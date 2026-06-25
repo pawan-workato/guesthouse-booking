@@ -1,18 +1,18 @@
 package com.guesthouse.booking.ui.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Bed
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -23,30 +23,62 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.guesthouse.booking.ui.screens.AdminScreen
 import com.guesthouse.booking.ui.screens.BookingFormScreen
+import com.guesthouse.booking.ui.screens.PropertiesScreen
+import com.guesthouse.booking.ui.screens.PropertyRoomsScreen
 import com.guesthouse.booking.ui.screens.RoomDetailScreen
-import com.guesthouse.booking.ui.screens.RoomsScreen
 import com.guesthouse.booking.viewmodel.AdminViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
+import com.guesthouse.booking.viewmodel.PropertiesViewModel
 import com.guesthouse.booking.viewmodel.RoomsViewModel
 
 sealed class Screen(val route: String, val label: String) {
-    data object Rooms : Screen("rooms", "Rooms")
+    data object Properties : Screen("properties", "Properties")
     data object Book : Screen("book", "Book")
-    data object Admin : Screen("admin", "Admin")
+    data object Admin : Screen("admin", "Bookings")
+    data object PropertyRooms : Screen("property/{propertyId}/rooms", "Rooms") {
+        fun createRoute(propertyId: Long) = "property/$propertyId/rooms"
+    }
     data object RoomDetail : Screen("room/{roomId}", "Room") {
         fun createRoute(roomId: Long) = "room/$roomId"
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GuesthouseNavHost(viewModelFactory: ViewModelProvider.Factory) {
+fun GuesthouseNavHost(
+    viewModelFactory: ViewModelProvider.Factory,
+    staffName: String,
+    isChainAdmin: Boolean,
+    onLogout: () -> Unit
+) {
     val navController = rememberNavController()
-    val bottomItems = listOf(Screen.Rooms, Screen.Book, Screen.Admin)
+    val bottomItems = listOf(Screen.Properties, Screen.Book, Screen.Admin)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-    val showBottomBar = currentDestination?.route in bottomItems.map { it.route }
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomBar = currentRoute in bottomItems.map { it.route }
 
     Scaffold(
+        topBar = {
+            if (showBottomBar) {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text("Guesthouse Booking")
+                            Text(
+                                if (isChainAdmin) "$staffName · Chain admin" else staffName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onLogout) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Sign out")
+                        }
+                    }
+                )
+            }
+        },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
@@ -55,7 +87,7 @@ fun GuesthouseNavHost(viewModelFactory: ViewModelProvider.Factory) {
                             icon = {
                                 Icon(
                                     when (screen) {
-                                        Screen.Rooms -> Icons.Default.Bed
+                                        Screen.Properties -> Icons.Default.LocationCity
                                         Screen.Book -> Icons.Default.CalendarMonth
                                         else -> Icons.Default.AdminPanelSettings
                                     },
@@ -63,7 +95,7 @@ fun GuesthouseNavHost(viewModelFactory: ViewModelProvider.Factory) {
                                 )
                             },
                             label = { Text(screen.label) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            selected = navBackStackEntry?.destination?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
@@ -81,14 +113,47 @@ fun GuesthouseNavHost(viewModelFactory: ViewModelProvider.Factory) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Rooms.route,
+            startDestination = Screen.Properties.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Rooms.route) {
-                val vm: RoomsViewModel = viewModel(factory = viewModelFactory)
-                RoomsScreen(
+            composable(Screen.Properties.route) {
+                val vm: PropertiesViewModel = viewModel(factory = viewModelFactory)
+                PropertiesScreen(
                     viewModel = vm,
-                    onRoomClick = { navController.navigate(Screen.RoomDetail.createRoute(it)) }
+                    isChainAdmin = isChainAdmin,
+                    onPropertyClick = { navController.navigate(Screen.PropertyRooms.createRoute(it)) }
+                )
+            }
+            composable(Screen.PropertyRooms.route) { entry ->
+                val propertyId = entry.arguments?.getString("propertyId")?.toLongOrNull() ?: return@composable
+                val roomsVm: RoomsViewModel = viewModel(factory = viewModelFactory)
+                val bookingVm: BookingViewModel = viewModel(factory = viewModelFactory)
+                if (!bookingVm.canAccessProperty(propertyId)) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    PropertyRoomsScreen(
+                        propertyId = propertyId,
+                        viewModel = roomsVm,
+                        onBack = { navController.popBackStack() },
+                        onRoomClick = { navController.navigate(Screen.RoomDetail.createRoute(it)) }
+                    )
+                }
+            }
+            composable(Screen.RoomDetail.route) { entry ->
+                val roomId = entry.arguments?.getString("roomId")?.toLongOrNull() ?: return@composable
+                val vm: BookingViewModel = viewModel(factory = viewModelFactory)
+                RoomDetailScreen(
+                    roomId = roomId,
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() },
+                    onBookNow = { propertyId, rid ->
+                        vm.preselect(propertyId, rid)
+                        navController.navigate(Screen.Book.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
             composable(Screen.Book.route) {
@@ -99,21 +164,27 @@ fun GuesthouseNavHost(viewModelFactory: ViewModelProvider.Factory) {
                 val vm: AdminViewModel = viewModel(factory = viewModelFactory)
                 AdminScreen(viewModel = vm)
             }
-            composable(Screen.RoomDetail.route) { entry ->
-                val roomId = entry.arguments?.getString("roomId")?.toLongOrNull() ?: return@composable
-                val vm: BookingViewModel = viewModel(factory = viewModelFactory)
-                RoomDetailScreen(
-                    roomId = roomId,
-                    viewModel = vm,
-                    onBookNow = {
-                        navController.navigate(Screen.Book.route) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PropertyAccessDenied(onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Access denied") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                )
-            }
+                }
+            )
+        }
+    ) { padding ->
+        Column(Modifier.padding(padding).padding(16.dp)) {
+            Text("You don't have access to this property.")
         }
     }
 }

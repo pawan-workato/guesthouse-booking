@@ -1,45 +1,43 @@
 # Guesthouse Booking (Android)
 
-Kotlin + Jetpack Compose Android app for managing guesthouse room bookings.
+Staff-only Android app for a small guesthouse chain (10+ properties). Property managers book on behalf of guests — no guest login or payments.
 
-## Features (MVP)
+## Documentation
 
-- **Rooms** — browse available rooms with pricing and capacity
-- **Availability** — calendar view of booked dates per room
-- **Book** — select dates, enter guest details, confirm booking
-- **Admin** — view and cancel all bookings
+- **[Guesthouse wiki](docs/wiki/README.md)** — chain overview, property details, staff procedures, and FAQ
 
-Data is stored locally with Room (SQLite). Four sample rooms are seeded on first launch.
+## Features
+
+- **Properties** — searchable list of all chain locations (12 seeded)
+- **Rooms** — per-property room inventory with pricing and capacity
+- **Availability** — calendar showing booked dates per room
+- **Book** — staff enters guest name, phone, email, dates, and room
+- **Bookings admin** — view and cancel bookings across all properties
+
+Data is stored locally with Room (SQLite). Database resets on schema upgrade during development.
 
 ## Requirements
 
 - Android Studio Ladybug or newer
 - Android SDK 36
-- JDK 17+ (Android Studio bundles a compatible JDK)
+- JDK 17–21
 
 ## Run
 
 1. Open this folder in **Android Studio**
-2. Let Gradle sync complete
-3. Run on an emulator or device (API 26+)
-
-Or from the command line (requires JDK 17–21):
+2. Sync Gradle and run on an emulator or device (API 26+)
 
 ```bash
 export ANDROID_HOME=$HOME/Library/Android/sdk
 ./gradlew assembleDebug
 ```
 
-## Project structure
+## Roadmap
 
-```
-app/src/main/java/com/guesthouse/booking/
-├── data/          # Room database, DAOs, repository
-├── viewmodel/     # Rooms, Booking, Admin ViewModels
-├── ui/            # Compose screens, navigation, theme
-└── MainActivity.kt
-```
+- Sprint 2: Staff login + property-scoped access
+- Sprint 3: Offline booking with sync queue
+- Sprint 4: Check-in/out, block dates, today board
 
 ## GitHub
 
-Repository: https://github.com/pawan-workato/guesthouse-booking
+https://github.com/pawan-workato/guesthouse-booking

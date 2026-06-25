@@ -35,7 +35,7 @@ interface BookingDao {
     ): List<BookingEntity>
 
     @Insert
-    suspend fun insert(booking: BookingEntity)
+    suspend fun insert(booking: BookingEntity): Long
 
     @Query("UPDATE bookings SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: Long, status: String)

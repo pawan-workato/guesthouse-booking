@@ -15,12 +15,12 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun AdminScreen(viewModel: AdminViewModel) {
-    val bookings by viewModel.bookingsWithRooms.collectAsState()
+    val bookings by viewModel.bookingsWithDetails.collectAsState()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Admin", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Manage all bookings", color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Text("Bookings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text("All properties — staff view", color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp))
 
         if (bookings.isEmpty()) {
@@ -31,10 +31,16 @@ fun AdminScreen(viewModel: AdminViewModel) {
                     val b = item.booking
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
+                            Text(item.propertyName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                             Text(item.roomName, fontWeight = FontWeight.SemiBold)
-                            Text("${b.guestName} · ${b.guestEmail}")
+                            Text(b.guestName)
+                            if (b.guestPhone.isNotBlank()) Text(b.guestPhone)
+                            if (b.guestEmail.isNotBlank()) Text(b.guestEmail)
                             Text("${LocalDate.ofEpochDay(b.checkInEpochDay).format(formatter)} → ${LocalDate.ofEpochDay(b.checkOutEpochDay).format(formatter)}")
-                            Text("Status: ${b.status}", color = if (b.status == BookingStatus.CONFIRMED.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                            Text(
+                                "Status: ${b.status}",
+                                color = if (b.status == BookingStatus.CONFIRMED.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            )
                             if (b.status == BookingStatus.CONFIRMED.name) {
                                 TextButton(onClick = { viewModel.cancelBooking(b.id) }) {
                                     Text("Cancel booking")

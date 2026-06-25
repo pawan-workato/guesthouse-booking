@@ -13,21 +13,38 @@ import com.guesthouse.booking.ui.components.bookedDaysFromRanges
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingFormScreen(viewModel: BookingViewModel) {
-    val rooms by viewModel.rooms.collectAsState()
+    val properties by viewModel.properties.collectAsState()
+    val selectedPropertyId by viewModel.selectedPropertyId.collectAsState()
+    val rooms by viewModel.roomsForSelectedProperty.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
-    var selectedRoomId by remember { mutableLongStateOf(rooms.firstOrNull()?.id ?: 0L) }
+
+    var selectedRoomId by remember { mutableLongStateOf(0L) }
     var guestName by remember { mutableStateOf("") }
     var guestEmail by remember { mutableStateOf("") }
+    var guestPhone by remember { mutableStateOf("") }
     var checkIn by remember { mutableStateOf<Long?>(null) }
     var checkOut by remember { mutableStateOf<Long?>(null) }
 
-    LaunchedEffect(rooms) {
-        if (selectedRoomId == 0L && rooms.isNotEmpty()) selectedRoomId = rooms.first().id
+    LaunchedEffect(properties, selectedPropertyId) {
+        if (selectedPropertyId == null && properties.isNotEmpty()) {
+            viewModel.selectProperty(properties.first().id)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.consumePreselectedRoom()?.let { selectedRoomId = it }
+    }
+
+    LaunchedEffect(selectedPropertyId, rooms) {
+        if (selectedRoomId == 0L || rooms.none { it.id == selectedRoomId }) {
+            selectedRoomId = rooms.firstOrNull()?.id ?: 0L
+            checkIn = null
+            checkOut = null
+        }
     }
 
     val bookings by viewModel.observeRoomBookings(selectedRoomId).collectAsState()
@@ -36,30 +53,34 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text("New Booking", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Select dates and enter guest details", color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 16.dp))
+        Text(
+            "Staff booking — enter guest details on their behalf",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
-        if (rooms.isNotEmpty()) {
-            var expanded by remember { mutableStateOf(false) }
-            val selectedRoom = rooms.find { it.id == selectedRoomId }
-            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        if (properties.isNotEmpty()) {
+            var propertyExpanded by remember { mutableStateOf(false) }
+            val selectedProperty = properties.find { it.id == selectedPropertyId }
+            ExposedDropdownMenuBox(expanded = propertyExpanded, onExpandedChange = { propertyExpanded = it }) {
                 OutlinedTextField(
-                    value = selectedRoom?.name ?: "Select room",
+                    value = selectedProperty?.name ?: "Select property",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Room") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                    label = { Text("Property") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(propertyExpanded) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                 )
-                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    rooms.forEach { room ->
+                ExposedDropdownMenu(expanded = propertyExpanded, onDismissRequest = { propertyExpanded = false }) {
+                    properties.forEach { property ->
                         DropdownMenuItem(
-                            text = { Text("${room.name} — $${room.pricePerNight.toInt()}/night") },
+                            text = { Text("${property.name} (${property.region})") },
                             onClick = {
-                                selectedRoomId = room.id
+                                viewModel.selectProperty(property.id)
+                                selectedRoomId = 0L
                                 checkIn = null
                                 checkOut = null
-                                expanded = false
+                                propertyExpanded = false
                             }
                         )
                     }
@@ -67,31 +88,60 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
             }
         }
 
-        AvailabilityCalendar(
-            bookedEpochDays = bookedDays,
-            selectedCheckIn = checkIn,
-            selectedCheckOut = checkOut,
-            onDateSelected = { day ->
-                when {
-                    checkIn == null || (checkIn != null && checkOut != null) -> {
-                        checkIn = day; checkOut = null
+        if (selectedPropertyId != null && rooms.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            var roomExpanded by remember { mutableStateOf(false) }
+            val selectedRoom = rooms.find { it.id == selectedRoomId }
+            ExposedDropdownMenuBox(expanded = roomExpanded, onExpandedChange = { roomExpanded = it }) {
+                OutlinedTextField(
+                    value = selectedRoom?.name ?: "Select room",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Room") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(roomExpanded) },
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                )
+                ExposedDropdownMenu(expanded = roomExpanded, onDismissRequest = { roomExpanded = false }) {
+                    rooms.forEach { room ->
+                        DropdownMenuItem(
+                            text = { Text("${room.name} — $${room.pricePerNight.toInt()}/night") },
+                            onClick = {
+                                selectedRoomId = room.id
+                                checkIn = null
+                                checkOut = null
+                                roomExpanded = false
+                            }
+                        )
                     }
-                    day <= checkIn!! -> checkIn = day
-                    else -> checkOut = day
                 }
-            },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
-        )
-
-        if (checkIn != null) {
-            Text("Check-in: ${LocalDate.ofEpochDay(checkIn!!).format(formatter)}")
-        }
-        if (checkOut != null) {
-            Text("Check-out: ${LocalDate.ofEpochDay(checkOut!!).format(formatter)}")
+            }
         }
 
-        OutlinedTextField(guestName, { guestName = it }, label = { Text("Guest name") },
+        if (selectedRoomId != 0L) {
+            AvailabilityCalendar(
+                bookedEpochDays = bookedDays,
+                selectedCheckIn = checkIn,
+                selectedCheckOut = checkOut,
+                onDateSelected = { day ->
+                    when {
+                        checkIn == null || (checkIn != null && checkOut != null) -> {
+                            checkIn = day; checkOut = null
+                        }
+                        day <= checkIn!! -> checkIn = day
+                        else -> checkOut = day
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+            )
+        }
+
+        if (checkIn != null) Text("Check-in: ${LocalDate.ofEpochDay(checkIn!!).format(formatter)}")
+        if (checkOut != null) Text("Check-out: ${LocalDate.ofEpochDay(checkOut!!).format(formatter)}")
+
+        OutlinedTextField(guestName, { guestName = it }, label = { Text("Guest name *") },
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+        OutlinedTextField(guestPhone, { guestPhone = it }, label = { Text("Phone") },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
         OutlinedTextField(guestEmail, { guestEmail = it }, label = { Text("Email") },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
 
@@ -105,14 +155,17 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
         Button(
             onClick = {
                 viewModel.clearMessages()
-                if (checkIn != null && checkOut != null) {
-                    viewModel.submitBooking(selectedRoomId, guestName, guestEmail, checkIn!!, checkOut!!)
+                if (checkIn != null && checkOut != null && selectedRoomId != 0L) {
+                    viewModel.submitBooking(
+                        selectedRoomId, guestName, guestEmail, guestPhone, checkIn!!, checkOut!!
+                    )
                 }
             },
-            enabled = !uiState.isSubmitting && checkIn != null && checkOut != null && guestName.isNotBlank() && guestEmail.isNotBlank(),
+            enabled = !uiState.isSubmitting && selectedRoomId != 0L &&
+                checkIn != null && checkOut != null && guestName.isNotBlank(),
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
         ) {
-            Text(if (uiState.isSubmitting) "Booking..." else "Confirm booking")
+            Text(if (uiState.isSubmitting) "Saving..." else "Confirm booking")
         }
     }
 }

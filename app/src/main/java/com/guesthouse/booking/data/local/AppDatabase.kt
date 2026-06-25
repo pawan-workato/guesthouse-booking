@@ -5,16 +5,27 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.guesthouse.booking.data.local.entities.BookingEntity
+import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
+import com.guesthouse.booking.data.local.entities.StaffEntity
+import com.guesthouse.booking.data.local.entities.StaffPropertyAssignmentEntity
 
 @Database(
-    entities = [RoomEntity::class, BookingEntity::class],
-    version = 1,
+    entities = [
+        PropertyEntity::class,
+        RoomEntity::class,
+        BookingEntity::class,
+        StaffEntity::class,
+        StaffPropertyAssignmentEntity::class
+    ],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
+    abstract fun propertyDao(): PropertyDao
     abstract fun roomDao(): RoomDao
     abstract fun bookingDao(): BookingDao
+    abstract fun staffDao(): StaffDao
 
     companion object {
         @Volatile
@@ -26,7 +37,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "guesthouse.db"
-                ).build().also { instance = it }
+                )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
+                    .also { instance = it }
             }
         }
     }
