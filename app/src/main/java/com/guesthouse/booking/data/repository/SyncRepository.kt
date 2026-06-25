@@ -1,6 +1,7 @@
 package com.guesthouse.booking.data.repository
 
 import android.content.Context
+import androidx.room.withTransaction
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -58,26 +59,29 @@ class SyncRepository(
         if (!networkMonitor.isCurrentlyOnline()) {
             return SyncResult(noNetwork = true)
         }
-        val pending = database.bookingDao().getBySyncStatus(SyncStatus.PENDING_SYNC.name)
-        var synced = 0
-        var conflicts = 0
-        for (booking in pending) {
-            val overlaps = database.bookingDao().findOverlapping(
-                roomId = booking.roomId,
-                checkIn = booking.checkInEpochDay,
-                checkOut = booking.checkOutEpochDay,
-                excludeId = booking.id
-            ).filter { it.syncStatus == SyncStatus.SYNCED.name }
-            if (overlaps.isNotEmpty()) {
-                database.bookingDao().updateSyncStatus(booking.id, SyncStatus.CONFLICT.name)
-                conflicts++
-            } else {
-                val reference = formatReference(booking.propertyId, booking.id)
-                database.bookingDao().updateSync(booking.id, SyncStatus.SYNCED.name, reference)
-                synced++
+        val (synced, conflicts, hadPending) = database.withTransaction {
+            val pending = database.bookingDao().getBySyncStatus(SyncStatus.PENDING_SYNC.name)
+            var syncedCount = 0
+            var conflictCount = 0
+            for (booking in pending) {
+                val overlaps = database.bookingDao().findOverlapping(
+                    roomId = booking.roomId,
+                    checkIn = booking.checkInEpochDay,
+                    checkOut = booking.checkOutEpochDay,
+                    excludeId = booking.id
+                ).filter { it.syncStatus == SyncStatus.SYNCED.name }
+                if (overlaps.isNotEmpty()) {
+                    database.bookingDao().updateSyncStatus(booking.id, SyncStatus.CONFLICT.name)
+                    conflictCount++
+                } else {
+                    val reference = formatReference(booking.propertyId, booking.id)
+                    database.bookingDao().updateSync(booking.id, SyncStatus.SYNCED.name, reference)
+                    syncedCount++
+                }
             }
+            Triple(syncedCount, conflictCount, pending.isNotEmpty())
         }
-        if (pending.isNotEmpty()) {
+        if (hadPending) {
             val now = System.currentTimeMillis()
             prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
             _lastSyncEpochMs.value = now
