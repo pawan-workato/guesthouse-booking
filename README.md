@@ -4,7 +4,11 @@ Staff-only Android app for a small guesthouse chain (10+ properties). Property m
 
 ## Documentation
 
-- **[Guesthouse wiki](docs/wiki/README.md)** — chain overview, property details, staff procedures, and FAQ
+The wiki lives in the repo (always available):
+
+- **[Browse wiki on GitHub](https://github.com/pawan-workato/guesthouse-booking/tree/main/docs/wiki)** — chain overview, property guides, staff procedures, FAQ
+
+The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) is separate and empty until initialized. Create a blank **Home** page on the wiki tab once, then run `./scripts/publish-github-wiki.sh` to sync.
 
 ## Features
 
