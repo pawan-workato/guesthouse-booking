@@ -13,18 +13,8 @@ class BookingRepository(private val database: AppDatabase) {
 
     fun observeBookings(): Flow<List<BookingEntity>> = database.bookingDao().observeAll()
 
-    fun observeBookingsForRoom(roomId: Long): Flow<List<BookingEntity>> {
-        return database.bookingDao().observeAll()
-    }
-
-    suspend fun getConfirmedBookingsForRoom(roomId: Long): List<BookingEntity> {
-        return database.bookingDao().observeAll()
-            .let { flow ->
-                kotlinx.coroutines.flow.firstOrNull(flow)?.filter {
-                    it.roomId == roomId && it.status == BookingStatus.CONFIRMED
-                } ?: emptyList()
-            }
-    }
+    fun observeConfirmedBookingsForRoom(roomId: Long): Flow<List<BookingEntity>> =
+        database.bookingDao().observeConfirmedForRoom(roomId)
 
     suspend fun createBooking(
         roomId: Long,
@@ -33,6 +23,9 @@ class BookingRepository(private val database: AppDatabase) {
         checkInEpochDay: Long,
         checkOutEpochDay: Long
     ): Result<Long> {
+        if (guestName.isBlank() || guestEmail.isBlank()) {
+            return Result.failure(IllegalArgumentException("Guest name and email are required"))
+        }
         if (checkOutEpochDay <= checkInEpochDay) {
             return Result.failure(IllegalArgumentException("Check-out must be after check-in"))
         }
@@ -57,15 +50,4 @@ class BookingRepository(private val database: AppDatabase) {
     suspend fun cancelBooking(bookingId: Long) {
         database.bookingDao().updateStatus(bookingId, BookingStatus.CANCELLED)
     }
-}
-
-private suspend fun <T> kotlinx.coroutines.flow.firstOrNull(
-    flow: kotlinx.coroutines.flow.Flow<T>
-): T? {
-    var result: T? = null
-    flow.collect { value ->
-        result = value
-        return@collect
-    }
-    return result
 }
