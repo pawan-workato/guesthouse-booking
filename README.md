@@ -8,7 +8,7 @@ The wiki lives in the repo (always available):
 
 - **[Browse wiki on GitHub](https://github.com/pawan-workato/guesthouse-booking/tree/main/docs/wiki)** — chain overview, property guides, staff procedures, FAQ
 
-The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) is separate and empty until initialized. Create a blank **Home** page on the wiki tab once, then run `./scripts/publish-github-wiki.sh` to sync.
+The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) mirrors `docs/wiki/` automatically on every push to `main` (GitHub Actions workflow **Sync Wiki**). You can also run `./scripts/publish-github-wiki.sh` locally.
 
 ## Features
 
