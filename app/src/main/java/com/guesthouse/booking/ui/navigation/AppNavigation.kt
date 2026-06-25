@@ -13,8 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -39,10 +39,7 @@ sealed class Screen(val route: String, val label: String) {
 }
 
 @Composable
-fun GuesthouseNavHost(
-    viewModelFactory: ViewModelProvider.Factory,
-    viewModel: (Class<out ViewModel>) -> ViewModel
-) {
+fun GuesthouseNavHost(viewModelFactory: ViewModelProvider.Factory) {
     val navController = rememberNavController()
     val bottomItems = listOf(Screen.Rooms, Screen.Book, Screen.Admin)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -88,22 +85,26 @@ fun GuesthouseNavHost(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Rooms.route) {
+                val vm: RoomsViewModel = viewModel(factory = viewModelFactory)
                 RoomsScreen(
-                    viewModel = viewModel(RoomsViewModel::class.java) as RoomsViewModel,
+                    viewModel = vm,
                     onRoomClick = { navController.navigate(Screen.RoomDetail.createRoute(it)) }
                 )
             }
             composable(Screen.Book.route) {
-                BookingFormScreen(viewModel = viewModel(BookingViewModel::class.java) as BookingViewModel)
+                val vm: BookingViewModel = viewModel(factory = viewModelFactory)
+                BookingFormScreen(viewModel = vm)
             }
             composable(Screen.Admin.route) {
-                AdminScreen(viewModel = viewModel(AdminViewModel::class.java) as AdminViewModel)
+                val vm: AdminViewModel = viewModel(factory = viewModelFactory)
+                AdminScreen(viewModel = vm)
             }
             composable(Screen.RoomDetail.route) { entry ->
                 val roomId = entry.arguments?.getString("roomId")?.toLongOrNull() ?: return@composable
+                val vm: BookingViewModel = viewModel(factory = viewModelFactory)
                 RoomDetailScreen(
                     roomId = roomId,
-                    viewModel = viewModel(BookingViewModel::class.java) as BookingViewModel,
+                    viewModel = vm,
                     onBookNow = {
                         navController.navigate(Screen.Book.route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }

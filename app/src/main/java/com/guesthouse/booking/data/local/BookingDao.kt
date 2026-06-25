@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.guesthouse.booking.data.local.entities.BookingEntity
-import com.guesthouse.booking.data.local.entities.BookingStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,28 +14,29 @@ interface BookingDao {
     @Query(
         """
         SELECT * FROM bookings
-        WHERE roomId = :roomId AND status = 'CONFIRMED'
+        WHERE roomId = :roomId AND status = :status
         ORDER BY checkInEpochDay ASC
         """
     )
-    fun observeConfirmedForRoom(roomId: Long): Flow<List<BookingEntity>>
+    fun observeConfirmedForRoom(roomId: Long, status: String): Flow<List<BookingEntity>>
 
     @Query(
         """
         SELECT * FROM bookings
-        WHERE roomId = :roomId AND status = 'CONFIRMED'
+        WHERE roomId = :roomId AND status = :status
         AND checkInEpochDay < :checkOut AND checkOutEpochDay > :checkIn
         """
     )
     suspend fun findOverlapping(
         roomId: Long,
         checkIn: Long,
-        checkOut: Long
+        checkOut: Long,
+        status: String
     ): List<BookingEntity>
 
     @Insert
-    suspend fun insert(booking: BookingEntity): Long
+    suspend fun insert(booking: BookingEntity)
 
     @Query("UPDATE bookings SET status = :status WHERE id = :id")
-    suspend fun updateStatus(id: Long, status: BookingStatus)
+    suspend fun updateStatus(id: Long, status: String)
 }

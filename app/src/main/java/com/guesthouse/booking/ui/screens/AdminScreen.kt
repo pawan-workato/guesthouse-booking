@@ -34,8 +34,8 @@ fun AdminScreen(viewModel: AdminViewModel) {
                             Text(item.roomName, fontWeight = FontWeight.SemiBold)
                             Text("${b.guestName} · ${b.guestEmail}")
                             Text("${LocalDate.ofEpochDay(b.checkInEpochDay).format(formatter)} → ${LocalDate.ofEpochDay(b.checkOutEpochDay).format(formatter)}")
-                            Text("Status: ${b.status.name}", color = if (b.status == BookingStatus.CONFIRMED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
-                            if (b.status == BookingStatus.CONFIRMED) {
+                            Text("Status: ${b.status}", color = if (b.status == BookingStatus.CONFIRMED.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                            if (b.status == BookingStatus.CONFIRMED.name) {
                                 TextButton(onClick = { viewModel.cancelBooking(b.id) }) {
                                     Text("Cancel booking")
                                 }

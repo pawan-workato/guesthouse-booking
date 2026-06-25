@@ -14,7 +14,7 @@ class BookingRepository(private val database: AppDatabase) {
     fun observeBookings(): Flow<List<BookingEntity>> = database.bookingDao().observeAll()
 
     fun observeConfirmedBookingsForRoom(roomId: Long): Flow<List<BookingEntity>> =
-        database.bookingDao().observeConfirmedForRoom(roomId)
+        database.bookingDao().observeConfirmedForRoom(roomId, BookingStatus.CONFIRMED.name)
 
     suspend fun createBooking(
         roomId: Long,
@@ -30,12 +30,12 @@ class BookingRepository(private val database: AppDatabase) {
             return Result.failure(IllegalArgumentException("Check-out must be after check-in"))
         }
         val overlaps = database.bookingDao().findOverlapping(
-            roomId, checkInEpochDay, checkOutEpochDay
+            roomId, checkInEpochDay, checkOutEpochDay, BookingStatus.CONFIRMED.name
         )
         if (overlaps.isNotEmpty()) {
             return Result.failure(IllegalStateException("Room is not available for those dates"))
         }
-        val id = database.bookingDao().insert(
+        database.bookingDao().insert(
             BookingEntity(
                 roomId = roomId,
                 guestName = guestName.trim(),
@@ -44,10 +44,10 @@ class BookingRepository(private val database: AppDatabase) {
                 checkOutEpochDay = checkOutEpochDay
             )
         )
-        return Result.success(id)
+        return Result.success(0L)
     }
 
     suspend fun cancelBooking(bookingId: Long) {
-        database.bookingDao().updateStatus(bookingId, BookingStatus.CANCELLED)
+        database.bookingDao().updateStatus(bookingId, BookingStatus.CANCELLED.name)
     }
 }

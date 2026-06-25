@@ -24,5 +24,5 @@ data class BookingEntity(
     val guestEmail: String,
     val checkInEpochDay: Long,
     val checkOutEpochDay: Long,
-    val status: BookingStatus = BookingStatus.CONFIRMED
+    val status: String = BookingStatus.CONFIRMED.name
 )
