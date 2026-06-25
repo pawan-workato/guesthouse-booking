@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.BookingStatus
+import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.viewmodel.AdminViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -20,7 +21,7 @@ fun AdminScreen(viewModel: AdminViewModel) {
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Bookings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("All properties — staff view", color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Text("Your assigned properties", color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp))
 
         if (bookings.isEmpty()) {
@@ -33,15 +34,21 @@ fun AdminScreen(viewModel: AdminViewModel) {
                         Column(Modifier.padding(16.dp)) {
                             Text(item.propertyName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                             Text(item.roomName, fontWeight = FontWeight.SemiBold)
+                            if (b.bookingReference.isNotBlank()) Text("Ref: ${b.bookingReference}")
                             Text(b.guestName)
                             if (b.guestPhone.isNotBlank()) Text(b.guestPhone)
                             if (b.guestEmail.isNotBlank()) Text(b.guestEmail)
                             Text("${LocalDate.ofEpochDay(b.checkInEpochDay).format(formatter)} → ${LocalDate.ofEpochDay(b.checkOutEpochDay).format(formatter)}")
+                            Text("Booking: ${b.status}", color = if (b.status == BookingStatus.CONFIRMED.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
                             Text(
-                                "Status: ${b.status}",
-                                color = if (b.status == BookingStatus.CONFIRMED.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                "Sync: ${b.syncStatus.replace('_', ' ')}",
+                                color = when (b.syncStatus) {
+                                    SyncStatus.CONFLICT.name -> MaterialTheme.colorScheme.error
+                                    SyncStatus.PENDING_SYNC.name -> MaterialTheme.colorScheme.tertiary
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                }
                             )
-                            if (b.status == BookingStatus.CONFIRMED.name) {
+                            if (b.status == BookingStatus.CONFIRMED.name && b.syncStatus != SyncStatus.CONFLICT.name) {
                                 TextButton(onClick = { viewModel.cancelBooking(b.id) }) {
                                     Text("Cancel booking")
                                 }

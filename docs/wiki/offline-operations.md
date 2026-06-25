@@ -1,31 +1,82 @@
 # Offline operations
 
-> **Status:** Placeholder for Sprint 3 — offline booking with sync queue. Behavior described here is planned, not yet implemented.
+> **Status:** Implemented in Sprint 3 — offline staff booking with local sync queue.
 
-## What staff should know (planned)
+## Overview
 
-When offline mode ships, property managers will be able to create and cancel bookings without a live network connection. Changes will queue locally and sync when connectivity returns.
+Staff can create bookings without a live network connection. Bookings are saved locally with a temporary reference and marked **PENDING SYNC**. When connectivity returns, the app syncs automatically (WorkManager) or on demand from the **Sync** tab.
 
-### Expected behavior
+Each device still uses a local Room database. Sprint 3 adds sync *status* and conflict handling on-device — there is no remote server yet. Sync marks bookings as **SYNCED** and assigns permanent references; conflicts are flagged when overlapping **SYNCED** bookings exist at sync time.
 
-| Scenario | Planned staff experience |
-|----------|-------------------------|
-| No network at check-in | Create booking offline; app queues it for sync |
-| Sync succeeds | Booking appears on all devices; calendar updates chain-wide |
-| Sync conflict | App flags overlapping booking created elsewhere; staff resolves manually |
-| Long offline period | Queue shows pending actions; do not assume other properties see your changes until synced |
+## Sync statuses
 
-### Until Sprint 3 ships
+| Status | Meaning |
+|--------|---------|
+| **PENDING SYNC** | Created offline (or awaiting sync). Reference: `TMP-xxxx`. Calendar treats as booked. |
+| **SYNCED** | Confirmed locally. Online bookings sync immediately; offline bookings after successful sync. Reference: `GH-{propertyId}-{id}`. |
+| **CONFLICT** | Sync found overlapping dates with another synced booking. Staff must cancel from Sync tab. |
 
-- The app stores all data **locally on the device** (Room/SQLite).
-- There is **no cloud sync** today — each device has its own database.
-- Bookings made on one device are **not visible** on another.
-- Treat the current app as a single-device tool until offline/sync is delivered.
+## Staff workflows
 
-### Preparation checklist (for managers)
+### Create booking offline
 
-1. Designate one primary device per property for booking during the transition.
-2. Export or screenshot critical bookings if switching devices (manual workaround until sync exists).
-3. Watch release notes for Sprint 3 before relying on offline queue behavior.
+1. Enable airplane mode (or lose connectivity).
+2. Sign in and open **Book**.
+3. An orange banner shows: *Offline — bookings will sync when you're back online*.
+4. Complete the booking form and submit.
+5. Success message: *Saved offline — will sync when online. Ref: TMP-xxxx*.
+6. The booking appears in **Bookings** with sync status **PENDING SYNC** and blocks the calendar like any confirmed stay.
 
-See the [root README](../../README.md) roadmap for sprint timeline.
+### Sync when back online
+
+1. Disable airplane mode.
+2. Open the **Sync** tab (badge shows pending + conflict count).
+3. Tap **Sync now**, or wait for automatic background sync (~15 min when network available).
+4. Pending bookings become **SYNCED** with `GH-{propertyId}-{id}` references, unless dates conflict.
+
+### Resolve conflicts
+
+If two bookings overlap the same room and dates (e.g. one created offline, one already synced):
+
+1. **Sync** tab lists the conflict with guest and dates.
+2. Tap **Cancel this booking** to dismiss the conflicting offline booking.
+3. The other booking remains confirmed.
+
+## UI locations
+
+| Screen | What to look for |
+|--------|------------------|
+| **Book** | Offline banner when no network |
+| **Bookings** | Reference, sync status per booking |
+| **Sync** | Online/offline chip, last sync time, pending list, conflicts, manual sync |
+| **Bottom nav** | Sync tab badge = pending + conflicts for your properties |
+
+## Demo logins
+
+Same as main app — e.g. `manager.mountain@chain.com` / `manager123` for properties 1, 3, 7, 11.
+
+## Testing offline mode (airplane mode)
+
+1. Install debug build on device or emulator.
+2. Sign in as a property manager.
+3. Enable **Airplane mode**.
+4. Create a booking on **Book** — expect offline banner and TMP reference.
+5. Check **Bookings** — status **PENDING SYNC**; room calendar shows dates blocked.
+6. Disable airplane mode → **Sync** tab → **Sync now**.
+7. Booking should show **SYNCED** and `GH-*` reference.
+
+### Conflict test
+
+1. While online, book Room A for dates X–Y.
+2. Enable airplane mode; book the same room for overlapping dates.
+3. Go online and sync — second booking becomes **CONFLICT**.
+4. Cancel from Sync tab.
+
+## Technical notes
+
+- Database schema v4: `syncStatus`, `bookingReference`, `createdAtEpochMs` on bookings.
+- `findOverlapping` excludes **CONFLICT** bookings so failed syncs don't block new bookings incorrectly.
+- WorkManager: one-time sync after offline save; periodic sync every 15 minutes when connected.
+- Permissions: `INTERNET`, `ACCESS_NETWORK_STATE`.
+
+See the [root README](../../README.md) for sprint history.

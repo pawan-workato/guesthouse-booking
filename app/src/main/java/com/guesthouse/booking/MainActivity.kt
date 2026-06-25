@@ -21,7 +21,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val app = application as GuesthouseApplication
         lifecycleScope.launch { app.authRepository.restoreSession() }
-        val factory = ViewModelFactory(app.repository, app.authRepository)
+        val factory = ViewModelFactory(
+            app.repository,
+            app.authRepository,
+            app.syncRepository,
+            app.networkMonitor
+        )
 
         setContent {
             val session by app.authRepository.session.collectAsStateWithLifecycle()

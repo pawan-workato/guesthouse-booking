@@ -21,6 +21,7 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
     val selectedPropertyId by viewModel.selectedPropertyId.collectAsState()
     val rooms by viewModel.roomsForSelectedProperty.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
 
     var selectedRoomId by remember { mutableLongStateOf(0L) }
     var guestName by remember { mutableStateOf("") }
@@ -56,8 +57,20 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
         Text(
             "Staff booking — enter guest details on their behalf",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 8.dp)
         )
+        if (!isOnline) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Text(
+                    "Offline — bookings will sync when you're back online",
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
 
         if (properties.isNotEmpty()) {
             var propertyExpanded by remember { mutableStateOf(false) }

@@ -21,7 +21,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("propertyId"), Index("roomId")]
+    indices = [Index("propertyId"), Index("roomId"), Index("syncStatus")]
 )
 data class BookingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -32,5 +32,8 @@ data class BookingEntity(
     val guestPhone: String = "",
     val checkInEpochDay: Long,
     val checkOutEpochDay: Long,
-    val status: String = BookingStatus.CONFIRMED.name
+    val status: String = BookingStatus.CONFIRMED.name,
+    val syncStatus: String = SyncStatus.SYNCED.name,
+    val bookingReference: String = "",
+    val createdAtEpochMs: Long = System.currentTimeMillis()
 )

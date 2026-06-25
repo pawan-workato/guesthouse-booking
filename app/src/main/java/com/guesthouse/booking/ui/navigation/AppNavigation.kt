@@ -8,8 +8,10 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -26,14 +28,17 @@ import com.guesthouse.booking.ui.screens.BookingFormScreen
 import com.guesthouse.booking.ui.screens.PropertiesScreen
 import com.guesthouse.booking.ui.screens.PropertyRoomsScreen
 import com.guesthouse.booking.ui.screens.RoomDetailScreen
+import com.guesthouse.booking.ui.screens.SyncScreen
 import com.guesthouse.booking.viewmodel.AdminViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
 import com.guesthouse.booking.viewmodel.RoomsViewModel
+import com.guesthouse.booking.viewmodel.SyncViewModel
 
 sealed class Screen(val route: String, val label: String) {
     data object Properties : Screen("properties", "Properties")
     data object Book : Screen("book", "Book")
+    data object Sync : Screen("sync", "Sync")
     data object Admin : Screen("admin", "Bookings")
     data object PropertyRooms : Screen("property/{propertyId}/rooms", "Rooms") {
         fun createRoute(propertyId: Long) = "property/$propertyId/rooms"
@@ -52,7 +57,9 @@ fun GuesthouseNavHost(
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
-    val bottomItems = listOf(Screen.Properties, Screen.Book, Screen.Admin)
+    val syncVm: SyncViewModel = viewModel(factory = viewModelFactory)
+    val issueCount by syncVm.issueCount.collectAsState()
+    val bottomItems = listOf(Screen.Properties, Screen.Book, Screen.Sync, Screen.Admin)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomItems.map { it.route }
@@ -85,14 +92,21 @@ fun GuesthouseNavHost(
                     bottomItems.forEach { screen ->
                         NavigationBarItem(
                             icon = {
-                                Icon(
-                                    when (screen) {
-                                        Screen.Properties -> Icons.Default.LocationCity
-                                        Screen.Book -> Icons.Default.CalendarMonth
-                                        else -> Icons.Default.AdminPanelSettings
-                                    },
-                                    contentDescription = screen.label
-                                )
+                                if (screen == Screen.Sync && issueCount > 0) {
+                                    BadgedBox(badge = { Badge { Text(issueCount.toString()) } }) {
+                                        Icon(Icons.Default.Sync, contentDescription = screen.label)
+                                    }
+                                } else {
+                                    Icon(
+                                        when (screen) {
+                                            Screen.Properties -> Icons.Default.LocationCity
+                                            Screen.Book -> Icons.Default.CalendarMonth
+                                            Screen.Sync -> Icons.Default.Sync
+                                            else -> Icons.Default.AdminPanelSettings
+                                        },
+                                        contentDescription = screen.label
+                                    )
+                                }
                             },
                             label = { Text(screen.label) },
                             selected = navBackStackEntry?.destination?.hierarchy?.any { it.route == screen.route } == true,
@@ -159,6 +173,9 @@ fun GuesthouseNavHost(
             composable(Screen.Book.route) {
                 val vm: BookingViewModel = viewModel(factory = viewModelFactory)
                 BookingFormScreen(viewModel = vm)
+            }
+            composable(Screen.Sync.route) {
+                SyncScreen(viewModel = syncVm)
             }
             composable(Screen.Admin.route) {
                 val vm: AdminViewModel = viewModel(factory = viewModelFactory)
