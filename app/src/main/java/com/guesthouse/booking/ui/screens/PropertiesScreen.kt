@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,38 +22,65 @@ import com.guesthouse.booking.viewmodel.PropertiesViewModel
 fun PropertiesScreen(
     viewModel: PropertiesViewModel,
     isChainAdmin: Boolean,
-    onPropertyClick: (Long) -> Unit
+    onPropertyClick: (Long) -> Unit,
+    onAddProperty: () -> Unit,
+    onEditProperty: (Long) -> Unit
 ) {
     val properties by viewModel.properties.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val showInactive by viewModel.showInactive.collectAsState()
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            "Your properties",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            if (isChainAdmin) "Chain admin — all ${properties.size} sites"
-            else "${properties.size} assigned ${if (properties.size == 1) "site" else "sites"}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = viewModel::setSearchQuery,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search by name, region, or city") },
-            singleLine = true
-        )
-        Spacer(Modifier.height(12.dp))
-        if (properties.isEmpty()) {
-            Text("No properties available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(properties, key = { it.id }) { property ->
-                    PropertyCard(property = property, onClick = { onPropertyClick(property.id) })
+    Scaffold(
+        floatingActionButton = {
+            if (isChainAdmin) {
+                FloatingActionButton(onClick = onAddProperty) {
+                    Icon(Icons.Default.Add, contentDescription = "Add property")
+                }
+            }
+        }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            Text(
+                "Your properties",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                if (isChainAdmin) "Chain admin — ${properties.size} ${if (showInactive) "total" else "active"} sites"
+                else "${properties.size} assigned ${if (properties.size == 1) "site" else "sites"}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            if (isChainAdmin) {
+                Row(
+                    Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Show removed", modifier = Modifier.weight(1f))
+                    Switch(checked = showInactive, onCheckedChange = viewModel::setShowInactive)
+                }
+            }
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = viewModel::setSearchQuery,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search by name, region, or city") },
+                singleLine = true
+            )
+            Spacer(Modifier.height(12.dp))
+            if (properties.isEmpty()) {
+                Text("No properties available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(properties, key = { it.id }) { property ->
+                        PropertyCard(
+                            property = property,
+                            isChainAdmin = isChainAdmin,
+                            onClick = { if (property.isActive) onPropertyClick(property.id) },
+                            onEdit = { onEditProperty(property.id) }
+                        )
+                    }
                 }
             }
         }
@@ -59,9 +88,14 @@ fun PropertiesScreen(
 }
 
 @Composable
-private fun PropertyCard(property: PropertyEntity, onClick: () -> Unit) {
+private fun PropertyCard(
+    property: PropertyEntity,
+    isChainAdmin: Boolean,
+    onClick: () -> Unit,
+    onEdit: () -> Unit
+) {
     Card(
-        Modifier.fillMaxWidth().clickable(onClick = onClick),
+        Modifier.fillMaxWidth().clickable(enabled = property.isActive, onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -69,7 +103,12 @@ private fun PropertyCard(property: PropertyEntity, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text(property.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(property.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    if (!property.isActive) {
+                        AssistChip(onClick = {}, enabled = false, label = { Text("Removed") })
+                    }
+                }
                 Text(property.region, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                 Text(property.address, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
                 Text(
@@ -79,7 +118,13 @@ private fun PropertyCard(property: PropertyEntity, onClick: () -> Unit) {
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            if (isChainAdmin) {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit property")
+                }
+            } else if (property.isActive) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            }
         }
     }
 }

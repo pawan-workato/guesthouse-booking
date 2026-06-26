@@ -23,6 +23,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch { app.authRepository.restoreSession() }
         val factory = ViewModelFactory(
             app.repository,
+            app.propertyRepository,
             app.authRepository,
             app.syncRepository,
             app.networkMonitor

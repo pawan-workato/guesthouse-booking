@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
+import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.data.repository.SyncRepository
 import com.guesthouse.booking.data.sync.NetworkMonitor
 
 class ViewModelFactory(
     private val repository: BookingRepository,
+    private val propertyRepository: PropertyRepository,
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val networkMonitor: NetworkMonitor
@@ -17,7 +19,7 @@ class ViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
             modelClass.isAssignableFrom(LoginViewModel::class.java) -> LoginViewModel(authRepository) as T
-            modelClass.isAssignableFrom(PropertiesViewModel::class.java) -> PropertiesViewModel(repository, authRepository) as T
+            modelClass.isAssignableFrom(PropertiesViewModel::class.java) -> PropertiesViewModel(propertyRepository, authRepository) as T
             modelClass.isAssignableFrom(RoomsViewModel::class.java) -> RoomsViewModel(repository) as T
             modelClass.isAssignableFrom(BookingViewModel::class.java) ->
                 BookingViewModel(repository, authRepository, syncRepository, networkMonitor) as T

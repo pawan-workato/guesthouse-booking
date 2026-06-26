@@ -10,5 +10,6 @@ data class PropertyEntity(
     val address: String,
     val region: String,
     val checkInTime: String = "15:00",
-    val checkOutTime: String = "11:00"
+    val checkOutTime: String = "11:00",
+    val isActive: Boolean = true
 )

@@ -26,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import com.guesthouse.booking.ui.screens.AdminScreen
 import com.guesthouse.booking.ui.screens.BookingFormScreen
 import com.guesthouse.booking.ui.screens.PropertiesScreen
+import com.guesthouse.booking.ui.screens.PropertyFormScreen
 import com.guesthouse.booking.ui.screens.PropertyRoomsScreen
 import com.guesthouse.booking.ui.screens.RoomDetailScreen
 import com.guesthouse.booking.ui.screens.SyncScreen
@@ -45,6 +46,10 @@ sealed class Screen(val route: String, val label: String) {
     }
     data object RoomDetail : Screen("room/{roomId}", "Room") {
         fun createRoute(roomId: Long) = "room/$roomId"
+    }
+    data object PropertyAdd : Screen("property/add", "Add property")
+    data object PropertyEdit : Screen("property/{propertyId}/edit", "Edit property") {
+        fun createRoute(propertyId: Long) = "property/$propertyId/edit"
     }
 }
 
@@ -135,7 +140,9 @@ fun GuesthouseNavHost(
                 PropertiesScreen(
                     viewModel = vm,
                     isChainAdmin = isChainAdmin,
-                    onPropertyClick = { navController.navigate(Screen.PropertyRooms.createRoute(it)) }
+                    onPropertyClick = { navController.navigate(Screen.PropertyRooms.createRoute(it)) },
+                    onAddProperty = { navController.navigate(Screen.PropertyAdd.route) },
+                    onEditProperty = { navController.navigate(Screen.PropertyEdit.createRoute(it)) }
                 )
             }
             composable(Screen.PropertyRooms.route) { entry ->
@@ -180,6 +187,33 @@ fun GuesthouseNavHost(
             composable(Screen.Admin.route) {
                 val vm: AdminViewModel = viewModel(factory = viewModelFactory)
                 AdminScreen(viewModel = vm)
+            }
+            composable(Screen.PropertyAdd.route) {
+                if (!isChainAdmin) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    val vm: PropertiesViewModel = viewModel(factory = viewModelFactory)
+                    PropertyFormScreen(
+                        propertyId = null,
+                        viewModel = vm,
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
+            composable(Screen.PropertyEdit.route) { entry ->
+                val propertyId = entry.arguments?.getString("propertyId")?.toLongOrNull() ?: return@composable
+                if (!isChainAdmin) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    val vm: PropertiesViewModel = viewModel(factory = viewModelFactory)
+                    PropertyFormScreen(
+                        propertyId = propertyId,
+                        viewModel = vm,
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }

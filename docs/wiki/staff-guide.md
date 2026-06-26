@@ -6,12 +6,13 @@ The Android app is **staff-only**. Property managers book rooms for guests; gues
 
 ## App navigation
 
-The bottom bar has three tabs:
+The bottom bar has four tabs:
 
 | Tab | Purpose |
 |-----|---------|
 | **Properties** | Browse all chain locations; tap a property to see its rooms |
 | **Book** | Create a new booking (select property, room, dates, guest info) |
+| **Sync** | Pending offline bookings, conflicts, and manual sync |
 | **Bookings** | View all bookings and cancel confirmed reservations |
 
 ### Typical workflow
@@ -20,6 +21,18 @@ The bottom bar has three tabs:
 2. Tap the property → tap a room → review availability on the calendar.
 3. Tap **Book now** (or go to the **Book** tab) and fill in guest details and dates.
 4. Confirm the booking appears under **Bookings**.
+
+
+## Property management (chain admin)
+
+Chain admins can manage the property list from the **Properties** tab:
+
+- **Add** — tap the **+** floating button
+- **Edit** — tap the pencil icon on a property card
+- **Remove** — on the edit screen, tap **Remove property** (hides the site; existing bookings and rooms are kept)
+- **Show removed** — toggle to view inactive properties and reactivate them
+
+Property managers only see active properties assigned to their account.
 
 ## Staff roles
 
