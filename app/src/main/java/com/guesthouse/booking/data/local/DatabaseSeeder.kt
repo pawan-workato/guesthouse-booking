@@ -1,6 +1,7 @@
 package com.guesthouse.booking.data.local
 
 import com.guesthouse.booking.data.auth.PasswordHasher
+import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.StaffEntity
@@ -64,6 +65,16 @@ object DatabaseSeeder {
                     RoomEntity(propertyId = 11, name = "Alpine Room", description = "Quiet rear-facing room.", pricePerNight = 72.0, capacity = 2),
                     RoomEntity(propertyId = 12, name = "Meadow Double", description = "Pasture views, ground floor.", pricePerNight = 74.0, capacity = 2),
                     RoomEntity(propertyId = 12, name = "Brook Suite", description = "Stream-side suite with sitting area.", pricePerNight = 99.0, capacity = 3)
+                )
+            )
+
+            database.guestDao().insertAll(
+                listOf(
+                    GuestEntity(1, "Maria Chen", "maria.chen@example.com", "+1 555-0101", "Prefers ground-floor rooms"),
+                    GuestEntity(2, "James O'Brien", "j.obrien@example.com", "+1 555-0102", "Late check-in often"),
+                    GuestEntity(3, "Priya Sharma", "priya.sh@example.com", "+1 555-0103", ""),
+                    GuestEntity(4, "Robert Kim", "r.kim@example.com", "+1 555-0104", "Traveling with service dog"),
+                    GuestEntity(5, "Elena Vasquez", "elena.v@example.com", "+1 555-0105", "Allergic to down pillows")
                 )
             )
 

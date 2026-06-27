@@ -6,12 +6,13 @@ The Android app is **staff-only**. Property managers book rooms for guests; gues
 
 ## App navigation
 
-The bottom bar has four tabs:
+The bottom bar has five tabs:
 
 | Tab | Purpose |
 |-----|---------|
 | **Properties** | Browse all chain locations; tap a property to see its rooms |
-| **Book** | Create a new booking (select property, room, dates, guest info) |
+| **Guests** | Add and maintain guest profiles; search by name, email, or phone |
+| **Book** | Create a booking — pick a saved guest or enter details manually |
 | **Sync** | Pending offline bookings, conflicts, and manual sync |
 | **Bookings** | View all bookings and cancel confirmed reservations |
 
@@ -19,9 +20,22 @@ The bottom bar has four tabs:
 
 1. Open **Properties** and find the guest's location (search by name or region).
 2. Tap the property → tap a room → review availability on the calendar.
-3. Tap **Book now** (or go to the **Book** tab) and fill in guest details and dates.
-4. Confirm the booking appears under **Bookings**.
+3. Optionally add the guest under **Guests** if they're a repeat visitor.
+4. Tap **Book now** (or go to the **Book** tab), pick the saved guest or enter details, and confirm dates.
+5. Confirm the booking appears under **Bookings**.
 
+
+
+## Guest management
+
+All staff can manage guest profiles from the **Guests** tab:
+
+- **Add** — tap the **+** floating button
+- **Edit** — tap the pencil icon on a guest card
+- **Remove** — on the edit screen, tap **Remove guest** (hides from active list; existing bookings keep their details)
+- **Show removed** — toggle to view inactive profiles and reactivate them
+
+When booking, use **Saved guest** on the **Book** tab to auto-fill name, phone, and email. You can still edit fields or enter a one-off guest manually.
 
 ## Property management (chain admin)
 

@@ -22,8 +22,10 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
     val rooms by viewModel.roomsForSelectedProperty.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
+    val activeGuests by viewModel.activeGuests.collectAsState()
 
     var selectedRoomId by remember { mutableLongStateOf(0L) }
+    var selectedGuestId by remember { mutableStateOf<Long?>(null) }
     var guestName by remember { mutableStateOf("") }
     var guestEmail by remember { mutableStateOf("") }
     var guestPhone by remember { mutableStateOf("") }
@@ -151,11 +153,59 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
         if (checkIn != null) Text("Check-in: ${LocalDate.ofEpochDay(checkIn!!).format(formatter)}")
         if (checkOut != null) Text("Check-out: ${LocalDate.ofEpochDay(checkOut!!).format(formatter)}")
 
-        OutlinedTextField(guestName, { guestName = it }, label = { Text("Guest name *") },
+        Spacer(Modifier.height(8.dp))
+        var guestExpanded by remember { mutableStateOf(false) }
+        val guestLabel = when (selectedGuestId) {
+            null -> "Enter guest manually"
+            else -> activeGuests.find { it.id == selectedGuestId }?.name ?: "Select guest"
+        }
+        ExposedDropdownMenuBox(expanded = guestExpanded, onExpandedChange = { guestExpanded = it }) {
+            OutlinedTextField(
+                value = guestLabel,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Saved guest (optional)") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(guestExpanded) },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+            )
+            ExposedDropdownMenu(expanded = guestExpanded, onDismissRequest = { guestExpanded = false }) {
+                DropdownMenuItem(
+                    text = { Text("Enter guest manually") },
+                    onClick = {
+                        selectedGuestId = null
+                        guestExpanded = false
+                    }
+                )
+                activeGuests.forEach { guest ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(guest.name)
+                                if (guest.phone.isNotBlank() || guest.email.isNotBlank()) {
+                                    Text(
+                                        listOf(guest.phone, guest.email).filter { it.isNotBlank() }.joinToString(" · "),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        },
+                        onClick = {
+                            selectedGuestId = guest.id
+                            guestName = guest.name
+                            guestEmail = guest.email
+                            guestPhone = guest.phone
+                            guestExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        OutlinedTextField(guestName, { guestName = it; selectedGuestId = null }, label = { Text("Guest name *") },
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
-        OutlinedTextField(guestPhone, { guestPhone = it }, label = { Text("Phone") },
+        OutlinedTextField(guestPhone, { guestPhone = it; selectedGuestId = null }, label = { Text("Phone") },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-        OutlinedTextField(guestEmail, { guestEmail = it }, label = { Text("Email") },
+        OutlinedTextField(guestEmail, { guestEmail = it; selectedGuestId = null }, label = { Text("Email") },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
 
         uiState.successMessage?.let {
@@ -170,7 +220,7 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
                 viewModel.clearMessages()
                 if (checkIn != null && checkOut != null && selectedRoomId != 0L) {
                     viewModel.submitBooking(
-                        selectedRoomId, guestName, guestEmail, guestPhone, checkIn!!, checkOut!!
+                        selectedRoomId, selectedGuestId, guestName, guestEmail, guestPhone, checkIn!!, checkOut!!
                     )
                 }
             },

@@ -26,6 +26,7 @@ class BookingRepository(private val database: AppDatabase) {
 
     suspend fun createBooking(
         roomId: Long,
+        guestId: Long?,
         guestName: String,
         guestEmail: String,
         guestPhone: String,
@@ -43,6 +44,7 @@ class BookingRepository(private val database: AppDatabase) {
             BookingEntity(
                 propertyId = room.propertyId,
                 roomId = roomId,
+                guestId = guestId,
                 guestName = guestName.trim(),
                 guestEmail = guestEmail.trim(),
                 guestPhone = guestPhone.trim(),

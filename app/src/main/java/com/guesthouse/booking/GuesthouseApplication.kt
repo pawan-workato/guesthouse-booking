@@ -5,6 +5,7 @@ import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.DatabaseSeeder
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
+import com.guesthouse.booking.data.repository.GuestRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.data.repository.SyncRepository
 import com.guesthouse.booking.data.sync.NetworkMonitor
@@ -13,6 +14,8 @@ class GuesthouseApplication : Application() {
     lateinit var repository: BookingRepository
         private set
     lateinit var propertyRepository: PropertyRepository
+        private set
+    lateinit var guestRepository: GuestRepository
         private set
     lateinit var authRepository: AuthRepository
         private set
@@ -27,6 +30,7 @@ class GuesthouseApplication : Application() {
         DatabaseSeeder.seedIfEmpty(database)
         repository = BookingRepository(database)
         propertyRepository = PropertyRepository(database)
+        guestRepository = GuestRepository(database)
         authRepository = AuthRepository(database, this)
         networkMonitor = NetworkMonitor(this)
         networkMonitor.start()

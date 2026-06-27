@@ -21,12 +21,13 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("propertyId"), Index("roomId"), Index("syncStatus")]
+    indices = [Index("propertyId"), Index("roomId"), Index("syncStatus"), Index("guestId")]
 )
 data class BookingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val propertyId: Long,
     val roomId: Long,
+    val guestId: Long? = null,
     val guestName: String,
     val guestEmail: String,
     val guestPhone: String = "",

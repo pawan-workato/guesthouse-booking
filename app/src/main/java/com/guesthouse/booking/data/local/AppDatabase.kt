@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.guesthouse.booking.data.local.entities.BookingEntity
+import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.StaffEntity
@@ -15,16 +16,18 @@ import com.guesthouse.booking.data.local.entities.StaffPropertyAssignmentEntity
         PropertyEntity::class,
         RoomEntity::class,
         BookingEntity::class,
+        GuestEntity::class,
         StaffEntity::class,
         StaffPropertyAssignmentEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun propertyDao(): PropertyDao
     abstract fun roomDao(): RoomDao
     abstract fun bookingDao(): BookingDao
+    abstract fun guestDao(): GuestDao
     abstract fun staffDao(): StaffDao
 
     companion object {

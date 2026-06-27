@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
         val factory = ViewModelFactory(
             app.repository,
             app.propertyRepository,
+            app.guestRepository,
             app.authRepository,
             app.syncRepository,
             app.networkMonitor

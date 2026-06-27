@@ -3,10 +3,12 @@ package com.guesthouse.booking.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guesthouse.booking.data.local.entities.BookingEntity
+import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
+import com.guesthouse.booking.data.repository.GuestRepository
 import com.guesthouse.booking.data.repository.SyncRepository
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +29,7 @@ data class BookingUiState(
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class BookingViewModel(
     private val repository: BookingRepository,
+    private val guestRepository: GuestRepository,
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val networkMonitor: NetworkMonitor
@@ -40,6 +43,9 @@ class BookingViewModel(
         if (session == null) emptyList()
         else properties.filter { session.canAccessProperty(it.id) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val activeGuests: StateFlow<List<GuestEntity>> = guestRepository.observeActiveGuests()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _selectedPropertyId = MutableStateFlow<Long?>(null)
     val selectedPropertyId: StateFlow<Long?> = _selectedPropertyId.asStateFlow()
@@ -78,6 +84,7 @@ class BookingViewModel(
 
     fun submitBooking(
         roomId: Long,
+        guestId: Long?,
         guestName: String,
         guestEmail: String,
         guestPhone: String,
@@ -97,7 +104,7 @@ class BookingViewModel(
             }
             val online = networkMonitor.isCurrentlyOnline()
             val result = repository.createBooking(
-                roomId, guestName, guestEmail, guestPhone, checkInEpochDay, checkOutEpochDay, online
+                roomId, guestId, guestName, guestEmail, guestPhone, checkInEpochDay, checkOutEpochDay, online
             )
             _uiState.value = result.fold(
                 onSuccess = { outcome ->

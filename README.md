@@ -15,7 +15,8 @@ The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) 
 - **Properties** — searchable list of chain locations; chain admins can add, edit, and remove properties
 - **Rooms** — per-property room inventory with pricing and capacity
 - **Availability** — calendar showing booked dates per room
-- **Book** — staff enters guest name, phone, email, dates, and room
+- **Guests** — add and maintain guest profiles (name, phone, email, notes)
+- **Book** — staff picks a saved guest or enters details manually, then selects dates and room
 - **Bookings admin** — view and cancel bookings across all properties
 
 Data is stored locally with Room (SQLite). Database resets on schema upgrade during development.
@@ -41,7 +42,8 @@ export ANDROID_HOME=$HOME/Library/Android/sdk
 - Sprint 2: Staff login + property-scoped access ✅
 - Sprint 3: Offline booking with sync queue ✅
 - Sprint 4: Property management (chain admin) ✅
-- Sprint 5: Check-in/out, block dates, today board
+- Sprint 5: Guest profiles ✅
+- Sprint 6: Check-in/out, block dates, today board
 
 ## GitHub
 
