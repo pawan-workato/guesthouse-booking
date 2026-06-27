@@ -196,6 +196,25 @@ fun GuesthouseNavHost(
                     onEditGuest = { navController.navigate(Screen.GuestEdit.createRoute(it)) }
                 )
             }
+            composable(Screen.GuestAdd.route) {
+                val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
+                GuestFormScreen(
+                    guestId = null,
+                    viewModel = vm,
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.GuestEdit.route) { entry ->
+                val guestId = entry.arguments?.getString("guestId")?.toLongOrNull() ?: return@composable
+                val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
+                GuestFormScreen(
+                    guestId = guestId,
+                    viewModel = vm,
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable(Screen.Book.route) {
                 val vm: BookingViewModel = viewModel(factory = viewModelFactory)
                 BookingFormScreen(viewModel = vm)

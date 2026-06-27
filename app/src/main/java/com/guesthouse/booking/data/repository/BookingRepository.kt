@@ -14,7 +14,10 @@ data class BookingCreateOutcome(
     val savedOffline: Boolean
 )
 
-class BookingRepository(private val database: AppDatabase) {
+class BookingRepository(
+    private val database: AppDatabase,
+    private val authRepository: AuthRepository
+) {
     fun observeProperties(): Flow<List<PropertyEntity>> = database.propertyDao().observeAll()
     fun observeProperty(propertyId: Long): Flow<PropertyEntity?> = database.propertyDao().observeById(propertyId)
     fun observeRooms(): Flow<List<RoomEntity>> = database.roomDao().observeAll()
@@ -65,7 +68,13 @@ class BookingRepository(private val database: AppDatabase) {
         return Result.success(BookingCreateOutcome(id, reference, savedOffline = !isOnline))
     }
 
+    suspend fun getBookingById(bookingId: Long): BookingEntity? =
+        database.bookingDao().getById(bookingId)
+
     suspend fun cancelBooking(bookingId: Long) {
+        val session = authRepository.currentSession() ?: return
+        val booking = database.bookingDao().getById(bookingId) ?: return
+        if (!session.canAccessProperty(booking.propertyId)) return
         database.bookingDao().updateStatus(bookingId, BookingStatus.CANCELLED.name)
     }
 }

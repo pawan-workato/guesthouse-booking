@@ -13,6 +13,9 @@ interface BookingDao {
     @Query("SELECT * FROM bookings ORDER BY checkInEpochDay DESC")
     fun observeAll(): Flow<List<BookingEntity>>
 
+    @Query("SELECT * FROM bookings WHERE id = :id")
+    suspend fun getById(id: Long): BookingEntity?
+
     @Query(
         """
         SELECT * FROM bookings
@@ -71,3 +74,23 @@ interface BookingDao {
     @Query("UPDATE bookings SET syncStatus = :syncStatus WHERE id = :id")
     suspend fun updateSyncStatus(id: Long, syncStatus: String)
 }
+
+    @Query("SELECT * FROM bookings WHERE serverId = :serverId LIMIT 1")
+    suspend fun getByServerId(serverId: Long): BookingEntity?
+
+    @Query(
+        """
+        UPDATE bookings SET syncStatus = :syncStatus, bookingReference = :reference,
+        serverId = :serverId, updatedAtEpochMs = :updatedAtEpochMs WHERE id = :id
+        """
+    )
+    suspend fun updateAfterSync(
+        id: Long,
+        syncStatus: String,
+        reference: String,
+        serverId: Long,
+        updatedAtEpochMs: Long
+    )
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(bookings: List<BookingEntity>)

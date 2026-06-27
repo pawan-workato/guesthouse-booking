@@ -43,6 +43,9 @@ class AdminViewModel(
 
     fun cancelBooking(bookingId: Long) {
         viewModelScope.launch {
+            val session = authRepository.currentSession() ?: return@launch
+            val booking = repository.getBookingById(bookingId) ?: return@launch
+            if (!session.canAccessProperty(booking.propertyId)) return@launch
             repository.cancelBooking(bookingId)
         }
     }
