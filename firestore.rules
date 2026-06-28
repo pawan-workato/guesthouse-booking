@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function staffData() {
+      return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
+    }
+
+    function isChainAdmin() {
+      return isSignedIn() && staffData().role == 'CHAIN_ADMIN';
+    }
+
+    function assignedPropertyIds() {
+      return staffData().assignedPropertyIds;
+    }
+
+    function canAccessProperty(propertyId) {
+      return isChainAdmin() || propertyId in assignedPropertyIds();
+    }
+
+    match /staff/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isChainAdmin());
+      allow write: if isChainAdmin();
+    }
+
+    match /staff_assignments/{assignmentId} {
+      allow read: if isSignedIn();
+      allow write: if isChainAdmin();
+    }
+
+    match /properties/{propertyId} {
+      allow read: if isSignedIn() && canAccessProperty(int(propertyId));
+      allow create, update, delete: if isChainAdmin();
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
+      allow create: if isChainAdmin();
+      allow update, delete: if isChainAdmin();
+    }
+
+    match /guests/{guestId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
+      allow create: if isSignedIn() && canAccessProperty(int(request.resource.data.propertyId));
+      allow update, delete: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
+    }
+  }
+}

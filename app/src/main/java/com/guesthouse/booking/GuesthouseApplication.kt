@@ -1,12 +1,18 @@
 package com.guesthouse.booking
 
 import android.app.Application
+import com.guesthouse.booking.data.firebase.FirebaseInitializer
+import com.guesthouse.booking.data.firebase.FirestoreDataSource
+import com.guesthouse.booking.data.firebase.FirestoreSyncService
 import com.guesthouse.booking.data.local.AppDatabase
-import com.guesthouse.booking.data.local.DatabaseSeeder
+import com.guesthouse.booking.data.remote.ApiClient
+import com.guesthouse.booking.data.remote.KtorApiSyncService
+import com.guesthouse.booking.data.remote.TokenStorage
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.GuestRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
+import com.guesthouse.booking.data.repository.StaffRepository
 import com.guesthouse.booking.data.repository.SyncRepository
 import com.guesthouse.booking.data.sync.NetworkMonitor
 
@@ -19,22 +25,74 @@ class GuesthouseApplication : Application() {
         private set
     lateinit var authRepository: AuthRepository
         private set
+    lateinit var staffRepository: StaffRepository
+        private set
     lateinit var syncRepository: SyncRepository
         private set
     lateinit var networkMonitor: NetworkMonitor
         private set
+    lateinit var tokenStorage: TokenStorage
+        private set
+    lateinit var apiClient: ApiClient
+        private set
+
+    val isFirebaseConfigured: Boolean
+        get() = FirebaseInitializer.isConfigured(this)
 
     override fun onCreate() {
         super.onCreate()
+        FirebaseInitializer.initialize(this)
         val database = AppDatabase.getInstance(this)
-        DatabaseSeeder.seedIfEmpty(database)
-        authRepository = AuthRepository(database, this)
-        repository = BookingRepository(database, authRepository)
-        propertyRepository = PropertyRepository(database)
-        guestRepository = GuestRepository(database)
+        val firestore = FirestoreDataSource()
+        val syncService = FirestoreSyncService(database, firestore)
         networkMonitor = NetworkMonitor(this)
         networkMonitor.start()
-        syncRepository = SyncRepository(database, networkMonitor, this)
+        tokenStorage = TokenStorage(this)
+        apiClient = ApiClient(tokenStorage)
+
+        lateinit var syncRef: SyncRepository
+        val ktorSync = lazy {
+            KtorApiSyncService(database, apiClient.api, authRepository)
+        }
+
+        authRepository = AuthRepository(
+            database = database,
+            context = this,
+            firestore = firestore,
+            syncService = syncService,
+            api = apiClient.api,
+            tokenStorage = tokenStorage,
+            networkMonitor = networkMonitor,
+            ktorSync = ktorSync
+        )
+
+        syncRef = SyncRepository(
+            database = database,
+            networkMonitor = networkMonitor,
+            context = this,
+            authRepository = authRepository,
+            firestore = firestore,
+            syncService = syncService,
+            tokenStorage = tokenStorage,
+            ktorSync = ktorSync
+        )
+        syncRepository = syncRef
+
+        repository = BookingRepository(
+            database,
+            authRepository,
+            networkMonitor,
+            firestore,
+            lazy { syncRef }
+        )
+        propertyRepository = PropertyRepository(database, networkMonitor, firestore)
+        guestRepository = GuestRepository(
+            database,
+            networkMonitor,
+            firestore,
+            lazy { syncRef }
+        )
+        staffRepository = StaffRepository(database)
         syncRepository.schedulePeriodicSync()
     }
 }

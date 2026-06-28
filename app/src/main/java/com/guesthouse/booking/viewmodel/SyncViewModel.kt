@@ -6,7 +6,6 @@ import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.SyncRepository
-import com.guesthouse.booking.data.repository.SyncResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +23,7 @@ data class SyncUiState(
 class SyncViewModel(
     private val syncRepository: SyncRepository,
     private val bookingRepository: BookingRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     val isOnline: StateFlow<Boolean> = syncRepository.isOnline
     val lastSyncEpochMs: StateFlow<Long> = syncRepository.lastSyncEpochMs
@@ -63,6 +62,7 @@ class SyncViewModel(
             val result = syncRepository.syncNow()
             _uiState.value = when {
                 result.noNetwork -> SyncUiState(error = "No network connection")
+                result.notAuthenticated -> SyncUiState(error = "Sign in to sync with Firebase")
                 result.syncedCount == 0 && result.conflictCount == 0 ->
                     SyncUiState(message = "Nothing to sync")
                 else -> SyncUiState(
@@ -74,6 +74,9 @@ class SyncViewModel(
 
     fun dismissConflict(bookingId: Long) {
         viewModelScope.launch {
+            val session = authRepository.currentSession() ?: return@launch
+            val booking = bookingRepository.getBookingById(bookingId) ?: return@launch
+            if (!session.canAccessProperty(booking.propertyId)) return@launch
             syncRepository.dismissConflict(bookingId)
         }
     }

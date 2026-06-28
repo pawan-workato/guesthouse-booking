@@ -15,14 +15,20 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun AdminScreen(viewModel: AdminViewModel) {
+fun AdminScreen(
+    viewModel: AdminViewModel,
+    onDismissConflict: (Long) -> Unit = {}
+) {
     val bookings by viewModel.bookingsWithDetails.collectAsState()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Bookings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Your assigned properties", color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 16.dp))
+        Text(
+            "Your assigned properties",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         if (bookings.isEmpty()) {
             Text("No bookings yet.")
@@ -48,7 +54,16 @@ fun AdminScreen(viewModel: AdminViewModel) {
                                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 }
                             )
-                            if (b.status == BookingStatus.CONFIRMED.name && b.syncStatus != SyncStatus.CONFLICT.name) {
+                            if (b.syncStatus == SyncStatus.CONFLICT.name) {
+                                Text(
+                                    "Another booking blocked these dates during sync.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                TextButton(onClick = { onDismissConflict(b.id) }) {
+                                    Text("Cancel this booking")
+                                }
+                            } else if (b.status == BookingStatus.CONFIRMED.name) {
                                 TextButton(onClick = { viewModel.cancelBooking(b.id) }) {
                                     Text("Cancel booking")
                                 }

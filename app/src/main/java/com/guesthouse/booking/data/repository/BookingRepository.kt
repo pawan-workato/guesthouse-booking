@@ -1,22 +1,24 @@
 package com.guesthouse.booking.data.repository
 
+import com.guesthouse.booking.BuildConfig
+import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.SyncStatus
+import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
 
-data class BookingCreateOutcome(
-    val bookingId: Long,
-    val reference: String,
-    val savedOffline: Boolean
-)
+data class BookingCreateOutcome(val bookingId: Long, val reference: String, val savedOffline: Boolean)
 
 class BookingRepository(
     private val database: AppDatabase,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val networkMonitor: NetworkMonitor,
+    private val firestore: FirestoreDataSource = FirestoreDataSource(),
+    private val syncRepository: Lazy<SyncRepository> = lazy { error("SyncRepository not initialized") }
 ) {
     fun observeProperties(): Flow<List<PropertyEntity>> = database.propertyDao().observeAll()
     fun observeProperty(propertyId: Long): Flow<PropertyEntity?> = database.propertyDao().observeById(propertyId)
@@ -43,6 +45,10 @@ class BookingRepository(
         if (database.bookingDao().findOverlapping(roomId, checkInEpochDay, checkOutEpochDay).isNotEmpty()) {
             return Result.failure(IllegalStateException("Room is not available for those dates"))
         }
+
+        val useFirestore = !BuildConfig.USE_KTOR_API &&
+            isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
+        val syncStatus = if (useFirestore) SyncStatus.SYNCED.name else SyncStatus.PENDING_SYNC.name
         val id = database.bookingDao().insert(
             BookingEntity(
                 propertyId = room.propertyId,
@@ -53,28 +59,33 @@ class BookingRepository(
                 guestPhone = guestPhone.trim(),
                 checkInEpochDay = checkInEpochDay,
                 checkOutEpochDay = checkOutEpochDay,
-                syncStatus = if (isOnline) SyncStatus.SYNCED.name else SyncStatus.PENDING_SYNC.name
+                syncStatus = syncStatus
             )
         )
-        val reference = if (isOnline) {
-            SyncRepository.formatReference(room.propertyId, id).also {
-                database.bookingDao().updateSync(id, SyncStatus.SYNCED.name, it)
-            }
-        } else {
-            SyncRepository.formatOfflineReference(id).also {
-                database.bookingDao().updateSync(id, SyncStatus.PENDING_SYNC.name, it)
-            }
+
+        if (useFirestore) {
+            val reference = SyncRepository.formatReference(room.propertyId, id)
+            database.bookingDao().updateSync(id, SyncStatus.SYNCED.name, reference)
+            database.bookingDao().getById(id)?.let { runCatching { firestore.upsertBooking(it) } }
+            return Result.success(BookingCreateOutcome(id, reference, savedOffline = false))
         }
-        return Result.success(BookingCreateOutcome(id, reference, savedOffline = !isOnline))
+
+        val offlineRef = SyncRepository.formatOfflineReference(id)
+        database.bookingDao().updateSync(id, SyncStatus.PENDING_SYNC.name, offlineRef)
+        if (isOnline) runCatching { syncRepository.value.syncNow() }
+        else syncRepository.value.enqueueSyncWorker()
+        return Result.success(BookingCreateOutcome(id, offlineRef, savedOffline = true))
     }
 
-    suspend fun getBookingById(bookingId: Long): BookingEntity? =
-        database.bookingDao().getById(bookingId)
+    suspend fun getBookingById(bookingId: Long): BookingEntity? = database.bookingDao().getById(bookingId)
 
     suspend fun cancelBooking(bookingId: Long) {
         val session = authRepository.currentSession() ?: return
         val booking = database.bookingDao().getById(bookingId) ?: return
         if (!session.canAccessProperty(booking.propertyId)) return
         database.bookingDao().updateStatus(bookingId, BookingStatus.CANCELLED.name)
+        if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
+            runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CANCELLED.name) }
+        }
     }
 }

@@ -1,0 +1,11 @@
+appId: com.guesthouse.booking
+---
+- launchApp
+- assertVisible: "Guesthouse Booking"
+- tapOn: "Email"
+- inputText: "admin@chain.com"
+- tapOn: "Password"
+- inputText: "admin123"
+- tapOn: "Sign in"
+- assertVisible: "Your properties"
+- assertVisible: "Chain admin"

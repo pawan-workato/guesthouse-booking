@@ -36,5 +36,7 @@ data class BookingEntity(
     val status: String = BookingStatus.CONFIRMED.name,
     val syncStatus: String = SyncStatus.SYNCED.name,
     val bookingReference: String = "",
-    val createdAtEpochMs: Long = System.currentTimeMillis()
+    val serverId: Long? = null,
+    val createdAtEpochMs: Long = System.currentTimeMillis(),
+    val updatedAtEpochMs: Long = System.currentTimeMillis()
 )

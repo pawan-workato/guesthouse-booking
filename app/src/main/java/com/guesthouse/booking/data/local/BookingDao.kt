@@ -2,6 +2,7 @@ package com.guesthouse.booking.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
@@ -60,6 +61,9 @@ interface BookingDao {
     @Insert
     suspend fun insert(booking: BookingEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(bookings: List<BookingEntity>)
+
     @Query("UPDATE bookings SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: Long, status: String)
 
@@ -73,7 +77,6 @@ interface BookingDao {
 
     @Query("UPDATE bookings SET syncStatus = :syncStatus WHERE id = :id")
     suspend fun updateSyncStatus(id: Long, syncStatus: String)
-}
 
     @Query("SELECT * FROM bookings WHERE serverId = :serverId LIMIT 1")
     suspend fun getByServerId(serverId: Long): BookingEntity?
@@ -91,6 +94,4 @@ interface BookingDao {
         serverId: Long,
         updatedAtEpochMs: Long
     )
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertAll(bookings: List<BookingEntity>)
+}

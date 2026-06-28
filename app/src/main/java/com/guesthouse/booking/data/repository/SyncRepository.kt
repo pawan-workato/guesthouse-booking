@@ -9,7 +9,13 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.guesthouse.booking.data.firebase.FirebaseInitializer
+import com.guesthouse.booking.data.firebase.FirestoreDataSource
+import com.guesthouse.booking.data.firebase.FirestoreSyncService
+import com.guesthouse.booking.BuildConfig
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.remote.KtorApiSyncService
+import com.guesthouse.booking.data.remote.TokenStorage
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
@@ -24,15 +30,22 @@ import java.util.concurrent.TimeUnit
 data class SyncResult(
     val syncedCount: Int = 0,
     val conflictCount: Int = 0,
-    val noNetwork: Boolean = false
+    val noNetwork: Boolean = false,
+    val notAuthenticated: Boolean = false
 )
 
 class SyncRepository(
     private val database: AppDatabase,
     private val networkMonitor: NetworkMonitor,
-    context: Context
+    context: Context,
+    private val authRepository: AuthRepository,
+    private val firestore: FirestoreDataSource = FirestoreDataSource(),
+    private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore),
+    private val tokenStorage: TokenStorage? = null,
+    private val ktorSync: Lazy<KtorApiSyncService>? = null
 ) {
     private val appContext = context.applicationContext
+    private val firebaseEnabled = FirebaseInitializer.isConfigured(appContext)
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val _lastSyncEpochMs = MutableStateFlow(prefs.getLong(KEY_LAST_SYNC, 0L))
     val lastSyncEpochMs: StateFlow<Long> = _lastSyncEpochMs.asStateFlow()
@@ -49,16 +62,81 @@ class SyncRepository(
         pending + conflicts
     }
 
-    fun observeConflicts() =
-        database.bookingDao().observeBySyncStatus(SyncStatus.CONFLICT.name)
-
-    fun observePending() =
-        database.bookingDao().observeBySyncStatus(SyncStatus.PENDING_SYNC.name)
+    fun observeConflicts() = database.bookingDao().observeBySyncStatus(SyncStatus.CONFLICT.name)
+    fun observePending() = database.bookingDao().observeBySyncStatus(SyncStatus.PENDING_SYNC.name)
 
     suspend fun syncNow(): SyncResult {
-        if (!networkMonitor.isCurrentlyOnline()) {
-            return SyncResult(noNetwork = true)
+        if (!networkMonitor.isCurrentlyOnline()) return SyncResult(noNetwork = true)
+        if (BuildConfig.USE_KTOR_API) {
+            if (tokenStorage?.hasToken() != true) return SyncResult(notAuthenticated = true)
+            return syncWithKtor()
         }
+        val session = authRepository.currentSession()
+        if (firebaseEnabled) {
+            if (!firestore.isSignedIn || session == null) {
+                return SyncResult(notAuthenticated = true)
+            }
+            return syncWithFirestore(session)
+        }
+        return syncLocalOnly()
+    }
+
+
+    private suspend fun syncWithKtor(): SyncResult {
+        val outcome = ktorSync?.value?.syncPending() ?: return SyncResult()
+        val now = System.currentTimeMillis()
+        prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
+        _lastSyncEpochMs.value = now
+        return SyncResult(syncedCount = outcome.syncedCount, conflictCount = outcome.conflictCount)
+    }
+
+    private suspend fun syncWithFirestore(session: com.guesthouse.booking.data.auth.StaffSession): SyncResult {
+        var syncedCount = 0
+        var conflictCount = 0
+        var hadActivity = false
+        val pending = database.bookingDao().getBySyncStatus(SyncStatus.PENDING_SYNC.name)
+        for (booking in pending) {
+            hadActivity = true
+            val localOverlaps = database.bookingDao().findOverlapping(
+                roomId = booking.roomId,
+                checkIn = booking.checkInEpochDay,
+                checkOut = booking.checkOutEpochDay,
+                excludeId = booking.id
+            ).filter { it.syncStatus == SyncStatus.SYNCED.name }
+            val remoteOverlaps = runCatching {
+                firestore.findOverlappingRemoteBookings(
+                    roomId = booking.roomId,
+                    checkIn = booking.checkInEpochDay,
+                    checkOut = booking.checkOutEpochDay,
+                    excludeId = booking.id
+                )
+            }.getOrDefault(emptyList())
+            if (localOverlaps.isNotEmpty() || remoteOverlaps.isNotEmpty()) {
+                database.bookingDao().updateSyncStatus(booking.id, SyncStatus.CONFLICT.name)
+                conflictCount++
+            } else {
+                val reference = formatReference(booking.propertyId, booking.id)
+                val synced = booking.copy(syncStatus = SyncStatus.SYNCED.name, bookingReference = reference)
+                runCatching { firestore.upsertBooking(synced) }
+                    .onSuccess {
+                        database.bookingDao().updateSync(synced.id, SyncStatus.SYNCED.name, reference)
+                        syncedCount++
+                    }
+                    .onFailure {
+                        database.bookingDao().updateSyncStatus(booking.id, SyncStatus.PENDING_SYNC.name)
+                    }
+            }
+        }
+        runCatching { syncService.pullRemoteData(session) }
+        if (hadActivity || syncedCount > 0) {
+            val now = System.currentTimeMillis()
+            prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
+            _lastSyncEpochMs.value = now
+        }
+        return SyncResult(syncedCount = syncedCount, conflictCount = conflictCount)
+    }
+
+    private suspend fun syncLocalOnly(): SyncResult {
         val (synced, conflicts, hadPending) = database.withTransaction {
             val pending = database.bookingDao().getBySyncStatus(SyncStatus.PENDING_SYNC.name)
             var syncedCount = 0
@@ -92,33 +170,26 @@ class SyncRepository(
     suspend fun dismissConflict(bookingId: Long) {
         database.bookingDao().updateStatus(bookingId, BookingStatus.CANCELLED.name)
         database.bookingDao().updateSyncStatus(bookingId, SyncStatus.SYNCED.name)
+        if (firebaseEnabled && firestore.isSignedIn) {
+            runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CANCELLED.name) }
+        }
     }
 
     fun enqueueSyncWorker() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(constraints)
-            .build()
+        val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
         WorkManager.getInstance(appContext).enqueueUniqueWork(
             SYNC_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
-            request
+            OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).build()
         )
     }
 
     fun schedulePeriodicSync() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
+        val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
         WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
             PERIODIC_SYNC_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
-            request
+            PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setConstraints(constraints).build()
         )
     }
 

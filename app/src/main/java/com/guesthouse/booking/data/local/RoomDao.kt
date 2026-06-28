@@ -12,6 +12,9 @@ interface RoomDao {
     @Query("SELECT * FROM rooms ORDER BY name ASC")
     fun observeAll(): Flow<List<RoomEntity>>
 
+    @Query("SELECT * FROM rooms ORDER BY name ASC")
+    suspend fun getAll(): List<RoomEntity>
+
     @Query("SELECT * FROM rooms WHERE propertyId = :propertyId ORDER BY name ASC")
     fun observeByPropertyId(propertyId: Long): Flow<List<RoomEntity>>
 

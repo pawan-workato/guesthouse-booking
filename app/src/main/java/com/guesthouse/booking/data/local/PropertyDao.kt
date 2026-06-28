@@ -16,6 +16,9 @@ interface PropertyDao {
     @Query("SELECT * FROM properties ORDER BY region ASC, name ASC")
     fun observeAllIncludingInactive(): Flow<List<PropertyEntity>>
 
+    @Query("SELECT * FROM properties ORDER BY region ASC, name ASC")
+    suspend fun getAllIncludingInactive(): List<PropertyEntity>
+
     @Query("SELECT * FROM properties WHERE id = :id")
     fun observeById(id: Long): Flow<PropertyEntity?>
 

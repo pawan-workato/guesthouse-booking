@@ -1,0 +1,105 @@
+package com.guesthouse.booking.data.firebase
+
+import com.guesthouse.booking.data.local.entities.BookingEntity
+import com.guesthouse.booking.data.local.entities.BookingStatus
+import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.data.local.entities.PropertyEntity
+import com.guesthouse.booking.data.local.entities.RoomEntity
+import com.guesthouse.booking.data.local.entities.SyncStatus
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
+
+class FirestoreDataSource(
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+) {
+    val isSignedIn: Boolean get() = auth.currentUser != null
+
+    suspend fun getStaffByUid(uid: String): StaffProfile? {
+        val snapshot = firestore.collection(FirestoreCollections.STAFF).document(uid).get().await()
+        return if (snapshot.exists()) snapshot.toStaffProfile() else null
+    }
+
+    suspend fun getStaffByEmail(email: String): StaffProfile? {
+        val snapshot = firestore.collection(FirestoreCollections.STAFF)
+            .whereEqualTo(FirestoreFields.EMAIL, email.trim())
+            .limit(1)
+            .get()
+            .await()
+        return snapshot.documents.firstOrNull()?.toStaffProfile()
+    }
+
+    suspend fun fetchAllStaff(): List<StaffProfile> =
+        firestore.collection(FirestoreCollections.STAFF)
+            .get().await()
+            .documents.mapNotNull { it.toStaffProfile() }
+
+    suspend fun fetchProperties(): List<PropertyEntity> =
+        firestore.collection(FirestoreCollections.PROPERTIES)
+            .get().await()
+            .documents.mapNotNull { it.toPropertyEntity() }
+
+    suspend fun fetchRooms(): List<RoomEntity> =
+        firestore.collection(FirestoreCollections.ROOMS)
+            .get().await()
+            .documents.mapNotNull { it.toRoomEntity() }
+
+    suspend fun fetchGuests(): List<GuestEntity> =
+        firestore.collection(FirestoreCollections.GUESTS)
+            .get().await()
+            .documents.mapNotNull { it.toGuestEntity() }
+
+    suspend fun fetchBookings(): List<BookingEntity> =
+        firestore.collection(FirestoreCollections.BOOKINGS)
+            .get().await()
+            .documents.mapNotNull { it.toBookingEntity() }
+
+    suspend fun upsertProperty(property: PropertyEntity) {
+        firestore.collection(FirestoreCollections.PROPERTIES)
+            .document(property.id.toString())
+            .set(property.toFirestoreMap())
+            .await()
+    }
+
+    suspend fun upsertGuest(guest: GuestEntity) {
+        firestore.collection(FirestoreCollections.GUESTS)
+            .document(guest.id.toString())
+            .set(guest.toFirestoreMap())
+            .await()
+    }
+
+    suspend fun upsertBooking(booking: BookingEntity) {
+        firestore.collection(FirestoreCollections.BOOKINGS)
+            .document(booking.id.toString())
+            .set(booking.toFirestoreMap())
+            .await()
+    }
+
+    suspend fun findOverlappingRemoteBookings(
+        roomId: Long,
+        checkIn: Long,
+        checkOut: Long,
+        excludeId: Long = 0L
+    ): List<BookingEntity> {
+        val snapshot = firestore.collection(FirestoreCollections.BOOKINGS)
+            .whereEqualTo(FirestoreFields.ROOM_ID, roomId)
+            .whereEqualTo(FirestoreFields.STATUS, BookingStatus.CONFIRMED.name)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { it.toBookingEntity() }
+            .filter { booking ->
+                booking.id != excludeId &&
+                    booking.syncStatus != SyncStatus.CONFLICT.name &&
+                    booking.checkInEpochDay < checkOut &&
+                    booking.checkOutEpochDay > checkIn
+            }
+    }
+
+    suspend fun updateBookingStatus(bookingId: Long, status: String) {
+        firestore.collection(FirestoreCollections.BOOKINGS)
+            .document(bookingId.toString())
+            .update(FirestoreFields.STATUS, status)
+            .await()
+    }
+}

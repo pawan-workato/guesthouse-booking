@@ -20,7 +20,7 @@ import com.guesthouse.booking.data.local.entities.StaffPropertyAssignmentEntity
         StaffEntity::class,
         StaffPropertyAssignmentEntity::class
     ],
-    version = 6,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

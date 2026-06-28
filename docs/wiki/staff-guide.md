@@ -37,6 +37,18 @@ All staff can manage guest profiles from the **Guests** tab:
 
 When booking, use **Saved guest** on the **Book** tab to auto-fill name, phone, and email. You can still edit fields or enter a one-off guest manually.
 
+
+## Staff management (chain admin)
+
+Chain admins manage property managers from the **Staff** tab (visible only when signed in as chain admin):
+
+- **Add manager** — tap **+**, enter display name, email, and a temporary password; select one or more active properties
+- **Edit** — tap the pencil icon to update name, email, or property assignments
+- **Remove** — on the edit screen, tap **Remove manager** (soft-deactivates the account; they cannot sign in)
+- **Show removed** — toggle to view inactive staff and reactivate them
+
+Chain admin accounts are listed but cannot be assigned to specific properties (they see all sites). The app prevents removing the last active chain admin.
+
 ## Property management (chain admin)
 
 Chain admins can manage the property list from the **Properties** tab:

@@ -1,0 +1,12 @@
+{
+  "name": "guesthouse-booking-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Firebase demo seed scripts for guesthouse-booking",
+  "scripts": {
+    "seed": "node seed-firebase-demo.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0"
+  }
+}

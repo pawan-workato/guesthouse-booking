@@ -74,18 +74,5 @@ fun LoginScreen(viewModel: LoginViewModel) {
             Text(if (uiState.isLoading) "Signing in..." else "Sign in")
         }
 
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Demo accounts", fontWeight = FontWeight.SemiBold)
-                Text("admin@chain.com / admin123 — all properties", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
-                Text("manager.mountain@chain.com / manager123", style = MaterialTheme.typography.bodySmall)
-                Text("manager.coastal@chain.com / manager123", style = MaterialTheme.typography.bodySmall)
-                Text("manager.southwest@chain.com / manager123", style = MaterialTheme.typography.bodySmall)
-                Text("manager.east@chain.com / manager123", style = MaterialTheme.typography.bodySmall)
-            }
-        }
     }
 }

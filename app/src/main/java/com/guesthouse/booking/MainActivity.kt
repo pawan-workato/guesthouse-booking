@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
             app.guestRepository,
             app.authRepository,
             app.syncRepository,
+            app.staffRepository,
             app.networkMonitor
         )
 
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity() {
                         viewModelFactory = factory,
                         staffName = session!!.displayName,
                         isChainAdmin = session!!.isChainAdmin,
+                        isFirebaseConfigured = app.isFirebaseConfigured,
                         onLogout = { app.authRepository.logout() }
                     )
                 }

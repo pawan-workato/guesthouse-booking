@@ -9,5 +9,7 @@ data class StaffEntity(
     val email: String,
     val passwordHash: String,
     val displayName: String,
-    val role: String
+    val role: String,
+    val firebaseUid: String = "",
+    val isActive: Boolean = true
 )

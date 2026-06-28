@@ -16,6 +16,9 @@ interface GuestDao {
     @Query("SELECT * FROM guests ORDER BY name ASC")
     fun observeAllIncludingInactive(): Flow<List<GuestEntity>>
 
+    @Query("SELECT * FROM guests ORDER BY name ASC")
+    suspend fun getAllIncludingInactive(): List<GuestEntity>
+
     @Query("SELECT * FROM guests WHERE id = :id")
     fun observeById(id: Long): Flow<GuestEntity?>
 
@@ -36,4 +39,21 @@ interface GuestDao {
 
     @Query("UPDATE guests SET isActive = :active WHERE id = :id")
     suspend fun setActive(id: Long, active: Boolean)
+
+    @Query("SELECT * FROM guests WHERE syncStatus = :syncStatus")
+    suspend fun getBySyncStatus(syncStatus: String): List<GuestEntity>
+
+    @Query("SELECT * FROM guests WHERE serverId = :serverId LIMIT 1")
+    suspend fun getByServerId(serverId: Long): GuestEntity?
+
+    @Query(
+        """
+        UPDATE guests SET serverId = :serverId, syncStatus = :syncStatus,
+        updatedAtEpochMs = :updatedAtEpochMs WHERE id = :id
+        """
+    )
+    suspend fun updateAfterSync(id: Long, serverId: Long, syncStatus: String, updatedAtEpochMs: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(guests: List<GuestEntity>)
 }

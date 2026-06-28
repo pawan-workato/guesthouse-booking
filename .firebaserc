@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "staging": "guesthouse-booking-dev"
+  },
+  "targets": {},
+  "etags": {}
+}
