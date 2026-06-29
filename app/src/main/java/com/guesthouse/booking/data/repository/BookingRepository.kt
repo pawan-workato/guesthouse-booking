@@ -1,12 +1,12 @@
 package com.guesthouse.booking.data.repository
 
-import com.guesthouse.booking.BuildConfig
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
+import com.guesthouse.booking.data.local.entities.RoomType
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
@@ -47,8 +47,7 @@ class BookingRepository(
             return Result.failure(IllegalStateException("Room is not available for those dates"))
         }
 
-        val useFirestore = !BuildConfig.USE_KTOR_API &&
-            isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
+        val useFirestore = isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
         val syncStatus = if (useFirestore) SyncStatus.SYNCED.name else SyncStatus.PENDING_SYNC.name
         val id = database.bookingDao().insert(
             BookingEntity(
@@ -127,8 +126,7 @@ class BookingRepository(
         )
         database.bookingDao().update(updated)
 
-        val useFirestore = !BuildConfig.USE_KTOR_API &&
-            isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
+        val useFirestore = isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
         if (useFirestore) {
             val reference = existing.bookingReference.ifBlank { SyncRepository.formatReference(room.propertyId, bookingId) }
             val synced = updated.copy(syncStatus = SyncStatus.SYNCED.name, bookingReference = reference)
@@ -184,12 +182,66 @@ class BookingRepository(
         if (booking.status != BookingStatus.CHECKED_IN.name) {
             return Result.failure(IllegalStateException("Only checked-in guests can be checked out"))
         }
-        if (booking.checkOutEpochDay > todayEpochDay) {
-            return Result.failure(IllegalStateException("Check-out is not available until departure date"))
-        }
         database.bookingDao().updateStatus(bookingId, BookingStatus.CHECKED_OUT.name)
         if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
             runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CHECKED_OUT.name) }
+        }
+        return Result.success(Unit)
+    }
+
+    suspend fun createRoom(
+        propertyId: Long,
+        name: String,
+        description: String,
+        pricePerNight: Double,
+        capacity: Int,
+        roomType: String
+    ): Result<Long> {
+        val session = authRepository.currentSession()
+            ?: return Result.failure(IllegalStateException("Not signed in"))
+        if (!session.canAccessProperty(propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) return Result.failure(IllegalArgumentException("Room name is required"))
+        if (pricePerNight < 0) return Result.failure(IllegalArgumentException("Price must be zero or greater"))
+        if (capacity < 1) return Result.failure(IllegalArgumentException("Capacity must be at least 1"))
+        val normalizedType = RoomType.fromStored(roomType).name
+
+        val entity = RoomEntity(
+            propertyId = propertyId,
+            name = trimmedName,
+            description = description.trim(),
+            pricePerNight = pricePerNight,
+            capacity = capacity,
+            roomType = normalizedType
+        )
+        val id = database.roomDao().insert(entity)
+        val saved = entity.copy(id = id)
+        if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
+            runCatching { firestore.upsertRoom(saved) }
+        }
+        return Result.success(id)
+    }
+
+    suspend fun updateRoom(room: RoomEntity): Result<Unit> {
+        val session = authRepository.currentSession()
+            ?: return Result.failure(IllegalStateException("Not signed in"))
+        if (!session.canAccessProperty(room.propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        if (room.name.isBlank()) return Result.failure(IllegalArgumentException("Room name is required"))
+        if (room.pricePerNight < 0) return Result.failure(IllegalArgumentException("Price must be zero or greater"))
+        if (room.capacity < 1) return Result.failure(IllegalArgumentException("Capacity must be at least 1"))
+        val updated = room.copy(
+            name = room.name.trim(),
+            description = room.description.trim(),
+            roomType = RoomType.fromStored(room.roomType).name
+        )
+
+        database.roomDao().update(updated)
+        if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
+            runCatching { firestore.upsertRoom(updated) }
         }
         return Result.success(Unit)
     }

@@ -6,75 +6,94 @@ The Android app is **staff-only**. Property managers book rooms for guests; gues
 
 ## App navigation
 
-The bottom bar has five tabs:
+### Bottom tabs
 
-| Tab | Purpose |
-|-----|---------|
-| **Properties** | Browse all chain locations; tap a property to see its rooms |
-| **Guests** | Add and maintain guest profiles; search by name, email, or phone |
-| **Book** | Create a booking — pick a saved guest or enter details manually |
-| **Sync** | Pending offline bookings, conflicts, and manual sync |
-| **Bookings** | View all bookings and cancel confirmed reservations |
+| Tab | Who | Purpose |
+|-----|-----|---------|
+| **Properties** | All staff | Browse assigned locations; open room lists |
+| **Book** | All staff | Create a booking with search and calendar |
+| **Today** | All staff | Arrivals, departures, in-house; check-in/out |
+| **Bookings** | All staff | All reservations for your properties; edit, cancel, check-in/out |
+
+### Top bar
+
+- **Guests** (person icon) — guest profiles (all staff see profile details; booking history is not shown here)
+- **Staff** (group icon, chain admin only) — add/edit property managers and assignments
+- **Sync** (circular arrows) — manual sync when online; badge = pending + conflict count
+- **Sign out**
+
+There is no separate **Sync** tab. **Guests** and **Staff** are in the top bar so the bottom navigation stays uncluttered for chain admins. Pending bookings and conflicts appear on **Bookings** (sync status + **Cancel this booking** for conflicts).
 
 ### Typical workflow
 
-1. Open **Properties** and find the guest's location (search by name or region).
-2. Tap the property → tap a room → review availability on the calendar.
-3. Optionally add the guest under **Guests** if they're a repeat visitor.
-4. Tap **Book now** (or go to the **Book** tab), pick the saved guest or enter details, and confirm dates.
-5. Confirm the booking appears under **Bookings**.
-
-
+1. **Properties** → pick a site (search by name or region).
+2. Open the property → review **room type breakdown** (e.g. `4 Double · 2 Single`) and rooms.
+3. Tap a room → calendar (booked + blocked dates) → **Book for guest**, or use the **Book** tab.
+4. On **Book**: search property/room, filter by room type chips, select dates, pick saved guest or enter details.
+5. Confirm under **Bookings**; use **Today** on arrival/departure day.
 
 ## Guest management
 
-All staff can manage guest profiles from the **Guests** tab:
+From **Guests**:
 
-- **Add** — tap the **+** floating button
-- **Edit** — tap the pencil icon on a guest card
-- **Remove** — on the edit screen, tap **Remove guest** (hides from active list; existing bookings keep their details)
-- **Show removed** — toggle to view inactive profiles and reactivate them
+- **Add** — **+** FAB
+- **Edit** — pencil on a card
+- **Remove** — edit screen → **Remove guest** (soft-delete; past bookings keep snapshot fields)
+- **Show removed** — toggle inactive profiles
 
-When booking, use **Saved guest** on the **Book** tab to auto-fill name, phone, and email. You can still edit fields or enter a one-off guest manually.
-
+**All signed-in staff** see every active guest profile (name, email, phone, notes). Guest screens show profile details only — not booking history. **Property managers** can edit or remove guests who appear on bookings at their assigned properties; other profiles open read-only. **Chain admins** can edit any guest.
 
 ## Staff management (chain admin)
 
-Chain admins manage property managers from the **Staff** tab (visible only when signed in as chain admin):
+Open **Staff** from the top bar (group icon):
 
-- **Add manager** — tap **+**, enter display name, email, and a temporary password; select one or more active properties
-- **Edit** — tap the pencil icon to update name, email, or property assignments
-- **Remove** — on the edit screen, tap **Remove manager** (soft-deactivates the account; they cannot sign in)
-- **Show removed** — toggle to view inactive staff and reactivate them
+- **Add manager** — name, email, temporary password, property assignments
+- **Edit** / **Remove** (soft-deactivate)
+- **Show removed** — reactivate
 
-Chain admin accounts are listed but cannot be assigned to specific properties (they see all sites). The app prevents removing the last active chain admin.
+Cannot remove the last active chain admin.
 
 ## Property management (chain admin)
 
-Chain admins can manage the property list from the **Properties** tab:
+**Properties** tab:
 
-- **Add** — tap the **+** floating button
-- **Edit** — tap the pencil icon on a property card
-- **Remove** — on the edit screen, tap **Remove property** (hides the site; existing bookings and rooms are kept)
-- **Show removed** — toggle to view inactive properties and reactivate them
+- **Add** / **Edit** / **Remove** (deactivate)
+- **Show removed** — reactivate
 
-Property managers only see active properties assigned to their account.
+Managers only see **active** properties assigned to them.
+
+## Room management
+
+Anyone with access to a property:
+
+- **Add** — **+** on the property room list
+- **Edit** — pencil on a card or **Edit** on room detail
+- Fields: name, description, nightly price, max guests, **room type** (Single, Double, Suite, Family)
+
+Room types show on the property room list, room cards, **Book** tab (summary + filter chips), and room picker.
+
+## Booking features
+
+- **Book** tab — dynamic search for properties (name, region, city) and rooms (name, description, type)
+- **Edit booking** — **Bookings** → **Edit** on a confirmed reservation
+- **Check-in / check-out** — **Bookings** or **Today** (when dates allow)
+- **Block dates** — room detail → **Block dates** (local only; orange on calendar)
 
 ## Staff roles
 
 | Role | Access |
 |------|--------|
-| **Chain admin** | All 12 properties; full bookings admin |
-| **Property manager** | Only assigned properties; bookings for those locations |
+| **Chain admin** | All 12 properties; all guests (full edit); staff admin; full bookings |
+| **Property manager** | Assigned properties only; view all guest profiles (edit scoped to property bookings); rooms CRUD at assigned sites |
 
-Role definitions and property assignments match the demo staff accounts seeded in Firebase (see [seeding guide](../../seeding.md) and `scripts/seed-firebase-demo.mjs`). Chain admins can access every property; managers are scoped to their assignments.
+Demo assignments come from seed data — see [seeding guide](../../seeding.md).
 
 ## Demo accounts (development)
 
-Run `npm run seed` in `scripts/` before signing in (see [seeding guide](../../seeding.md)). Use these credentials in development builds:
+Run `npm run seed` in `scripts/` to create Firebase Auth users and Firestore data.
 
-| Email | Password | Display name | Role | Assigned properties (IDs) |
-|-------|----------|--------------|------|---------------------------|
+| Email | Password | Display name | Role | Property IDs |
+|-------|----------|--------------|------|----------------|
 | `admin@chain.com` | `admin123` | Chain Admin | Chain admin | All (1–12) |
 | `manager.mountain@chain.com` | `manager123` | Alex Mountain | Property manager | 1, 3, 7, 11 |
 | `manager.coastal@chain.com` | `manager123` | Sam Coastal | Property manager | 2, 4, 8 |

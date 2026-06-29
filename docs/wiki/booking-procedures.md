@@ -2,74 +2,72 @@
 
 ## Creating a booking
 
-Staff create bookings on behalf of guests from the **Book** tab (or via **Book now** on a room detail screen).
+Staff create bookings from the **Book** tab or **Book for guest** on a room detail screen.
 
-### Required guest information
+### Search and filters (Book tab)
+
+- **Search properties** — filters the property picker by name, region, or address.
+- After selecting a property, the app shows **room count and type breakdown** (e.g. `12 rooms · 4 Double · 3 Single`).
+- **Room type chips** — tap to filter the room list (tap again to clear).
+- **Search rooms** — filters by name, description, or type label.
+
+### Required information
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| Guest name | **Yes** | Cannot be blank; stored trimmed |
-| Guest email | No | Stored trimmed; collect when available for confirmations |
-| Guest phone | No | Stored trimmed; primary contact for day-of coordination |
-| Property | Yes | Selected from property list |
+| Guest name | **Yes** | Trimmed; blank rejected |
+| Guest email / phone | No | Trimmed when provided |
+| Property | Yes | Scoped to your assignments |
 | Room | Yes | Must belong to selected property |
-| Check-in date | Yes | First night of stay |
-| Check-out date | Yes | Must be **after** check-in (departure day, not a booked night) |
+| Check-in / check-out | Yes | Check-out must be **after** check-in |
 
 ### Date selection
 
-- Tap check-in on the calendar, then check-out.
-- Booked nights show as unavailable on the calendar.
-- A stay from Monday check-in to Wednesday check-out occupies **Monday and Tuesday** nights (check-out morning is not charged as a night).
+- Tap check-in, then check-out on the calendar.
+- **Confirmed** bookings and **block dates** show as unavailable.
+- Nights are **check-in through the day before check-out** (check-out morning is not a charged night).
 
-### Validation rules
+### Validation
 
-The app enforces these rules at booking time:
+1. Guest name not empty.
+2. `check-out > check-in`.
+3. No overlap with other **confirmed** bookings for the same room (`CONFIRMED` status only; cancelled bookings do not block).
 
-1. **Guest name** must not be empty.
-2. **Check-out** must be strictly after **check-in** (`check-out <= check-in` is rejected).
-3. **No overlap** with existing **confirmed** bookings for the same room.
+On failure: e.g. *"Room is not available for those dates"*.
 
-Overlap detection uses: `existing.checkIn < new.checkOut AND existing.checkOut > new.checkIn`. Only bookings with status **CONFIRMED** block availability; cancelled bookings do not.
+## Editing a booking
 
-If validation fails, the app shows an error (e.g. "Room is not available for those dates") and the booking is not created.
+**Bookings** → **Edit** on a **confirmed** reservation. You can change room, guest fields, and dates (same overlap rules). Managers can only edit bookings at properties they can access.
 
 ## Viewing bookings
 
-The **Bookings** tab lists all reservations, newest check-in first. Each entry shows:
+**Bookings** tab — newest check-in first. Shows property, room, guest, dates, booking status, and **sync status**. Cancelled bookings are hidden by default; turn on **Show cancelled** to include them.
 
-- Guest name and contact info
-- Property and room
-- Check-in → check-out dates
-- Status (confirmed or cancelled)
+Actions on confirmed bookings: **Edit**, **Check in**, **Cancel**. On checked-in: **Check out**.
 
-## Cancellation policy
+## Today board
 
-### In the app
+**Today** tab — **Arrivals**, **Departures**, **In-house** for today (filter by property if you have several). Use **Check in** / **Check out** when operational rules allow (app enforces arrival/departure dates).
 
-- Staff can cancel any **confirmed** booking from the **Bookings** tab.
-- Cancellation sets status to **CANCELLED**; the record remains for audit but **no longer blocks** the room calendar.
-- There is no automatic refund or fee calculation in the app (payments are out of scope).
+## Cancellation
 
-### Operational guidance
+- **Bookings** → **Cancel** on a confirmed booking → status **CANCELLED**; room freed on calendar.
+- No payment or refund logic in the app.
 
-| Timing | Recommended action |
-|--------|-------------------|
-| Same day / walk-in change | Cancel in app and rebook if needed |
-| Guest no-show | Cancel after property check-out time on day after expected arrival |
-| Early departure | Cancel remaining nights manually; note in guest file if your property uses one |
-
-Always confirm with the guest before cancelling on their behalf.
+| Scenario | Action |
+|----------|--------|
+| Same-day change | Cancel and rebook if needed |
+| No-show | Cancel after property policy |
+| Early departure | Cancel remaining nights manually |
 
 ## Check-in and check-out times
 
-Default property times (see [chain overview](chain-overview.md)):
-
-- Check-in from **15:00**
-- Check-out by **11:00**
-
-Early check-in or late check-out requires manual coordination — the app does not track time-of-day, only calendar dates.
+Default (see [chain overview](chain-overview.md)): **15:00** check-in, **11:00** check-out. The app tracks **dates** only, not time-of-day.
 
 ## Capacity
 
-Each room has a maximum **capacity** (guest count). The app stores capacity per room but does not currently block over-capacity bookings; staff should verify party size against the room listing before confirming.
+Each room has a **capacity** field. The app does not block over-capacity bookings — verify party size before confirming.
+
+## Block dates
+
+From **room detail** → **Block dates**. Blocked ranges appear in orange on the calendar and prevent new overlapping bookings. Stored **locally** (`block_dates` table); not synced to Firestore.

@@ -10,11 +10,11 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 88 River Walk, Portland, OR
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| River View | 2 | $95 | Balcony overlooking the river |
-| Studio | 2 | $70 | Compact studio with kitchenette |
-| Suite | 3 | $130 | Separate living area and bedroom |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| River View | 2 | Double | $95 | Balcony overlooking the river |
+| Studio | 2 | Double | $70 | Compact studio with kitchenette |
+| Suite | 3 | Suite | $130 | Separate living area and bedroom |
 
 **Local notes for staff**
 

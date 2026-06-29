@@ -6,61 +6,93 @@ Common questions from property staff using the booking app.
 
 ### Do guests log in to the app?
 
-No. The app is staff-only. You enter guest name, phone, and email when creating a booking.
+No. Staff enter guest details when creating a booking.
 
 ### Can guests pay through the app?
 
-No. Payments and invoicing are handled outside the app.
+No. Payments are handled outside the app.
 
 ### How many properties are in the chain?
 
-Twelve. See the [chain overview](chain-overview.md) for the full list.
+Twelve. See [chain overview](chain-overview.md).
+
+### Where is the Sync tab?
+
+There is no Sync tab. Use the **sync icon** in the top app bar (next to sign out). The badge shows pending uploads and conflicts.
 
 ## Bookings
 
 ### What happens if I pick overlapping dates?
 
-The app blocks the booking and shows "Room is not available for those dates." Only **confirmed** bookings count; cancelled ones free the room.
+The app blocks the booking: *"Room is not available for those dates."* Only **confirmed** bookings and **block dates** count; cancelled bookings free the room.
+
+### Can I edit a booking after it's created?
+
+Yes — **Bookings** → **Edit** on a **confirmed** reservation (room, guest, dates).
+
+### How do I check a guest in or out?
+
+Use **Check in** / **Check out** on **Bookings**, or the **Today** tab (arrivals / departures / in-house).
 
 ### Is guest email required?
 
-No, but collect it when possible for follow-up. **Guest name** is the only required field.
+No. **Guest name** is the only required field.
 
 ### Does check-out day count as a booked night?
 
-No. A stay from June 1 check-in to June 3 check-out books June 1 and June 2 only.
+No. Check-in Mon → check-out Wed books Mon and Tue nights only.
 
-### How do I cancel a booking?
+### How do I cancel?
 
-Open **Bookings**, find the reservation, and tap **Cancel booking**. Status changes to cancelled; the room becomes available again.
+**Bookings** → **Cancel** on a confirmed booking.
 
 ## Properties and rooms
 
-### Where do room prices come from?
+### What are room types?
 
-Each room has a seeded **price per night** in the app (see property pages under [properties/](properties/)). The app does not process payment — prices are for reference when quoting guests.
+Each room has a type: **Single**, **Double**, **Suite**, or **Family**. Shown on property room lists, room cards, and the **Book** tab (summary line + filter chips).
 
-### What are the standard check-in and check-out times?
+### Can managers add or change rooms?
 
-**15:00** check-in and **11:00** check-out unless a property page notes otherwise.
+Yes — at **assigned properties** only: **+** on the room list or **Edit** on a room. Chain admins can manage rooms at any property.
+
+### Where do prices come from?
+
+Stored per room in the app (seed data or staff edits). Prices are for reference when quoting guests — no payment processing.
+
+### Standard check-in / check-out times?
+
+**15:00** and **11:00** unless a property page says otherwise.
 
 ### Which manager handles my property?
 
-See the [staff guide](staff-guide.md#manager--property-map) for manager assignments and demo login emails.
+See [staff guide — manager map](staff-guide.md#manager--property-map).
+
+### Why don't I see every guest?
+
+All signed-in staff can view every guest profile (name, email, phone, notes). Guest screens do not show booking history. Property managers can only edit guests linked to bookings at **their** properties; chain admins can edit any guest.
 
 ## Demo / development
 
-### What are the test login passwords?
+### Test passwords?
 
 | Account | Password |
 |---------|----------|
 | `admin@chain.com` | `admin123` |
-| All `manager.*@chain.com` accounts | `manager123` |
+| All `manager.*@chain.com` | `manager123` |
 
 ### Why don't I see bookings from another phone?
 
-Bookings sync when the device is online via the Ktor API or Firestore. Offline bookings stay on the device until sync completes — see [offline operations](offline-operations.md).
+Data syncs when online via Firebase. Offline bookings stay on the device until sync — [offline operations](offline-operations.md).
 
-### The database looks empty after an update
+### Empty app after an update?
 
-If the local Room cache looks empty after an app update, clear app data (or reinstall), then sign in again while online to pull properties, rooms, and bookings from Firestore. Demo staff and entity data are seeded in Firebase via `scripts/seed-firebase-demo.mjs` — see [seeding.md](../seeding.md).
+Room DB upgrades use migrations (v10). If data looks wrong, clear app storage or reinstall, then sign in **online** to pull bootstrap data. Seed Firebase with `npm run seed` in `scripts/`.
+
+### How do I run on the emulator quickly?
+
+```bash
+./scripts/run-on-emulator.sh --fresh
+```
+
+See root [README](../../README.md).

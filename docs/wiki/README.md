@@ -1,15 +1,15 @@
 # Guesthouse Chain Wiki
 
-Staff reference for the 12-property guesthouse chain. Use this wiki alongside the Android booking app for property details, procedures, and demo account info.
+Staff reference for the 12-property guesthouse chain. Use alongside the Android booking app.
 
 ## Pages
 
 | Page | Description |
 |------|-------------|
-| [Chain overview](chain-overview.md) | Purpose of the chain and summary of all 12 properties |
-| [Staff guide](staff-guide.md) | App navigation, login roles, and demo accounts |
-| [Booking procedures](booking-procedures.md) | How to create and cancel bookings, overlap rules |
-| [Offline operations](offline-operations.md) | Offline booking, sync queue, and conflict handling |
+| [Chain overview](chain-overview.md) | Purpose and list of all 12 properties |
+| [Staff guide](staff-guide.md) | Navigation, roles, room/booking features, demo accounts |
+| [Booking procedures](booking-procedures.md) | Create, edit, cancel, check-in/out, block dates |
+| [Offline operations](offline-operations.md) | Offline queue, top-bar sync, conflicts |
 | [FAQ](faq.md) | Common staff questions |
 
 ## Properties by region
@@ -24,7 +24,10 @@ Staff reference for the 12-property guesthouse chain. Use this wiki alongside th
 | Midwest | Lakeside Haven, Meadowbrook Cottage | [midwest.md](properties/midwest.md) |
 | Southeast | Oak & Ivy Guesthouse | [southeast.md](properties/southeast.md) |
 
+Property pages describe seeded room names, **types** (from `scripts/seed-data.mjs` `inferRoomType`), and prices. Live inventory staff add or edit in the app is authoritative after sync.
+
 ## Quick links
 
-- [Root project README](../../README.md)
-- Demo admin login: `admin@chain.com` / `admin123`
+- [Root README](../../README.md)
+- [Seeding](../seeding.md)
+- Demo admin: `admin@chain.com` / `admin123`

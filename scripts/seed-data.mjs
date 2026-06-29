@@ -1,5 +1,5 @@
 /**
- * Demo seed data — mirrors backend DatabaseSeeder.kt entity definitions
+ * Demo seed data for Firebase seed script
  */
 
 export const ADMIN_PASSWORD = 'admin123';

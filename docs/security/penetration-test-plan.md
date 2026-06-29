@@ -1,7 +1,7 @@
 # Penetration Test Plan — Guesthouse Booking (Android)
 
 **Document version:** 1.0  
-**Last updated:** 2026-06-27  
+**Last updated:** 2026-06-29  
 **Application:** `com.guesthouse.booking` (staff-only Android app)  
 **Repository:** [guesthouse-booking](https://github.com/pawan-workato/guesthouse-booking)
 
@@ -19,11 +19,11 @@
 | **Business logic** | Booking creation, cancellation, guest CRUD, property management, offline sync queue |
 | **Android platform surface** | Manifest permissions, exported components, backup, WorkManager sync workers |
 | **Client-side controls** | Navigation routes, ViewModel authorization, repository-layer enforcement gaps |
-| **Future API (planned)** | Checklist for when a real backend replaces local-only sync |
+| **Future API (planned)** | Ktor API is implemented; include `POST/PUT /api/rooms`, JWT RBAC, and dual Firebase path in API-phase tests |
 
 ### 1.2 Out of scope (current phase)
 
-- Cloud infrastructure, CDN, or server-side hosting (no backend exists yet)
+- Cloud infrastructure hosting the **optional** Ktor API (in scope for P3 API pentest, not P0 mobile-only)
 - Third-party SaaS integrations (payments, email, analytics)
 - Physical security of guesthouse premises
 - Social engineering of real staff (unless explicitly authorized red-team exercise)
@@ -68,7 +68,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  UI Layer (Compose / Navigation)                            │
-│  Routes: properties, guests, book, sync, admin, deep links  │
+│  Routes: properties, guests, book, today, bookings, staff (admin) │
 ├─────────────────────────────────────────────────────────────┤
 │  ViewModels (RBAC enforced inconsistently)                   │
 ├─────────────────────────────────────────────────────────────┤
@@ -85,7 +85,7 @@
 | Phase | When | Focus | Owner |
 |-------|------|-------|-------|
 | **P0 — Dev self-assessment** | After Sprint 5 (guest profiles) ✅ | SAST, manifest review, known-finding validation | Engineering |
-| **P1 — Internal pentest** | After Sprint 6 (check-in/out, today board) | Full mobile test cases below on release candidate | Engineering + security champion |
+| **P1 — Internal pentest** | After Sprint 7 feature complete | Full mobile test cases below on release candidate | Engineering + security champion |
 | **P2 — Pre-production gate** | Before first pilot deployment to properties | Repeat P1 + rooted device extraction, backup abuse | External or dedicated security reviewer |
 | **P3 — Backend integration** | Before API goes live (post-Sprint ~8–10) | Mobile + API combined pentest | External pentest firm |
 | **P4 — Annual / major release** | Yearly or after significant RBAC/sync changes | Regression + new feature surface | External pentest |
@@ -94,10 +94,9 @@
 
 | Sprint | Security activity |
 |--------|-------------------|
-| **Sprint 6** (current) | Run P0 checklist; fix critical RBAC gaps in `AdminViewModel`, `SyncViewModel`, `GuestsViewModel` |
-| **Sprint 7–8** | Password hashing upgrade (bcrypt/Argon2), disable backup, encrypted Room |
-| **Sprint 9** | Enable ProGuard/R8, certificate pinning prep for API |
-| **Sprint 10** | **P1 internal pentest** — formal test execution using this document |
+| **Sprint 7** (shipped) | BCrypt passwords, backup disabled, guest RBAC scoping, room CRUD, Today board, edit bookings |
+| **Sprint 8–9** | Encrypted Room ✅, ProGuard/R8, certificate pinning for API |
+| **Sprint 10** | **P1 internal pentest** — formal execution using this document |
 | **Pre-pilot** | **P2 gate** — sign-off required before devices ship to properties |
 
 ---
@@ -173,7 +172,7 @@
 |----|-----------|-------|----------|----------------|
 | DATA-01 | SQLite file location | `adb shell run-as ...` or root path | `/data/data/com.guesthouse.booking/databases/guesthouse.db` | `AppDatabase` name |
 | DATA-02 | **Backup extraction** | `adb backup`, `bmgr backup`, or Android Backup Extractor | PII and password hashes recoverable if backup allowed | `android:allowBackup="true"` |
-| DATA-03 | Root read without encryption | Rooted device: copy DB and prefs | Full plaintext read | No SQLCipher / EncryptedSharedPreferences |
+| DATA-03 | Root read without encryption | Rooted device: copy DB and prefs | DB encrypted (SQLCipher); session prefs encrypted | `AppDatabase` + `DatabaseKeyManager`; auth uses EncryptedSharedPreferences |
 | DATA-04 | Guest PII in bookings | Query bookings table | Denormalized guest fields even when `guestId` set | `BookingEntity` |
 | DATA-05 | Staff table exposure | Query staff table | Email + password hashes readable | `StaffEntity` |
 | DATA-06 | Log leakage | Logcat during login/booking | No passwords or PII in logs | Manual log review |
@@ -262,6 +261,7 @@ These items were identified in code review; pentest should confirm exploitabilit
 | **KR-10** | Destructive DB migrations wipe all data | **Medium** (ops) | `AppDatabase.kt:44` | DATA-07 |
 | **KR-11** | Release build not minified | **Low** | `app/build.gradle.kts` | PLAT-04 |
 | **KR-12** | No brute-force protection on login | **Medium** | `LoginViewModel.kt` | AUTH-03 |
+| **KR-13** | Plaintext Room SQLite (guest PII, password hashes) | **High** | `AppDatabase.kt` | DATA-03 — **Fixed** (SQLCipher + Keystore-backed passphrase) |
 
 ### AdminViewModel cancel authorization (verified)
 
@@ -397,16 +397,25 @@ Copy into issue tracker or spreadsheet for each finding:
 | **Retest result** | Pass / Fail |
 ```
 
-### Finding status dashboard (template)
+### Finding status dashboard
 
-| ID | Severity | Status | Owner | Sprint |
-|----|----------|--------|-------|--------|
-| KR-01 | Critical | Open | | 7 |
-| KR-02 | High | Open | | 7 |
-| KR-03 | High | Open | | 8 |
-| KR-04 | High | Open | | 7 |
-| KR-05 | High | Open | | 6 |
-| ... | | | | |
+| ID | Severity | Status | Sprint | Notes |
+|----|----------|--------|--------|-------|
+| KR-01 | Critical | **Open** | 8 | SHA-256 + static salt — Firebase Auth is the prod auth provider; local hash is demo-only |
+| KR-02 | High | **Fixed** ✅ | 8 | `AuthRepository` uses `EncryptedSharedPreferences` (AES256-GCM, Android Keystore) |
+| KR-03 | High | **Open** | 9 | `allowBackup=true` — add `android:dataExtractionRules` config before pilot |
+| KR-04 | High | **Open** (accepted/dev) | — | Demo creds documented as dev-only in `staff-guide.md`; not in production Firebase |
+| KR-05 | High | **Fixed** ✅ | 8 | `AdminViewModel.cancelBooking` checks `session.canAccessProperty(booking.propertyId)` |
+| KR-06 | Medium | **Fixed** ✅ | 8 | `SyncViewModel.dismissConflict` checks session + property before delegating |
+| KR-07 | Medium | **Fixed** ✅ | 8 | `GuestRepository.canEditGuest` scopes edits; `AppNavigation` shows access-denied screen |
+| KR-08 | Medium | **Fixed** ✅ | 8 | `RoomDetail` route checks `canAccessProperty(propertyId)` before rendering |
+| KR-09 | High | **Fixed** ✅ | 8 | `BookingRepository.cancelBooking` checks session + `canAccessProperty` |
+| KR-10 | Medium | **Documented** | 8 | `fallbackToDestructiveMigration` marked dev-only; explicit migrations v8→9→10 in place |
+| KR-11 | Low | **Fixed** ✅ | 8 | `isMinifyEnabled = true`, `isShrinkResources = true`, `proguard-rules.pro` added |
+| KR-12 | Medium | **Fixed** ✅ | 8 | `LoginViewModel`: lockout after 5 failures, 30 s cooldown (in-memory per session) |
+| KR-13 | High | **Fixed** ✅ | 8 | SQLCipher: 32-byte random key in Android Keystore; plaintext DB migration on upgrade |
+| KR-14 | Low | **Fixed** ✅ | 8 | `FLAG_SECURE` on `MainActivity` — prevents screenshots/recents across all screens |
+| KR-15 | Medium | **Fixed** ✅ | 8 | Firestore `guests/{id}`: `delete` requires `isChainAdmin()`; create/read/update → signed-in |
 
 ---
 
@@ -446,3 +455,6 @@ From `docs/wiki/staff-guide.md` (do not use in production):
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-06-27 | Engineering | Initial pentest plan for local-only Android app |
+| 1.1 | 2026-06-29 | Engineering | Firebase + optional Ktor API, Sprint 7 scope, toolbar sync (no Sync tab), room CRUD |
+| 1.2 | 2026-06-29 | Engineering | KR-13 SQLCipher Room encryption, plaintext migration documented |
+| 1.3 | 2026-06-29 | Engineering | Sprint 8 security fixes: KR-02,05–15 marked Fixed; dashboard updated; KR-03 deferred to Sprint 9 |

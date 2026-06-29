@@ -5,7 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Local-only maintenance/owner blocks — not synced to Ktor or Firestore. */
+/** Local-only maintenance/owner blocks — not synced to Firestore. */
 @Entity(
     tableName = "block_dates",
     foreignKeys = [

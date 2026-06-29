@@ -99,6 +99,13 @@ class FirestoreDataSource(
             .await()
     }
 
+    suspend fun upsertRoom(room: RoomEntity) {
+        firestore.collection(FirestoreCollections.ROOMS)
+            .document(room.id.toString())
+            .set(room.toFirestoreMap())
+            .await()
+    }
+
     suspend fun upsertGuest(guest: GuestEntity) {
         firestore.collection(FirestoreCollections.GUESTS)
             .document(guest.id.toString())

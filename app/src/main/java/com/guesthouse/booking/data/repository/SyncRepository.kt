@@ -12,10 +12,7 @@ import androidx.work.WorkManager
 import com.guesthouse.booking.data.firebase.FirebaseInitializer
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.firebase.FirestoreSyncService
-import com.guesthouse.booking.BuildConfig
 import com.guesthouse.booking.data.local.AppDatabase
-import com.guesthouse.booking.data.remote.KtorApiSyncService
-import com.guesthouse.booking.data.remote.TokenStorage
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
@@ -43,9 +40,7 @@ class SyncRepository(
     context: Context,
     private val authRepository: AuthRepository,
     private val firestore: FirestoreDataSource = FirestoreDataSource(),
-    private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore),
-    private val tokenStorage: TokenStorage? = null,
-    private val ktorSync: Lazy<KtorApiSyncService>? = null
+    private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore)
 ) {
     private val appContext = context.applicationContext
     private val firebaseEnabled = FirebaseInitializer.isConfigured(appContext)
@@ -70,10 +65,6 @@ class SyncRepository(
 
     suspend fun syncNow(): SyncResult {
         if (!networkMonitor.isCurrentlyOnline()) return SyncResult(noNetwork = true)
-        if (BuildConfig.USE_KTOR_API) {
-            if (tokenStorage?.hasToken() != true) return SyncResult(notAuthenticated = true)
-            return syncWithKtor()
-        }
         val session = authRepository.currentSession()
         if (firebaseEnabled) {
             if (!firestore.isSignedIn || session == null) {
@@ -82,15 +73,6 @@ class SyncRepository(
             return syncWithFirestore(session)
         }
         return syncLocalOnly()
-    }
-
-
-    private suspend fun syncWithKtor(): SyncResult {
-        val outcome = ktorSync?.value?.syncPending() ?: return SyncResult()
-        val now = System.currentTimeMillis()
-        prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
-        _lastSyncEpochMs.value = now
-        return SyncResult(syncedCount = outcome.syncedCount, conflictCount = outcome.conflictCount)
     }
 
     private suspend fun syncWithFirestore(session: com.guesthouse.booking.data.auth.StaffSession): SyncResult {

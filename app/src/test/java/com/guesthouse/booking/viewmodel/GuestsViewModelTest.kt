@@ -4,12 +4,14 @@ import app.cash.turbine.test
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.repository.GuestRepository
 import com.guesthouse.booking.testutil.MainDispatcherRule
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -63,5 +65,21 @@ class GuestsViewModelTest {
             assertTrue(filtered.first().name.contains("Carol"))
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun loadGuestForEdit_setsReadOnlyWhenManagerCannotEditGuest() = runTest {
+        val guest = guests.first()
+        coEvery { guestRepository.getGuest(guest.id) } returns guest
+        coEvery { guestRepository.canEditGuest(guest.id) } returns false
+        every { guestRepository.observeScopedActiveGuests() } returns flowOf(guests)
+        every { guestRepository.observeScopedAllGuests() } returns flowOf(guests)
+
+        val viewModel = GuestsViewModel(guestRepository)
+        viewModel.loadGuestForEdit(guest.id)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.canEditGuest.value)
+        assertEquals(guest, viewModel.editGuest.value)
     }
 }

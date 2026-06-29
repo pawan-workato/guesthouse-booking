@@ -10,11 +10,11 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 142 Ridge Rd, Aspen, CO
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Garden Suite | 2 | $89 | Ground-floor patio and garden views |
-| Loft Room | 2 | $75 | Upper-floor skylight and workspace |
-| Family Room | 4 | $120 | Two queen beds for families |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Garden Suite | 2 | Suite | $89 | Ground-floor patio and garden views |
+| Loft Room | 2 | Double | $75 | Upper-floor skylight and workspace |
+| Family Room | 4 | Family | $120 | Two queen beds for families |
 
 **Local notes for staff**
 
@@ -28,10 +28,10 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 19 Cedar Ln, Bozeman, MT
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Cedar Double | 2 | $80 | Warm wood finishes, mountain view |
-| Cozy Single | 1 | $55 | Ideal for solo travelers |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Cedar Double | 2 | Double | $80 | Warm wood finishes, mountain view |
+| Cozy Single | 1 | Single | $55 | Ideal for solo travelers |
 
 **Local notes for staff**
 
@@ -44,10 +44,10 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 77 Pine Rd, Jackson, WY
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Pine Standard | 2 | $88 | Forest-facing double room |
-| Bear Den | 4 | $100 | Rustic lodge feel, two beds |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Pine Standard | 2 | Double | $88 | Forest-facing double room |
+| Bear Den | 4 | Family | $100 | Rustic lodge feel, two beds |
 
 **Local notes for staff**
 
@@ -60,10 +60,10 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 901 Summit Blvd, Denver, CO
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Summit Double | 2 | $86 | City and mountain skyline |
-| Alpine Room | 2 | $72 | Quiet rear-facing room |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Summit Double | 2 | Double | $86 | City and mountain skyline |
+| Alpine Room | 2 | Double | $72 | Quiet rear-facing room |
 
 **Local notes for staff**
 

@@ -1,21 +1,60 @@
 # Room database migrations
 
-## Current state (v9)
+## Current state (v10)
 
-The app uses Room database version **9** after room type inventory. `AppDatabase` uses `AppDatabaseMigrations.MIGRATION_8_9` for upgrades; older versions still rely on development-time destructive rebuilds until full migration chain is added (KR-10).
+`AppDatabase` version **10**. Registered migrations: `MIGRATION_8_9`, `MIGRATION_9_10` in `AppDatabaseMigrations.kt`.
 
-## Version 9 — room type inventory
+`fallbackToDestructiveMigration` is gated behind `BuildConfig.DEBUG` only — **release builds** will fail on unregistered version jumps rather than silently wiping data. Debug builds retain the destructive fallback for developer convenience.
 
-Adds `roomType` (`SINGLE`, `DOUBLE`, `SUITE`, `FAMILY`) to each room row. Migration `MIGRATION_8_9` backfills from name/capacity. Synced via Ktor `RoomDto`, Firestore `roomType`, and PostgreSQL `rooms.room_type`.
+## Encryption (KR-13, Sprint 8–9)
+
+Room uses **SQLCipher** via `net.zetetic:sqlcipher-android` and `SupportOpenHelperFactory`.
+
+| Component | Location | Role |
+|-----------|----------|------|
+| Passphrase storage | `DatabaseKeyManager.kt` | 32-byte random key in `EncryptedSharedPreferences` (`guesthouse_db_key`), Keystore-backed `MasterKey` |
+| Plaintext upgrade | `PlaintextDatabaseMigrator.kt` | One-time export from legacy `guesthouse.db` |
+| Database open | `AppDatabase.buildDatabase()` | Loads native lib, migrates if needed, opens encrypted Room |
+
+### First install
+
+1. `DatabaseKeyManager` generates a 32-byte passphrase and stores it Base64-encoded in EncryptedSharedPreferences.
+2. Room creates a new encrypted `guesthouse.db`.
+
+### Upgrade from plaintext (existing installs)
+
+On first launch after this release:
+
+1. Detect plaintext file via standard SQLite header (`SQLite format 3`).
+2. Create temporary encrypted database (`guesthouse.db.encrypting`).
+3. `ATTACH` plaintext DB with empty key; `SELECT sqlcipher_export('main', 'plaintext')`.
+4. Delete plaintext file and `-wal` / `-shm` / `-journal` sidecars; rename temp file to `guesthouse.db`.
+
+If migration fails, the app throws on startup (no silent data loss). Staff can sign in again to re-sync from Firestore.
+
+### Validation
+
+- `adb shell run-as com.guesthouse.booking cat databases/guesthouse.db | head -c 16` should **not** show `SQLite format 3`.
+- Standard `sqlite3 guesthouse.db` on a copied file should fail without the passphrase.
+
+## Version 8 → 9 — room types
+
+Adds `roomType` (`SINGLE`, `DOUBLE`, `SUITE`, `FAMILY`) with backfill from name/capacity. Indexed on `roomType`.
+
+Synced via Firestore `roomType`.
+
+## Version 9 → 10 — block dates
+
+Creates `block_dates` table (local-only feature; not synced to Firestore):
+
+- `propertyId`, `roomId`, `startEpochDay`, `endEpochDay`, `reason`, `createdByStaffId`, `createdAtEpochMs`
+
+## Security (shipped)
+
+- **KR-01:** Staff passwords use BCrypt (cost 12) for local staff records.
+- **KR-03:** `android:allowBackup="false"`.
+- **KR-13:** SQLCipher-encrypted Room; passphrase in EncryptedSharedPreferences.
 
 ## Pre-pilot (KR-10)
 
-Before pilot deployment, add explicit `Migration` objects for each version step and remove destructive fallback so staff devices retain local cache across app updates.
-
-## Password hashing (KR-01)
-
-Staff passwords now use **BCrypt** (cost 12). Legacy SHA-256 hashes from seed data remain verifiable via `PasswordHasher.verify()` and are upgraded to BCrypt on successful Ktor API login.
-
-## Backup (KR-03)
-
-`android:allowBackup` is set to **false** to prevent PII extraction via ADB backup.
+✅ Release builds no longer use destructive fallback (debug-only). Add explicit migrations for any future version bumps before rollout.

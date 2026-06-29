@@ -11,11 +11,11 @@ Standard times: check-in **15:00**, check-out **11:00**.
 **Address:** 12 Lakeview Dr, Traverse City, MI  
 **Manager:** Sam Coastal (`manager.coastal@chain.com`)
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Lakeview Double | 2 | $90 | Direct lake views |
-| Dock Room | 2 | $82 | Near the private dock |
-| Family Cottage | 6 | $155 | Two-bedroom cottage unit |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Lakeview Double | 2 | Double | $90 | Direct lake views |
+| Dock Room | 2 | Double | $82 | Near the private dock |
+| Family Cottage | 6 | Family | $155 | Two-bedroom cottage unit |
 
 **Local notes for staff**
 
@@ -30,10 +30,10 @@ Standard times: check-in **15:00**, check-out **11:00**.
 **Address:** 3 Meadow Ln, Madison, WI  
 **Manager:** Taylor East (`manager.east@chain.com`)
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Meadow Double | 2 | $74 | Pasture views, ground floor |
-| Brook Suite | 3 | $99 | Stream-side suite with sitting area |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Meadow Double | 2 | Double | $74 | Pasture views, ground floor |
+| Brook Suite | 3 | Suite | $99 | Stream-side suite with sitting area |
 
 **Local notes for staff**
 

@@ -6,6 +6,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isStaff() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
     function staffData() {
       return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
     }
@@ -39,12 +44,16 @@ service cloud.firestore {
 
     match /rooms/{roomId} {
       allow read: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
-      allow create: if isChainAdmin();
-      allow update, delete: if isChainAdmin();
+      allow create: if isSignedIn() && canAccessProperty(int(request.resource.data.propertyId));
+      allow update, delete: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
     }
 
     match /guests/{guestId} {
-      allow read, write: if isSignedIn();
+      // All staff (including managers) may read the chain guest list; edit scope is enforced in-app.
+      allow read: if isStaff();
+      // Guest docs have no propertyId — create/update allowed for any staff; managers edit only linked guests in app.
+      allow create, update: if isStaff();
+      allow delete: if isChainAdmin();
     }
 
     match /bookings/{bookingId} {

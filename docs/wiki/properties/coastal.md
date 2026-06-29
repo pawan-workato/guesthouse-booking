@@ -10,11 +10,11 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 5 Pier St, Monterey, CA
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Harbor King | 2 | $110 | King bed with ocean glimpse |
-| Anchor Room | 2 | $85 | Nautical theme, queen bed |
-| Captain's Suite | 4 | $145 | Corner suite with bay windows |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Harbor King | 2 | Double | $110 | King bed with ocean glimpse |
+| Anchor Room | 2 | Double | $85 | Nautical theme, queen bed |
+| Captain's Suite | 4 | Suite | $145 | Corner suite with bay windows |
 
 **Local notes for staff**
 

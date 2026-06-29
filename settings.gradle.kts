@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "GuesthouseBooking"
-include(":app", ":backend")
+include(":app")

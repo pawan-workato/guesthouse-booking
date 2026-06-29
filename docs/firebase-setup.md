@@ -67,12 +67,24 @@ If you cannot use a service account, create Auth users and `staff/{uid}` documen
 ## 5. Build and run
 
 ```bash
-./gradlew assembleDebug
+./scripts/run-on-emulator.sh
 ```
 
-Sync Gradle in Android Studio, then run on an emulator or device (API 26+). Sign in with a demo account from step 4.
+Or `./gradlew assembleDebug`, then run from Android Studio (API 26+). Sign in with a demo account from step 4.
 
-Optional: chain admin can upload properties/rooms/guests from the app (**Sync → Upload demo seed to Firestore**) if those collections are still empty — see [seeding.md](seeding.md).
+Entity data is seeded by **`npm run seed`**. There is no in-app Firestore upload button.
+
+## Firestore guest rules
+
+The `guests` collection in `firestore.rules`:
+
+| Operation | Who |
+|-----------|-----|
+| **Read** | Any signed-in staff member (`staff/{uid}` doc must exist) — managers see the full chain guest list |
+| **Create / update** | Any staff member (guest docs have no `propertyId`; edit scope for managers is enforced in the Android app via `GuestRepository.canEditGuest`) |
+| **Delete** | Chain admin only |
+
+Deploy rules after changes: `npx firebase-tools deploy --only firestore:rules`.
 
 ## Security notes
 

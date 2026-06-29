@@ -10,11 +10,11 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 44 Desert Dr, Sedona, AZ
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Adobe Room | 2 | $92 | Southwestern adobe styling |
-| Terrace Double | 2 | $105 | Private terrace, red rock views |
-| Poolside | 2 | $98 | Steps from the courtyard pool |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Adobe Room | 2 | Double | $92 | Southwestern adobe styling |
+| Terrace Double | 2 | Double | $105 | Private terrace, red rock views |
+| Poolside | 2 | Double | $98 | Steps from the courtyard pool |
 
 **Local notes for staff**
 
@@ -28,10 +28,10 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 210 Cactus Way, Santa Fe, NM
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Bloom Single | 1 | $65 | Courtyard garden access |
-| Adobe Double | 2 | $85 | Traditional pueblo design |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Bloom Single | 1 | Single | $65 | Courtyard garden access |
+| Adobe Double | 2 | Double | $85 | Traditional pueblo design |
 
 **Local notes for staff**
 

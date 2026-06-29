@@ -36,6 +36,9 @@ class GuestsViewModel(
     private val _editAccessDenied = MutableStateFlow(false)
     val editAccessDenied: StateFlow<Boolean> = _editAccessDenied.asStateFlow()
 
+    private val _canEditGuest = MutableStateFlow(true)
+    val canEditGuest: StateFlow<Boolean> = _canEditGuest.asStateFlow()
+
     val guests: StateFlow<List<GuestEntity>> = combine(
         guestRepository.observeScopedActiveGuests(),
         guestRepository.observeScopedAllGuests(),
@@ -67,14 +70,17 @@ class GuestsViewModel(
 
     fun loadGuestForEdit(guestId: Long) {
         viewModelScope.launch {
-            _editAccessDenied.value = !guestRepository.canAccessGuest(guestId)
-            _editGuest.value = if (_editAccessDenied.value) null else guestRepository.getGuest(guestId)
+            val guest = guestRepository.getGuest(guestId)
+            _editAccessDenied.value = guest == null
+            _canEditGuest.value = guest != null && guestRepository.canEditGuest(guestId)
+            _editGuest.value = guest
         }
     }
 
     fun clearEditGuest() {
         _editGuest.value = null
         _editAccessDenied.value = false
+        _canEditGuest.value = true
     }
 
     fun createGuest(name: String, email: String, phone: String, notes: String) {

@@ -1,87 +1,64 @@
 # Offline operations
 
-> **Status:** Implemented in Sprint 3 — offline staff booking with local sync queue.
-
 ## Overview
 
-Staff can create bookings without a live network connection. Bookings are saved locally with a temporary reference and marked **PENDING SYNC**. When connectivity returns, the app syncs automatically (WorkManager) or on demand from the **Sync** tab.
+Staff can create bookings offline. They save locally as **PENDING SYNC** with reference `TMP-xxxx` and still block the room calendar. When online, **SyncRepository** + WorkManager push to Firebase.
 
-Each device uses a local Room cache. When online, data syncs to the Ktor API or Firestore (depending on build configuration). Sync marks bookings as **SYNCED** and assigns permanent references; conflicts are flagged when overlapping **SYNCED** bookings exist at sync time.
+Trigger sync manually via the **sync icon** in the top app bar (badge = pending + conflicts). Background sync runs about every **15 minutes** when the network is available.
 
 ## Sync statuses
 
 | Status | Meaning |
 |--------|---------|
-| **PENDING SYNC** | Created offline (or awaiting sync). Reference: `TMP-xxxx`. Calendar treats as booked. |
-| **SYNCED** | Confirmed locally. Online bookings sync immediately; offline bookings after successful sync. Reference: `GH-{propertyId}-{id}`. |
-| **CONFLICT** | Sync found overlapping dates with another synced booking. Staff must cancel from Sync tab. |
+| **PENDING SYNC** | Awaiting upload. Reference `TMP-xxxx`. Calendar treats as booked. |
+| **SYNCED** | On server / merged. Reference `GH-{propertyId}-{id}`. |
+| **CONFLICT** | Overlap with another synced booking at sync time. Resolve on **Bookings**. |
 
-## Staff workflows
+## Workflows
 
-### Create booking offline
+### Book offline
 
-1. Enable airplane mode (or lose connectivity).
-2. Sign in and open **Book**.
-3. An orange banner shows: *Offline — bookings will sync when you're back online*.
-4. Complete the booking form and submit.
-5. Success message: *Saved offline — will sync when online. Ref: TMP-xxxx*.
-6. The booking appears in **Bookings** with sync status **PENDING SYNC** and blocks the calendar like any confirmed stay.
+1. Lose connectivity (or airplane mode).
+2. **Book** tab shows an offline banner.
+3. Submit booking → *Saved offline — will sync when online. Ref: TMP-xxxx*.
+4. **Bookings** shows **PENDING SYNC**.
 
-### Sync when back online
+### Sync when online
 
-1. Disable airplane mode.
-2. Open the **Sync** tab (badge shows pending + conflict count).
-3. Tap **Sync now**, or wait for automatic background sync (~15 min when network available).
-4. Pending bookings become **SYNCED** with `GH-{propertyId}-{id}` references, unless dates conflict.
+1. Restore network.
+2. Tap **sync** in the top bar (or wait for background sync).
+3. Pending items become **SYNCED** unless dates conflict.
 
 ### Resolve conflicts
 
-If two bookings overlap the same room and dates (e.g. one created offline, one already synced):
+1. **Bookings** — conflicting row shows **CONFLICT** and explanation.
+2. **Cancel this booking** dismisses the conflicting local booking.
+3. The other reservation stays confirmed.
 
-1. **Sync** tab lists the conflict with guest and dates.
-2. Tap **Cancel this booking** to dismiss the conflicting offline booking.
-3. The other booking remains confirmed.
+## Where to look
 
-## UI locations
-
-| Screen | What to look for |
-|--------|------------------|
-| **Book** | Offline banner when no network |
-| **Bookings** | Reference, sync status per booking |
-| **Sync** | Online/offline chip, last sync time, pending list, conflicts, manual sync |
-| **Bottom nav** | Sync tab badge = pending + conflicts for your properties |
-
-## Demo logins
-
-Same as main app — e.g. `manager.mountain@chain.com` / `manager123` for properties 1, 3, 7, 11.
-
-## Testing offline mode (airplane mode)
-
-1. Install debug build on device or emulator.
-2. Sign in as a property manager.
-3. Enable **Airplane mode**.
-4. Create a booking on **Book** — expect offline banner and TMP reference.
-5. Check **Bookings** — status **PENDING SYNC**; room calendar shows dates blocked.
-6. Disable airplane mode → **Sync** tab → **Sync now**.
-7. Booking should show **SYNCED** and `GH-*` reference.
-
-### Conflict test
-
-1. While online, book Room A for dates X–Y.
-2. Enable airplane mode; book the same room for overlapping dates.
-3. Go online and sync — second booking becomes **CONFLICT**.
-4. Cancel from Sync tab.
+| Location | What |
+|----------|------|
+| **Book** | Offline banner |
+| **Bookings** | Reference, sync status, conflict actions |
+| **Top bar sync** | Manual sync; badge count |
+| Room calendar | Pending bookings block dates like confirmed stays |
 
 ## Block dates (local-only)
 
-Staff block rooms from **Room detail** → **Block dates**. Orange slots prevent overlapping bookings. Stored in local `block_dates` only — not synced to Ktor or Firestore.
+**Room detail** → **Block dates**. Not synced to cloud backends.
 
 ## Technical notes
 
-- Database schema v9: `block_dates` table.
-- Database schema v4: `syncStatus`, `bookingReference`, `createdAtEpochMs` on bookings.
-- `findOverlapping` excludes **CONFLICT** bookings so failed syncs don't block new bookings incorrectly.
-- WorkManager: one-time sync after offline save; periodic sync every 15 minutes when connected.
+- Room database **version 10** (`block_dates`, `roomType` on rooms, guests/bookings sync fields).
+- Migrations: `MIGRATION_8_9` (room types), `MIGRATION_9_10` (block dates). `fallbackToDestructiveMigration` still enabled for uncovered version jumps — reinstall or clear data if upgrade fails.
+- Overlap checks exclude **CONFLICT** bookings from blocking new entries incorrectly.
 - Permissions: `INTERNET`, `ACCESS_NETWORK_STATE`.
 
-See the [root README](../../README.md) for sprint history.
+## Demo / test
+
+1. Sign in as `manager.mountain@chain.com` / `manager123`.
+2. Airplane mode → book on **Book** → expect TMP reference.
+3. Online → top-bar **sync** → **SYNCED** / `GH-*` reference.
+
+**Conflict test:** book room online for dates X–Y; offline overlapping booking on same room; sync → second becomes **CONFLICT**; cancel from **Bookings**.

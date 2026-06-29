@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +24,14 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RoomDetailScreen(roomId: Long, viewModel: BookingViewModel, onBack: () -> Unit, onBookNow: (Long, Long) -> Unit) {
+fun RoomDetailScreen(
+    roomId: Long,
+    viewModel: BookingViewModel,
+    canEditRoom: Boolean,
+    onBack: () -> Unit,
+    onBookNow: (Long, Long) -> Unit,
+    onEditRoom: () -> Unit
+) {
     val room by viewModel.room(roomId).collectAsState()
     val bookings by viewModel.observeRoomBookings(roomId).collectAsState()
     val blocks by viewModel.observeRoomBlocks(roomId).collectAsState()
@@ -31,7 +39,23 @@ fun RoomDetailScreen(roomId: Long, viewModel: BookingViewModel, onBack: () -> Un
     var showBlockDialog by remember { mutableStateOf(false) }
     LaunchedEffect(blockUiState.successMessage) { if (blockUiState.successMessage != null) { showBlockDialog = false; viewModel.clearBlockMessages() } }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(room?.name ?: "Room") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } }) }) { padding ->
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { Text(room?.name ?: "Room") },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+            },
+            actions = {
+                if (canEditRoom) {
+                    IconButton(onClick = onEditRoom) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit room")
+                    }
+                }
+            }
+        )
+    }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp)) {
             if (room == null) { Text("Room not found"); return@Column }
             val r = room!!

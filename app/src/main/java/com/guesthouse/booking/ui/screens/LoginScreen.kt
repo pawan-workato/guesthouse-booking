@@ -66,9 +66,16 @@ fun LoginScreen(viewModel: LoginViewModel) {
             )
         }
 
+        if (uiState.isLockedOut && uiState.lockoutSecondsRemaining > 0) {
+            LaunchedEffect(uiState.lockoutSecondsRemaining) {
+                kotlinx.coroutines.delay(1000)
+                viewModel.refreshLockoutCountdown()
+            }
+        }
+
         Button(
             onClick = { viewModel.login(email, password) },
-            enabled = !uiState.isLoading && email.isNotBlank() && password.isNotBlank(),
+            enabled = !uiState.isLoading && !uiState.isLockedOut && email.isNotBlank() && password.isNotBlank(),
             modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
         ) {
             Text(if (uiState.isLoading) "Signing in..." else "Sign in")

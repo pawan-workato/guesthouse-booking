@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,6 +37,7 @@ import com.guesthouse.booking.ui.screens.PropertiesScreen
 import com.guesthouse.booking.ui.screens.PropertyFormScreen
 import com.guesthouse.booking.ui.screens.PropertyRoomsScreen
 import com.guesthouse.booking.ui.screens.RoomDetailScreen
+import com.guesthouse.booking.ui.screens.RoomFormScreen
 import com.guesthouse.booking.ui.screens.StaffFormScreen
 import com.guesthouse.booking.ui.screens.StaffScreen
 import com.guesthouse.booking.ui.screens.TodayScreen
@@ -61,6 +63,12 @@ sealed class Screen(val route: String, val label: String) {
     }
     data object RoomDetail : Screen("room/{roomId}", "Room") {
         fun createRoute(roomId: Long) = "room/$roomId"
+    }
+    data object RoomAdd : Screen("property/{propertyId}/rooms/add", "Add room") {
+        fun createRoute(propertyId: Long) = "property/$propertyId/rooms/add"
+    }
+    data object RoomEdit : Screen("room/{roomId}/edit", "Edit room") {
+        fun createRoute(roomId: Long) = "room/$roomId/edit"
     }
     data object PropertyAdd : Screen("property/add", "Add property")
     data object PropertyEdit : Screen("property/{propertyId}/edit", "Edit property") {
@@ -93,17 +101,20 @@ fun GuesthouseNavHost(
     val isOnline by syncVm.isOnline.collectAsState()
     val syncUiState by syncVm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val bottomItems = buildList {
-        add(Screen.Properties)
+    val bottomNavItems = listOf(
+        Screen.Properties,
+        Screen.Book,
+        Screen.Today,
+        Screen.Admin
+    )
+    val topNavItems = buildList {
         add(Screen.Guests)
         if (isChainAdmin) add(Screen.Staff)
-        add(Screen.Book)
-        add(Screen.Today)
-        add(Screen.Admin)
     }
+    val mainTabRoutes = (bottomNavItems + topNavItems).map { it.route }.toSet()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val showBottomBar = currentRoute in bottomItems.map { it.route }
+    val showMainChrome = currentRoute in mainTabRoutes
 
     LaunchedEffect(syncUiState.message, syncUiState.error) {
         val text = syncUiState.message ?: syncUiState.error ?: return@LaunchedEffect
@@ -114,7 +125,7 @@ fun GuesthouseNavHost(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (showBottomBar) {
+            if (showMainChrome) {
                 TopAppBar(
                     title = {
                         Column {
@@ -127,6 +138,31 @@ fun GuesthouseNavHost(
                         }
                     },
                     actions = {
+                        topNavItems.forEach { screen ->
+                            IconButton(
+                                onClick = {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            ) {
+                                val isSelected = navBackStackEntry?.destination?.hierarchy
+                                    ?.any { it.route == screen.route } == true
+                                Icon(
+                                    when (screen) {
+                                        Screen.Guests -> Icons.Default.Person
+                                        else -> Icons.Default.Group
+                                    },
+                                    contentDescription = screen.label,
+                                    tint = if (isSelected) MaterialTheme.colorScheme.primary
+                                           else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         IconButton(
                             onClick = { syncVm.clearMessage(); syncVm.syncNow() },
                             enabled = isOnline && !syncUiState.isSyncing
@@ -147,9 +183,9 @@ fun GuesthouseNavHost(
             }
         },
         bottomBar = {
-            if (showBottomBar) {
+            if (showMainChrome) {
                 NavigationBar {
-                    bottomItems.forEach { screen ->
+                    bottomNavItems.forEach { screen ->
                         NavigationBarItem(
                             icon = {
                                 Icon(
@@ -206,8 +242,45 @@ fun GuesthouseNavHost(
                     PropertyRoomsScreen(
                         propertyId = propertyId,
                         viewModel = roomsVm,
+                        canManageRooms = roomsVm.canManageProperty(propertyId),
                         onBack = { navController.popBackStack() },
-                        onRoomClick = { navController.navigate(Screen.RoomDetail.createRoute(it)) }
+                        onRoomClick = { navController.navigate(Screen.RoomDetail.createRoute(it)) },
+                        onAddRoom = { navController.navigate(Screen.RoomAdd.createRoute(propertyId)) },
+                        onEditRoom = { navController.navigate(Screen.RoomEdit.createRoute(it)) }
+                    )
+                }
+            }
+            composable(Screen.RoomAdd.route) { entry ->
+                val propertyId = entry.arguments?.getString("propertyId")?.toLongOrNull() ?: return@composable
+                val roomsVm: RoomsViewModel = viewModel(factory = viewModelFactory)
+                val bookingVm: BookingViewModel = viewModel(factory = viewModelFactory)
+                if (!bookingVm.canAccessProperty(propertyId)) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    RoomFormScreen(
+                        propertyId = propertyId,
+                        roomId = null,
+                        viewModel = roomsVm,
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
+            composable(Screen.RoomEdit.route) { entry ->
+                val roomId = entry.arguments?.getString("roomId")?.toLongOrNull() ?: return@composable
+                val roomsVm: RoomsViewModel = viewModel(factory = viewModelFactory)
+                val accessDenied by roomsVm.editAccessDenied.collectAsState()
+                LaunchedEffect(roomId) { roomsVm.loadRoomForEdit(roomId) }
+                if (accessDenied) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    val editRoom by roomsVm.editRoom.collectAsState()
+                    RoomFormScreen(
+                        propertyId = editRoom?.propertyId ?: 0L,
+                        roomId = roomId,
+                        viewModel = roomsVm,
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() }
                     )
                 }
             }
@@ -222,6 +295,7 @@ fun GuesthouseNavHost(
                     RoomDetailScreen(
                         roomId = roomId,
                         viewModel = vm,
+                        canEditRoom = propertyId != null && vm.canAccessProperty(propertyId),
                         onBack = { navController.popBackStack() },
                         onBookNow = { pid, rid ->
                             vm.preselect(pid, rid)
@@ -230,7 +304,8 @@ fun GuesthouseNavHost(
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        }
+                        },
+                        onEditRoom = { navController.navigate(Screen.RoomEdit.createRoute(roomId)) }
                     )
                 }
             }
@@ -256,6 +331,7 @@ fun GuesthouseNavHost(
                 val guestId = entry.arguments?.getString("guestId")?.toLongOrNull() ?: return@composable
                 val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
                 val accessDenied by vm.editAccessDenied.collectAsState()
+                val canEdit by vm.canEditGuest.collectAsState()
                 LaunchedEffect(guestId) { vm.loadGuestForEdit(guestId) }
                 if (accessDenied) {
                     PropertyAccessDenied(onBack = { navController.popBackStack() })
@@ -263,6 +339,7 @@ fun GuesthouseNavHost(
                     GuestFormScreen(
                         guestId = guestId,
                         viewModel = vm,
+                        readOnly = !canEdit,
                         onSaved = { navController.popBackStack() },
                         onBack = { navController.popBackStack() }
                     )

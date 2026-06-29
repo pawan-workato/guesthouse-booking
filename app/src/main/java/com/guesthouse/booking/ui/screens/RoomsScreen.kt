@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,8 +25,11 @@ import java.util.Locale
 fun PropertyRoomsScreen(
     propertyId: Long,
     viewModel: RoomsViewModel,
+    canManageRooms: Boolean,
     onBack: () -> Unit,
-    onRoomClick: (Long) -> Unit
+    onRoomClick: (Long) -> Unit,
+    onAddRoom: () -> Unit,
+    onEditRoom: (Long) -> Unit
 ) {
     val property by viewModel.property(propertyId).collectAsState()
     val rooms by viewModel.roomsForProperty(propertyId).collectAsState()
@@ -40,6 +45,13 @@ fun PropertyRoomsScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            if (canManageRooms) {
+                FloatingActionButton(onClick = onAddRoom) {
+                    Icon(Icons.Default.Add, contentDescription = "Add room")
+                }
+            }
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
@@ -54,7 +66,12 @@ fun PropertyRoomsScreen(
             }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(rooms, key = { it.id }) { room ->
-                    RoomCard(room) { onRoomClick(room.id) }
+                    RoomCard(
+                        room = room,
+                        canEdit = canManageRooms,
+                        onClick = { onRoomClick(room.id) },
+                        onEdit = { onEditRoom(room.id) }
+                    )
                 }
             }
         }
@@ -62,19 +79,34 @@ fun PropertyRoomsScreen(
 }
 
 @Composable
-private fun RoomCard(room: RoomEntity, onClick: () -> Unit) {
+private fun RoomCard(
+    room: RoomEntity,
+    canEdit: Boolean,
+    onClick: () -> Unit,
+    onEdit: () -> Unit
+) {
     val roomType = RoomType.fromStored(room.roomType)
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick), elevation = CardDefaults.cardElevation(2.dp)) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(room.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                AssistChip(onClick = {}, label = { Text(roomType.displayLabel()) }, enabled = false)
+        Row(
+            Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(room.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    AssistChip(onClick = {}, label = { Text(roomType.displayLabel()) }, enabled = false)
+                }
+                Text(room.description, Modifier.padding(vertical = 8.dp))
+                Text(
+                    "$${String.format(Locale.US, "%.0f", room.pricePerNight)}/night · ${room.capacity} guests",
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
-            Text(room.description, Modifier.padding(vertical = 8.dp))
-            Text(
-                "$${String.format(Locale.US, "%.0f", room.pricePerNight)}/night · ${room.capacity} guests",
-                color = MaterialTheme.colorScheme.primary
-            )
+            if (canEdit) {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit room")
+                }
+            }
         }
     }
 }
