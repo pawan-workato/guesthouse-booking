@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.guesthouse.booking.testutil.UiTestEnvironment
@@ -87,6 +88,6 @@ class GuestFormScreenUiTest {
         }
         composeTestRule.onNodeWithText("All properties").assertIsDisplayed()
         composeTestRule.onNodeWithText("Hill View Guesthouse").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Coastal Lodge").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Coastal Lodge").performScrollTo().assertIsDisplayed()
     }
 }
