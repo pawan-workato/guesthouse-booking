@@ -8,6 +8,7 @@ import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.firebase.FirebaseInitializer
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.firebase.FirestoreSyncService
+import com.guesthouse.booking.data.firebase.PullRemoteDataResult
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.StaffRole
 import com.guesthouse.booking.data.remote.GuesthouseApi
@@ -78,7 +79,17 @@ class AuthRepository(
             return
         }
         _session.value = session
-        runCatching { syncService.pullRemoteData(session) }
+        pullRemoteDataWithRetry(session)
+    }
+
+    private suspend fun pullRemoteDataWithRetry(session: StaffSession): PullRemoteDataResult {
+        val first = runCatching { syncService.pullRemoteData(session) }
+        if (first.isSuccess && (first.getOrNull()?.hasData == true || first.getOrNull()?.errors.isNullOrEmpty())) {
+            return first.getOrThrow()
+        }
+        return runCatching { syncService.pullRemoteData(session) }.getOrElse { error ->
+            first.getOrNull() ?: PullRemoteDataResult(errors = listOf(error.message ?: "Sync failed"))
+        }
     }
 
     suspend fun login(email: String, password: String): Result<StaffSession> {
@@ -140,7 +151,7 @@ class AuthRepository(
                 ?: throw IllegalArgumentException("No staff profile linked to this account")
             persistSession(session.staffId, uid)
             _session.value = session
-            syncService.pullRemoteData(session)
+            pullRemoteDataWithRetry(session)
             session
         }.fold(onSuccess = { Result.success(it) }, onFailure = { Result.failure(mapFirebaseError(it)) })
     }

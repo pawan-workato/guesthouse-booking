@@ -63,11 +63,24 @@ class SyncViewModel(
             _uiState.value = when {
                 result.noNetwork -> SyncUiState(error = "No network connection")
                 result.notAuthenticated -> SyncUiState(error = "Sign in to sync with Firebase")
-                result.syncedCount == 0 && result.conflictCount == 0 ->
-                    SyncUiState(message = "Nothing to sync")
-                else -> SyncUiState(
+                result.pullErrors.isNotEmpty() && result.propertiesPulled == 0 && result.guestsPulled == 0 ->
+                    SyncUiState(error = "Download failed: ${result.pullErrors.first()}")
+                result.propertiesPulled > 0 || result.guestsPulled > 0 -> {
+                    val pullSummary = buildList {
+                        if (result.propertiesPulled > 0) add("${result.propertiesPulled} properties")
+                        if (result.guestsPulled > 0) add("${result.guestsPulled} guests")
+                    }.joinToString(", ")
+                    val uploadSummary = when {
+                        result.syncedCount > 0 || result.conflictCount > 0 ->
+                            "; uploaded ${result.syncedCount}, conflicts ${result.conflictCount}"
+                        else -> ""
+                    }
+                    SyncUiState(message = "Downloaded $pullSummary$uploadSummary")
+                }
+                result.syncedCount > 0 || result.conflictCount > 0 -> SyncUiState(
                     message = "Synced ${result.syncedCount}, conflicts ${result.conflictCount}"
                 )
+                else -> SyncUiState(message = "Up to date")
             }
         }
     }

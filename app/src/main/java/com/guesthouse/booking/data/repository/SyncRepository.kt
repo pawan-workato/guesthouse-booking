@@ -30,6 +30,9 @@ import java.util.concurrent.TimeUnit
 data class SyncResult(
     val syncedCount: Int = 0,
     val conflictCount: Int = 0,
+    val propertiesPulled: Int = 0,
+    val guestsPulled: Int = 0,
+    val pullErrors: List<String> = emptyList(),
     val noNetwork: Boolean = false,
     val notAuthenticated: Boolean = false
 )
@@ -127,13 +130,19 @@ class SyncRepository(
                     }
             }
         }
-        runCatching { syncService.pullRemoteData(session) }
-        if (hadActivity || syncedCount > 0) {
+        val pullResult = syncService.pullRemoteData(session)
+        if (hadActivity || syncedCount > 0 || pullResult.hasData) {
             val now = System.currentTimeMillis()
             prefs.edit().putLong(KEY_LAST_SYNC, now).apply()
             _lastSyncEpochMs.value = now
         }
-        return SyncResult(syncedCount = syncedCount, conflictCount = conflictCount)
+        return SyncResult(
+            syncedCount = syncedCount,
+            conflictCount = conflictCount,
+            propertiesPulled = pullResult.propertiesCount,
+            guestsPulled = pullResult.guestsCount,
+            pullErrors = pullResult.errors
+        )
     }
 
     private suspend fun syncLocalOnly(): SyncResult {
