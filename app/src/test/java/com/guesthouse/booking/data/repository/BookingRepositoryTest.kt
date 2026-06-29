@@ -3,10 +3,8 @@ package com.guesthouse.booking.data.repository
 import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
-import com.guesthouse.booking.data.local.BlockDateDao
 import com.guesthouse.booking.data.local.BookingDao
 import com.guesthouse.booking.data.local.RoomDao
-import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.RoomEntity
@@ -28,7 +26,6 @@ class BookingRepositoryTest {
 
     private val database = mockk<AppDatabase>()
     private val bookingDao = mockk<BookingDao>(relaxed = true)
-    private val blockDateDao = mockk<BlockDateDao>(relaxed = true)
     private val roomDao = mockk<RoomDao>()
     private val authRepository = mockk<AuthRepository>()
     private val networkMonitor = mockk<NetworkMonitor>()
@@ -49,7 +46,6 @@ class BookingRepositoryTest {
     @Before
     fun setUp() {
         every { database.bookingDao() } returns bookingDao
-        every { database.blockDateDao() } returns blockDateDao
         every { database.roomDao() } returns roomDao
         every { networkMonitor.isCurrentlyOnline() } returns false
         every { firestore.isSignedIn } returns false
@@ -125,7 +121,6 @@ class BookingRepositoryTest {
     fun createBooking_succeedsWhenRoomIsAvailable() = runTest {
         coEvery { roomDao.getById(10L) } returns room
         coEvery { bookingDao.findOverlapping(10L, 100L, 105L) } returns emptyList()
-        coEvery { blockDateDao.findOverlapping(10L, 100L, 105L) } returns emptyList()
         coEvery { bookingDao.insert(any()) } returns 42L
 
         val result = repository.createBooking(
@@ -354,4 +349,30 @@ class BookingRepositoryTest {
         }
     }
 
+    fun checkInBooking_rejectsWhenNotConfirmed() = runTest {
+        val booking = BookingEntity(id = 5L, propertyId = 1L, roomId = 10L, guestName = "Jane Doe", guestEmail = "", checkInEpochDay = 100L, checkOutEpochDay = 105L, status = BookingStatus.CHECKED_IN.name)
+        every { authRepository.currentSession() } returns StaffSession(staffId = 2L, email = "m@x.com", displayName = "M", role = StaffRole.PROPERTY_MANAGER, assignedPropertyIds = setOf(1L))
+        coEvery { bookingDao.getById(5L) } returns booking
+        val result = repository.checkInBooking(5L, 100L)
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { bookingDao.updateStatus(any(), BookingStatus.CHECKED_IN.name) }
+    }
+
+    @Test
+    fun checkInBooking_updatesStatusWhenValid() = runTest {
+        val booking = BookingEntity(id = 5L, propertyId = 1L, roomId = 10L, guestName = "Jane Doe", guestEmail = "", checkInEpochDay = 100L, checkOutEpochDay = 105L, status = BookingStatus.CONFIRMED.name)
+        every { authRepository.currentSession() } returns StaffSession(staffId = 2L, email = "m@x.com", displayName = "M", role = StaffRole.PROPERTY_MANAGER, assignedPropertyIds = setOf(1L))
+        coEvery { bookingDao.getById(5L) } returns booking
+        assertTrue(repository.checkInBooking(5L, 100L).isSuccess)
+        coVerify { bookingDao.updateStatus(5L, BookingStatus.CHECKED_IN.name) }
+    }
+
+    @Test
+    fun checkOutBooking_updatesStatusWhenCheckedIn() = runTest {
+        val booking = BookingEntity(id = 5L, propertyId = 1L, roomId = 10L, guestName = "Jane Doe", guestEmail = "", checkInEpochDay = 98L, checkOutEpochDay = 100L, status = BookingStatus.CHECKED_IN.name)
+        every { authRepository.currentSession() } returns StaffSession(staffId = 2L, email = "m@x.com", displayName = "M", role = StaffRole.PROPERTY_MANAGER, assignedPropertyIds = setOf(1L))
+        coEvery { bookingDao.getById(5L) } returns booking
+        assertTrue(repository.checkOutBooking(5L, 100L).isSuccess)
+        coVerify { bookingDao.updateStatus(5L, BookingStatus.CHECKED_OUT.name) }
+    }
 }

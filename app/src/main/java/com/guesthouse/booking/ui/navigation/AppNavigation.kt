@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +38,7 @@ import com.guesthouse.booking.ui.screens.PropertyRoomsScreen
 import com.guesthouse.booking.ui.screens.RoomDetailScreen
 import com.guesthouse.booking.ui.screens.StaffFormScreen
 import com.guesthouse.booking.ui.screens.StaffScreen
+import com.guesthouse.booking.ui.screens.TodayScreen
 import com.guesthouse.booking.viewmodel.AdminViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import com.guesthouse.booking.viewmodel.GuestsViewModel
@@ -44,10 +46,12 @@ import com.guesthouse.booking.viewmodel.PropertiesViewModel
 import com.guesthouse.booking.viewmodel.RoomsViewModel
 import com.guesthouse.booking.viewmodel.StaffViewModel
 import com.guesthouse.booking.viewmodel.SyncViewModel
+import com.guesthouse.booking.viewmodel.TodayViewModel
 
 sealed class Screen(val route: String, val label: String) {
     data object Properties : Screen("properties", "Properties")
     data object Book : Screen("book", "Book")
+    data object Today : Screen("today", "Today")
     data object BookingEdit : Screen("booking/{bookingId}/edit", "Edit booking") {
         fun createRoute(bookingId: Long) = "booking/$bookingId/edit"
     }
@@ -94,6 +98,7 @@ fun GuesthouseNavHost(
         add(Screen.Guests)
         if (isChainAdmin) add(Screen.Staff)
         add(Screen.Book)
+        add(Screen.Today)
         add(Screen.Admin)
     }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -153,6 +158,7 @@ fun GuesthouseNavHost(
                                         Screen.Guests -> Icons.Default.Person
                                         Screen.Staff -> Icons.Default.Group
                                         Screen.Book -> Icons.Default.CalendarMonth
+                                        Screen.Today -> Icons.Default.Today
                                         else -> Icons.Default.AdminPanelSettings
                                     },
                                     contentDescription = screen.label
@@ -265,6 +271,10 @@ fun GuesthouseNavHost(
             composable(Screen.Book.route) {
                 val vm: BookingViewModel = viewModel(factory = viewModelFactory)
                 BookingFormScreen(viewModel = vm)
+            }
+            composable(Screen.Today.route) {
+                val vm: TodayViewModel = viewModel(factory = viewModelFactory)
+                TodayScreen(viewModel = vm)
             }
             composable(Screen.Admin.route) {
                 val vm: AdminViewModel = viewModel(factory = viewModelFactory)

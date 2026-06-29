@@ -38,21 +38,22 @@ interface BookingDao {
     @Query(
         """
         SELECT * FROM bookings
-        WHERE roomId = :roomId AND status = :status
+        WHERE roomId = :roomId
+        AND status IN ('CONFIRMED', 'CHECKED_IN')
         AND syncStatus != :conflictStatus
         ORDER BY checkInEpochDay ASC
         """
     )
     fun observeActiveForRoom(
         roomId: Long,
-        status: String = BookingStatus.CONFIRMED.name,
         conflictStatus: String = SyncStatus.CONFLICT.name
     ): Flow<List<BookingEntity>>
 
     @Query(
         """
         SELECT * FROM bookings
-        WHERE roomId = :roomId AND status = :status
+        WHERE roomId = :roomId
+        AND status IN ('CONFIRMED', 'CHECKED_IN')
         AND syncStatus != :conflictStatus
         AND (:excludeId = 0 OR id != :excludeId)
         AND checkInEpochDay < :checkOut AND checkOutEpochDay > :checkIn
@@ -62,7 +63,6 @@ interface BookingDao {
         roomId: Long,
         checkIn: Long,
         checkOut: Long,
-        status: String = BookingStatus.CONFIRMED.name,
         conflictStatus: String = SyncStatus.CONFLICT.name,
         excludeId: Long = 0L
     ): List<BookingEntity>
