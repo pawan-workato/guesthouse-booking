@@ -37,6 +37,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.4")
     implementation("ch.qos.logback:logback-classic:1.5.16")
     implementation("com.auth0:java-jwt:4.4.0")
+    implementation("at.favre.lib:bcrypt:0.10.2")
 }
 
 tasks.withType<Test> {
