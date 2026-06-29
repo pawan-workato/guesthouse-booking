@@ -42,6 +42,8 @@ class ViewModelFactory(
                 BookingDetailViewModel(repository, authRepository, networkMonitor) as T
             modelClass.isAssignableFrom(StaffViewModel::class.java) ->
                 StaffViewModel(staffRepository, propertyRepository, authRepository) as T
+            modelClass.isAssignableFrom(ReportsViewModel::class.java) ->
+                ReportsViewModel(propertyRepository, OccupancyRepository(database), authRepository) as T
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
         }
     }

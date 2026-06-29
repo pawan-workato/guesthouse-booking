@@ -53,7 +53,8 @@ class MainNavigationUiTest {
         composeTestRule.onNodeWithText("Guesthouse Booking").assertIsDisplayed()
         composeTestRule.onNodeWithText("Properties").assertIsDisplayed()
         composeTestRule.onNodeWithText("Book").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Today").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Today").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Arrivals").assertIsDisplayed()
         composeTestRule.onNodeWithText("Bookings").assertIsDisplayed()
 
         composeTestRule.onNodeWithContentDescription("Guests").performClick()

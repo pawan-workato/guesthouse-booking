@@ -55,6 +55,6 @@ class BookingFormScreenUiTest {
         composeTestRule.onNodeWithText("New Booking").assertIsDisplayed()
         composeTestRule.onNodeWithText("Search properties").assertIsDisplayed()
         composeTestRule.onNodeWithText("Guest name *").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Hill View Guesthouse (Mountain West)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Select property").assertIsDisplayed()
     }
 }

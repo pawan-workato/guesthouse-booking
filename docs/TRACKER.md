@@ -125,6 +125,7 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-GLASS | Product | Apple Liquid Glass UI theme | ✅ Done | Medium | `Glass.kt` — gradient mesh, frosted cards, glass nav/scaffold on all screens | Working tree |
 | FEAT-BLOCK-SYNC | Product | Firestore sync for block dates | ✅ Done | Medium | `block_dates` collection; push/pull in SyncRepository; MIGRATION_10_11 | Working tree |
 | FEAT-GUEST-HISTORY | Product | Guest stay history on guest detail (property-scoped for managers) | ✅ Done | Medium | `GuestRepository.observeGuestStayHistory`; `GuestFormScreen` stay section | Working tree |
+| FEAT-REPORTS | Product | Chain admin occupancy report screen | ✅ Done | Medium | Date stepping; per-property stats; entry from Properties | Working tree |
 | FEAT-S8-OCC | Product | Occupancy dashboard | ✅ Done | Medium | Inline stats on Properties cards + optional chain banner | `4d6c1ea` |
 | FEAT-S8-DETAIL | Product | Booking detail screen | ✅ Done | Medium | Bookings/Today → detail | Working tree |
 | FEAT-S8-DUP | Product | Duplicate guest detection | ✅ Done | Medium | Similar guest warning | Working tree |

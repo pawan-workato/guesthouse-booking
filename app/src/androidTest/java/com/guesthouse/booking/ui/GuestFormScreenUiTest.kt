@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.guesthouse.booking.testutil.UiTestEnvironment
 import com.guesthouse.booking.testutil.UiTestSessions
@@ -43,8 +44,6 @@ class GuestFormScreenUiTest {
     @Test
     fun guestDetail_showsProfileAndStayHistoryForManager() {
         val viewModel = GuestsViewModel(env.guestRepository, env.authRepository)
-        viewModel.loadGuestForEdit(guestId)
-        composeTestRule.waitForIdle()
 
         composeTestRule.setGuesthouseContent {
             GuestFormScreen(
@@ -56,6 +55,9 @@ class GuestFormScreenUiTest {
             )
         }
 
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+            composeTestRule.onAllNodesWithText("Edit guest").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText("Edit guest").assertIsDisplayed()
         composeTestRule.onNodeWithText("Stay history").assertIsDisplayed()
         assert(composeTestRule.onAllNodesWithText("Remove guest").fetchSemanticsNodes().isEmpty())
@@ -68,8 +70,6 @@ class GuestFormScreenUiTest {
     fun guestDetail_chainAdminSeesAllPropertyStays() {
         env.setSession(UiTestSessions.admin)
         val viewModel = GuestsViewModel(env.guestRepository, env.authRepository)
-        viewModel.loadGuestForEdit(guestId)
-        composeTestRule.waitForIdle()
 
         composeTestRule.setGuesthouseContent {
             GuestFormScreen(
@@ -81,6 +81,9 @@ class GuestFormScreenUiTest {
             )
         }
 
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+            composeTestRule.onAllNodesWithText("All properties").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText("All properties").assertIsDisplayed()
         composeTestRule.onNodeWithText("Hill View Guesthouse").assertIsDisplayed()
         composeTestRule.onNodeWithText("Coastal Lodge").assertIsDisplayed()

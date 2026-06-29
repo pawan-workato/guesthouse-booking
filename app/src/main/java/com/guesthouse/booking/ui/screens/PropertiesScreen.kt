@@ -29,7 +29,8 @@ fun PropertiesScreen(
     isChainAdmin: Boolean,
     onPropertyClick: (Long) -> Unit,
     onAddProperty: () -> Unit,
-    onEditProperty: (Long) -> Unit
+    onEditProperty: (Long) -> Unit,
+    onOpenReports: (() -> Unit)? = null
 ) {
     val properties by viewModel.properties.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -59,6 +60,13 @@ fun PropertiesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
+            }
+            if (onOpenReports != null) {
+                item(key = "open_reports") {
+                    TextButton(onClick = onOpenReports, modifier = Modifier.fillMaxWidth()) {
+                        Text("Occupancy report")
+                    }
+                }
             }
             if (isChainAdmin) {
                 item(key = "show_inactive") {

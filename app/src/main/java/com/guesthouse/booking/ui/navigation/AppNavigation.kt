@@ -42,6 +42,7 @@ import com.guesthouse.booking.ui.screens.BookingFormScreen
 import com.guesthouse.booking.ui.screens.GuestFormScreen
 import com.guesthouse.booking.ui.screens.GuestsScreen
 import com.guesthouse.booking.ui.screens.PropertiesScreen
+import com.guesthouse.booking.ui.screens.ReportsScreen
 import com.guesthouse.booking.ui.screens.PropertyFormScreen
 import com.guesthouse.booking.ui.screens.PropertyRoomsScreen
 import com.guesthouse.booking.ui.screens.RoomDetailScreen
@@ -55,6 +56,7 @@ import com.guesthouse.booking.viewmodel.BookingDetailViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import com.guesthouse.booking.viewmodel.GuestsViewModel
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
+import com.guesthouse.booking.viewmodel.ReportsViewModel
 import com.guesthouse.booking.viewmodel.RoomsViewModel
 import com.guesthouse.booking.viewmodel.StaffViewModel
 import com.guesthouse.booking.viewmodel.SyncViewModel
@@ -89,6 +91,7 @@ sealed class Screen(val route: String, val label: String) {
     }
     data object Guests : Screen("guests", "Guests")
     data object Sync : Screen("sync", "Sync status")
+    data object Reports : Screen("reports", "Occupancy report")
     data object GuestAdd : Screen("guest/add", "Add guest")
     data object GuestEdit : Screen("guest/{guestId}/edit", "Edit guest") {
         fun createRoute(guestId: Long) = "guest/$guestId/edit"
@@ -251,7 +254,10 @@ fun GuesthouseNavHost(
                     isChainAdmin = isChainAdmin,
                     onPropertyClick = { navController.navigate(Screen.PropertyRooms.createRoute(it)) },
                     onAddProperty = { navController.navigate(Screen.PropertyAdd.route) },
-                    onEditProperty = { navController.navigate(Screen.PropertyEdit.createRoute(it)) }
+                    onEditProperty = { navController.navigate(Screen.PropertyEdit.createRoute(it)) },
+                    onOpenReports = if (isChainAdmin) {
+                        { navController.navigate(Screen.Reports.route) }
+                    } else null
                 )
             }
             composable(Screen.PropertyRooms.route) { entry ->
@@ -332,6 +338,17 @@ fun GuesthouseNavHost(
                 }
             }
 
+            composable(Screen.Reports.route) {
+                if (!isChainAdmin) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    val reportsVm: ReportsViewModel = viewModel(factory = viewModelFactory)
+                    ReportsScreen(
+                        viewModel = reportsVm,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
             composable(Screen.Sync.route) {
                 SyncStatusScreen(
                     viewModel = syncVm,
