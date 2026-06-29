@@ -253,7 +253,14 @@ fun GuesthouseNavHost(
                             },
                             label = { Text(screen.label) },
                             selected = screen.route in selectedRoutes,
-                            onClick = { navController.navigateToMainTab(screen.route) }
+                            onClick = { navController.navigateToMainTab(screen.route) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                            )
                         )
                     }
                 }

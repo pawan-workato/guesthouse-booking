@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.ui.theme.GlassCard
+import com.guesthouse.booking.ui.theme.glassOutlinedTextFieldColors
 import com.guesthouse.booking.viewmodel.LoginViewModel
 
 @Composable
@@ -36,7 +37,8 @@ fun LoginScreen(viewModel: LoginViewModel) {
                 Text(
                     "Guesthouse Booking",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     "Staff sign in",
@@ -52,7 +54,8 @@ fun LoginScreen(viewModel: LoginViewModel) {
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    colors = glassOutlinedTextFieldColors()
                 )
                 OutlinedTextField(
                     value = password,
@@ -62,7 +65,8 @@ fun LoginScreen(viewModel: LoginViewModel) {
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    colors = glassOutlinedTextFieldColors()
                 )
 
                 uiState.errorMessage?.let {

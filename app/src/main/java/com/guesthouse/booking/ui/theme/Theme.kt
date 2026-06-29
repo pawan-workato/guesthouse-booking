@@ -36,12 +36,13 @@ private val DarkColors = darkColorScheme(
     secondary = Color(0xFF90A4AE),
     tertiary = Color(0xFF4FC3F7),
     background = GlassDarkBase,
-    onBackground = Color(0xFFECEFF1),
-    surface = Color(0x14FFFFFF),
-    onSurface = Color(0xFFECEFF1),
-    surfaceVariant = Color(0x1FFFFFFF),
-    onSurfaceVariant = Color(0xFFB0BEC5),
-    outline = Color(0xFF455A64),
+    onBackground = Color(0xFFF5F7FA),
+    surface = Color(0x22FFFFFF),
+    onSurface = Color(0xFFF5F7FA),
+    surfaceVariant = Color(0x2AFFFFFF),
+    onSurfaceVariant = Color(0xFFCFD8DC),
+    outline = Color(0xFF78909C),
+    outlineVariant = Color(0xFF546E7A),
     error = Color(0xFFEF5350)
 )
 

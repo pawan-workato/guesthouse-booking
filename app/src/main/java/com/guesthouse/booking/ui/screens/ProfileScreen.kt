@@ -42,6 +42,7 @@ import com.guesthouse.booking.BuildConfig
 import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.ui.theme.GlassScaffold
 import com.guesthouse.booking.ui.theme.GlassTopAppBar
+import com.guesthouse.booking.ui.theme.glassOutlinedTextFieldColors
 import com.guesthouse.booking.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -106,7 +107,8 @@ fun ProfileScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.medium,
-                        enabled = !uiState.isSaving
+                        enabled = !uiState.isSaving,
+                        colors = glassOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = current.email,
@@ -116,7 +118,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.medium,
                         readOnly = true,
-                        enabled = false
+                        colors = glassOutlinedTextFieldColors()
                     )
                     Text(
                         "Email changes require your chain admin.",

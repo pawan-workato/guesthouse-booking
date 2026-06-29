@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -115,7 +116,7 @@ fun GlassScaffold(
 @Composable
 fun glassSurfaceColor(): Color {
     val dark = isSystemInDarkTheme()
-    return if (dark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.55f)
+    return if (dark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.55f)
 }
 
 @Composable
@@ -129,6 +130,21 @@ fun glassBorderColor(): Color {
 fun glassTopAppBarColors() = TopAppBarDefaults.topAppBarColors(
     containerColor = glassSurfaceColor(),
     scrolledContainerColor = glassSurfaceColor().copy(alpha = if (isSystemInDarkTheme()) 0.14f else 0.72f)
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun glassOutlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+    disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    cursorColor = MaterialTheme.colorScheme.primary,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant
 )
 
 @Composable
