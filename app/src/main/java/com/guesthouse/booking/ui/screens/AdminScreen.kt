@@ -17,7 +17,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun AdminScreen(
     viewModel: AdminViewModel,
-    onDismissConflict: (Long) -> Unit = {}
+    onDismissConflict: (Long) -> Unit = {},
+    onEditBooking: (Long) -> Unit = {}
 ) {
     val bookings by viewModel.bookingsWithDetails.collectAsState()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
@@ -64,8 +65,13 @@ fun AdminScreen(
                                     Text("Cancel this booking")
                                 }
                             } else if (b.status == BookingStatus.CONFIRMED.name) {
-                                TextButton(onClick = { viewModel.cancelBooking(b.id) }) {
-                                    Text("Cancel booking")
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TextButton(onClick = { onEditBooking(b.id) }) {
+                                        Text("Edit booking")
+                                    }
+                                    TextButton(onClick = { viewModel.cancelBooking(b.id) }) {
+                                        Text("Cancel booking")
+                                    }
                                 }
                             }
                         }

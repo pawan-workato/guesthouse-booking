@@ -3,8 +3,11 @@ package com.guesthouse.booking.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -16,51 +19,91 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BookingFormScreen(viewModel: BookingViewModel) {
+fun BookingFormScreen(
+    viewModel: BookingViewModel,
+    bookingId: Long? = null,
+    onSaved: (() -> Unit)? = null,
+    onBack: (() -> Unit)? = null
+) {
     val properties by viewModel.properties.collectAsState()
     val selectedPropertyId by viewModel.selectedPropertyId.collectAsState()
     val rooms by viewModel.roomsForSelectedProperty.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val activeGuests by viewModel.activeGuests.collectAsState()
+    val editBooking by viewModel.editBooking.collectAsState()
+    val isEdit = bookingId != null
 
-    var selectedRoomId by remember { mutableLongStateOf(0L) }
-    var selectedGuestId by remember { mutableStateOf<Long?>(null) }
-    var guestName by remember { mutableStateOf("") }
-    var guestEmail by remember { mutableStateOf("") }
-    var guestPhone by remember { mutableStateOf("") }
-    var checkIn by remember { mutableStateOf<Long?>(null) }
-    var checkOut by remember { mutableStateOf<Long?>(null) }
+    var selectedRoomId by remember(bookingId) { mutableLongStateOf(0L) }
+    var selectedGuestId by remember(bookingId) { mutableStateOf<Long?>(null) }
+    var guestName by remember(bookingId) { mutableStateOf("") }
+    var guestEmail by remember(bookingId) { mutableStateOf("") }
+    var guestPhone by remember(bookingId) { mutableStateOf("") }
+    var checkIn by remember(bookingId) { mutableStateOf<Long?>(null) }
+    var checkOut by remember(bookingId) { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(bookingId) {
+        viewModel.clearMessages()
+        if (bookingId != null) viewModel.loadBookingForEdit(bookingId)
+        else viewModel.clearEditBooking()
+    }
+
+    LaunchedEffect(editBooking) {
+        editBooking?.let { booking ->
+            selectedRoomId = booking.roomId
+            selectedGuestId = booking.guestId
+            guestName = booking.guestName
+            guestEmail = booking.guestEmail
+            guestPhone = booking.guestPhone
+            checkIn = booking.checkInEpochDay
+            checkOut = booking.checkOutEpochDay
+        }
+    }
+
+    LaunchedEffect(uiState.successMessage) {
+        if (isEdit && uiState.successMessage != null) {
+            viewModel.clearEditBooking()
+            onSaved?.invoke()
+        }
+    }
 
     LaunchedEffect(properties, selectedPropertyId) {
-        if (selectedPropertyId == null && properties.isNotEmpty()) {
+        if (!isEdit && selectedPropertyId == null && properties.isNotEmpty()) {
             viewModel.selectProperty(properties.first().id)
         }
     }
 
     LaunchedEffect(Unit) {
-        viewModel.consumePreselectedRoom()?.let { selectedRoomId = it }
+        if (!isEdit) viewModel.consumePreselectedRoom()?.let { selectedRoomId = it }
     }
 
-    LaunchedEffect(selectedPropertyId, rooms) {
+    LaunchedEffect(selectedPropertyId, rooms, isEdit, editBooking) {
+        if (isEdit && editBooking != null) return@LaunchedEffect
         if (selectedRoomId == 0L || rooms.none { it.id == selectedRoomId }) {
             selectedRoomId = rooms.firstOrNull()?.id ?: 0L
-            checkIn = null
-            checkOut = null
+            if (!isEdit) {
+                checkIn = null
+                checkOut = null
+            }
         }
     }
 
     val bookings by viewModel.observeRoomBookings(selectedRoomId).collectAsState()
-    val bookedDays = bookedDaysFromRanges(bookings.map { it.checkInEpochDay to it.checkOutEpochDay })
+    val bookedDays = bookedDaysFromRanges(
+        bookings
+            .filter { !isEdit || it.id != bookingId }
+            .map { it.checkInEpochDay to it.checkOutEpochDay }
+    )
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Text("New Booking", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text(
-            "Staff booking — enter guest details on their behalf",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+    if (isEdit && editBooking == null && !uiState.isSubmitting && uiState.errorMessage == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val formContent: @Composable ColumnScope.() -> Unit = {
         if (!isOnline) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -209,7 +252,9 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
 
         uiState.successMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp))
+            if (!isEdit) {
+                Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp))
+            }
         }
         uiState.errorMessage?.let {
             Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
@@ -219,16 +264,63 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
             onClick = {
                 viewModel.clearMessages()
                 if (checkIn != null && checkOut != null && selectedRoomId != 0L) {
-                    viewModel.submitBooking(
-                        selectedRoomId, selectedGuestId, guestName, guestEmail, guestPhone, checkIn!!, checkOut!!
-                    )
+                    if (isEdit && bookingId != null) {
+                        viewModel.updateBooking(
+                            bookingId, selectedRoomId, selectedGuestId, guestName, guestEmail, guestPhone,
+                            checkIn!!, checkOut!!
+                        )
+                    } else {
+                        viewModel.submitBooking(
+                            selectedRoomId, selectedGuestId, guestName, guestEmail, guestPhone, checkIn!!, checkOut!!
+                        )
+                    }
                 }
             },
             enabled = !uiState.isSubmitting && selectedRoomId != 0L &&
                 checkIn != null && checkOut != null && guestName.isNotBlank(),
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
         ) {
-            Text(if (uiState.isSubmitting) "Saving..." else "Confirm booking")
+            Text(
+                when {
+                    uiState.isSubmitting -> "Saving..."
+                    isEdit -> "Save changes"
+                    else -> "Confirm booking"
+                }
+            )
+        }
+    }
+
+    if (isEdit) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Edit booking") },
+                    navigationIcon = {
+                        IconButton(onClick = { onBack?.invoke() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                content = formContent
+            )
+        }
+    } else {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+            Text("New Booking", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(
+                "Staff booking — enter guest details on their behalf",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            formContent()
         }
     }
 }

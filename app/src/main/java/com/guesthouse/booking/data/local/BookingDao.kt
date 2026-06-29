@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.SyncStatus
@@ -77,6 +78,9 @@ interface BookingDao {
 
     @Insert
     suspend fun insert(booking: BookingEntity): Long
+
+    @Update
+    suspend fun update(booking: BookingEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(bookings: List<BookingEntity>)

@@ -59,6 +59,8 @@ class BookingViewModel(
 
     private val _uiState = MutableStateFlow(BookingUiState())
     val uiState: StateFlow<BookingUiState> = _uiState.asStateFlow()
+    private val _editBooking = MutableStateFlow<BookingEntity?>(null)
+    val editBooking: StateFlow<BookingEntity?> = _editBooking.asStateFlow()
     private val _preselectedRoomId = MutableStateFlow<Long?>(null)
 
     fun selectProperty(propertyId: Long) { _selectedPropertyId.value = propertyId }
@@ -120,6 +122,61 @@ class BookingViewModel(
                     }
                 },
                 onFailure = { BookingUiState(errorMessage = it.message ?: "Booking failed") }
+            )
+        }
+    }
+
+    fun loadBookingForEdit(bookingId: Long) {
+        viewModelScope.launch {
+            val booking = repository.getBookingById(bookingId)
+            if (booking != null && canAccessProperty(booking.propertyId)) {
+                _editBooking.value = booking
+                _selectedPropertyId.value = booking.propertyId
+            } else {
+                _editBooking.value = null
+                _uiState.value = BookingUiState(errorMessage = "Booking not found or access denied")
+            }
+        }
+    }
+
+    fun clearEditBooking() { _editBooking.value = null }
+
+    fun updateBooking(
+        bookingId: Long,
+        roomId: Long,
+        guestId: Long?,
+        guestName: String,
+        guestEmail: String,
+        guestPhone: String,
+        checkInEpochDay: Long,
+        checkOutEpochDay: Long
+    ) {
+        viewModelScope.launch {
+            _uiState.value = BookingUiState(isSubmitting = true)
+            val room = repository.getRoomById(roomId)
+            if (room == null) {
+                _uiState.value = BookingUiState(errorMessage = "Room not found")
+                return@launch
+            }
+            if (!canAccessProperty(room.propertyId)) {
+                _uiState.value = BookingUiState(errorMessage = "You don't have access to this property")
+                return@launch
+            }
+            val online = networkMonitor.isCurrentlyOnline()
+            val result = repository.updateBooking(
+                bookingId, roomId, guestId, guestName, guestEmail, guestPhone,
+                checkInEpochDay, checkOutEpochDay, online
+            )
+            _uiState.value = result.fold(
+                onSuccess = {
+                    if (online) {
+                        BookingUiState(successMessage = "Booking updated")
+                    } else {
+                        syncRepository.enqueueSyncWorker()
+                        BookingUiState(successMessage = "Saved offline — will sync when online")
+                    }
+                },
+                onFailure = { BookingUiState(errorMessage = it.message ?: "Update failed") }
             )
         }
     }
