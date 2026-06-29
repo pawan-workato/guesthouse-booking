@@ -121,6 +121,8 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-DOCS | Product | README & wiki docs refresh | ✅ Done | Low | README Firebase-first; wiki offline/migrations updated | Working tree |
 | FEAT-WIKI | Product | Property wiki **Type** column | ✅ Done | Low | All 7 region property pages include Type column | Working tree |
 | FEAT-GLASS | Product | Apple Liquid Glass UI theme | ✅ Done | Medium | `Glass.kt` — gradient mesh, frosted cards, glass nav/scaffold on all screens | Working tree |
+| FEAT-BLOCK-SYNC | Product | Firestore sync for block dates | ✅ Done | Medium | `block_dates` collection; push/pull in SyncRepository; MIGRATION_10_11 | Working tree |
+| FEAT-GUEST-HISTORY | Product | Guest stay history on guest detail (property-scoped for managers) | ✅ Done | Medium | `GuestRepository.observeGuestStayHistory`; `GuestFormScreen` stay section | Working tree |
 | FEAT-S8+ | Product | Sprint 8+ roadmap (TBD) | ⏳ Pending | — | Not defined in README yet | — |
 
 ---

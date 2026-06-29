@@ -25,6 +25,7 @@ fun AdminScreen(
     onEditBooking: (Long) -> Unit = {}
 ) {
     val bookings by viewModel.bookingsWithDetails.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val showCancelled by viewModel.showCancelled.collectAsStateWithLifecycle()
     val actionMessage by viewModel.actionMessage.collectAsStateWithLifecycle()
     val actionError by viewModel.actionError.collectAsStateWithLifecycle()
@@ -45,12 +46,19 @@ fun AdminScreen(
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Row(
-            Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            Modifier.fillMaxWidth().padding(bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Show cancelled", modifier = Modifier.weight(1f))
             Switch(checked = showCancelled, onCheckedChange = viewModel::setShowCancelled)
         }
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = viewModel::setSearchQuery,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            placeholder = { Text("Search guest, property, room, ref, or status") },
+            singleLine = true
+        )
         actionMessage?.let {
             Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
         }

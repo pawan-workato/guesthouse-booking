@@ -1,5 +1,6 @@
 package com.guesthouse.booking.data.firebase
 
+import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.GuestEntity
@@ -98,6 +99,22 @@ class FirestoreDataSource(
                 .documents.mapNotNull { it.toBookingEntity() }
         }
 
+    suspend fun fetchBlockDates(): List<BlockDateEntity> =
+        firestore.collection(FirestoreCollections.BLOCK_DATES)
+            .get(Source.SERVER)
+            .await()
+            .documents.mapNotNull { it.toBlockDateEntity() }
+            .filter { !it.markedForDeletion }
+
+    suspend fun fetchBlockDatesForProperties(propertyIds: Collection<Long>): List<BlockDateEntity> =
+        propertyIds.chunked(WHERE_IN_LIMIT).flatMap { chunk ->
+            firestore.collection(FirestoreCollections.BLOCK_DATES)
+                .whereIn(FirestoreFields.PROPERTY_ID, chunk)
+                .get(Source.SERVER)
+                .await()
+                .documents.mapNotNull { it.toBlockDateEntity() }
+        }.filter { !it.markedForDeletion }
+
     suspend fun upsertProperty(property: PropertyEntity) {
         firestore.collection(FirestoreCollections.PROPERTIES)
             .document(property.id.toString())
@@ -124,6 +141,40 @@ class FirestoreDataSource(
             .document(booking.id.toString())
             .set(booking.toFirestoreMap())
             .await()
+    }
+
+    suspend fun upsertBlockDate(blockDate: BlockDateEntity) {
+        firestore.collection(FirestoreCollections.BLOCK_DATES)
+            .document(blockDate.id.toString())
+            .set(blockDate.toFirestoreMap())
+            .await()
+    }
+
+    suspend fun deleteBlockDate(blockDateId: Long) {
+        firestore.collection(FirestoreCollections.BLOCK_DATES)
+            .document(blockDateId.toString())
+            .delete()
+            .await()
+    }
+
+    suspend fun findOverlappingRemoteBlockDates(
+        roomId: Long,
+        startEpochDay: Long,
+        endEpochDay: Long,
+        excludeId: Long = 0L
+    ): List<BlockDateEntity> {
+        val snapshot = firestore.collection(FirestoreCollections.BLOCK_DATES)
+            .whereEqualTo(FirestoreFields.ROOM_ID, roomId)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { it.toBlockDateEntity() }
+            .filter { block ->
+                !block.markedForDeletion &&
+                    block.id != excludeId &&
+                    block.syncStatus != SyncStatus.CONFLICT.name &&
+                    block.startEpochDay < endEpochDay &&
+                    block.endEpochDay > startEpochDay
+            }
     }
 
     suspend fun findOverlappingRemoteBookings(

@@ -84,7 +84,13 @@ class GuesthouseApplication : Application() {
             firestore,
             lazy { syncRepository }
         )
-        blockDateRepository = BlockDateRepository(database, authRepository)
+        blockDateRepository = BlockDateRepository(
+            database,
+            authRepository,
+            networkMonitor,
+            firestore,
+            lazy { syncRepository }
+        )
         propertyRepository = PropertyRepository(database, networkMonitor, firestore)
         guestRepository = GuestRepository(
             database,

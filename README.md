@@ -17,7 +17,7 @@ The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) 
 
 - **Properties** — searchable list; chain admins add, edit, and deactivate properties
 - **Rooms** — per-property inventory with **room type** (Single, Double, Suite, Family), price, and capacity; staff with property access can add and edit rooms
-- **Availability** — calendar shows booked and **blocked** dates; block/unblock from room detail
+- **Availability** — calendar shows booked and **blocked** dates; block/unblock from room detail (syncs to Firestore)
 - **Guests** — profiles with search; managers view all guests (read-only unless linked to their properties); chain admins full edit
 - **Book** — search properties and rooms (including by type), pick dates, saved guest or manual entry
 - **Today** — arrivals, departures, and in-house board with check-in / check-out actions
@@ -68,10 +68,20 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 ## Testing
 
+**JDK:** Android Gradle Plugin 8.9 requires **JDK 17–21** to run Gradle. If you see `26.0.1`, your system Java is too new. Run:
+
+```bash
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+./gradlew --stop
+```
+
+On macOS, `./gradlew` also auto-selects Android Studio’s JBR when `JAVA_HOME` is unset or points at Java 26+.
+
 | Layer | Command |
 |-------|---------|
 | Unit tests | `./gradlew :app:testDebugUnitTest` |
-| Instrumented | `./gradlew :app:connectedDebugAndroidTest` (device/emulator) |
+| Instrumented (Room DAO) | `./gradlew :app:connectedDebugAndroidTest` — requires device/emulator |
+| Instrumented (Compose UI) | Same command — `app/src/androidTest/.../ui/*UiTest.kt` |
 
 **CI:** `.github/workflows/android-test.yml` — unit tests + API 34 emulator instrumented tests on push/PR to `main`.
 

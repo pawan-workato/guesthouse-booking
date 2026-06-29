@@ -50,11 +50,15 @@ class SyncRepository(
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
 
-    val pendingCount: Flow<Int> =
-        database.bookingDao().observeCountBySyncStatus(SyncStatus.PENDING_SYNC.name)
+    val pendingCount: Flow<Int> = combine(
+        database.bookingDao().observeCountBySyncStatus(SyncStatus.PENDING_SYNC.name),
+        database.blockDateDao().observeCountBySyncStatus(SyncStatus.PENDING_SYNC.name)
+    ) { bookingPending, blockPending -> bookingPending + blockPending }
 
-    val conflictCount: Flow<Int> =
-        database.bookingDao().observeCountBySyncStatus(SyncStatus.CONFLICT.name)
+    val conflictCount: Flow<Int> = combine(
+        database.bookingDao().observeCountBySyncStatus(SyncStatus.CONFLICT.name),
+        database.blockDateDao().observeCountBySyncStatus(SyncStatus.CONFLICT.name)
+    ) { bookingConflicts, blockConflicts -> bookingConflicts + blockConflicts }
 
     val issueCount: Flow<Int> = combine(pendingCount, conflictCount) { pending, conflicts ->
         pending + conflicts
@@ -112,6 +116,45 @@ class SyncRepository(
                     }
             }
         }
+        val pendingBlocks = database.blockDateDao().getBySyncStatus(SyncStatus.PENDING_SYNC.name)
+        for (block in pendingBlocks) {
+            hadActivity = true
+            if (block.markedForDeletion) {
+                if (block.syncStatus == SyncStatus.PENDING_SYNC.name) {
+                    runCatching { firestore.deleteBlockDate(block.id) }
+                        .onSuccess { database.blockDateDao().deleteById(block.id) }
+                }
+                continue
+            }
+            val localOverlaps = database.blockDateDao().findOverlapping(
+                roomId = block.roomId,
+                startEpochDay = block.startEpochDay,
+                endEpochDay = block.endEpochDay,
+                excludeId = block.id
+            ).filter { it.syncStatus == SyncStatus.SYNCED.name }
+            val remoteOverlaps = runCatching {
+                firestore.findOverlappingRemoteBlockDates(
+                    roomId = block.roomId,
+                    startEpochDay = block.startEpochDay,
+                    endEpochDay = block.endEpochDay,
+                    excludeId = block.id
+                )
+            }.getOrDefault(emptyList())
+            if (localOverlaps.isNotEmpty() || remoteOverlaps.isNotEmpty()) {
+                database.blockDateDao().updateSyncStatus(block.id, SyncStatus.CONFLICT.name)
+                conflictCount++
+            } else {
+                val synced = block.copy(syncStatus = SyncStatus.SYNCED.name)
+                runCatching { firestore.upsertBlockDate(synced) }
+                    .onSuccess {
+                        database.blockDateDao().updateSyncStatus(synced.id, SyncStatus.SYNCED.name)
+                        syncedCount++
+                    }
+                    .onFailure {
+                        database.blockDateDao().updateSyncStatus(block.id, SyncStatus.PENDING_SYNC.name)
+                    }
+            }
+        }
         val pullResult = syncService.pullRemoteData(session)
         if (hadActivity || syncedCount > 0 || pullResult.hasData) {
             val now = System.currentTimeMillis()
@@ -148,7 +191,28 @@ class SyncRepository(
                     syncedCount++
                 }
             }
-            Triple(syncedCount, conflictCount, pending.isNotEmpty())
+            val pendingBlocks = database.blockDateDao().getBySyncStatus(SyncStatus.PENDING_SYNC.name)
+            for (block in pendingBlocks) {
+                if (block.markedForDeletion) {
+                    database.blockDateDao().deleteById(block.id)
+                    syncedCount++
+                    continue
+                }
+                val overlaps = database.blockDateDao().findOverlapping(
+                    roomId = block.roomId,
+                    startEpochDay = block.startEpochDay,
+                    endEpochDay = block.endEpochDay,
+                    excludeId = block.id
+                ).filter { it.syncStatus == SyncStatus.SYNCED.name }
+                if (overlaps.isNotEmpty()) {
+                    database.blockDateDao().updateSyncStatus(block.id, SyncStatus.CONFLICT.name)
+                    conflictCount++
+                } else {
+                    database.blockDateDao().updateSyncStatus(block.id, SyncStatus.SYNCED.name)
+                    syncedCount++
+                }
+            }
+            Triple(syncedCount, conflictCount, pending.isNotEmpty() || pendingBlocks.isNotEmpty())
         }
         if (hadPending) {
             val now = System.currentTimeMillis()

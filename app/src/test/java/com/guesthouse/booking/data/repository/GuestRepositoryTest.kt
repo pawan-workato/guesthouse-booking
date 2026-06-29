@@ -5,13 +5,22 @@ import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.BookingDao
 import com.guesthouse.booking.data.local.GuestDao
+import com.guesthouse.booking.data.local.PropertyDao
+import com.guesthouse.booking.data.local.RoomDao
+import com.guesthouse.booking.data.local.entities.BookingEntity
+import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.data.local.entities.PropertyEntity
+import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.StaffRole
 import com.guesthouse.booking.data.sync.NetworkMonitor
+import app.cash.turbine.test
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -24,9 +33,12 @@ class GuestRepositoryTest {
     private val database = mockk<AppDatabase>()
     private val guestDao = mockk<GuestDao>(relaxed = true)
     private val bookingDao = mockk<BookingDao>(relaxed = true)
+    private val propertyDao = mockk<PropertyDao>(relaxed = true)
+    private val roomDao = mockk<RoomDao>(relaxed = true)
     private val authRepository = mockk<AuthRepository>()
     private val networkMonitor = mockk<NetworkMonitor>()
     private val firestore = mockk<FirestoreDataSource>(relaxed = true)
+    private val sessionFlow = MutableStateFlow<StaffSession?>(null)
 
     private lateinit var repository: GuestRepository
 
@@ -42,9 +54,13 @@ class GuestRepositoryTest {
     fun setUp() {
         every { database.guestDao() } returns guestDao
         every { database.bookingDao() } returns bookingDao
+        every { database.propertyDao() } returns propertyDao
+        every { database.roomDao() } returns roomDao
+        every { authRepository.session } returns sessionFlow
         every { networkMonitor.isCurrentlyOnline() } returns false
         every { firestore.isSignedIn } returns false
         every { authRepository.currentSession() } returns managerSession
+        sessionFlow.value = managerSession
         repository = GuestRepository(
             database,
             authRepository,
@@ -139,5 +155,60 @@ class GuestRepositoryTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun observeGuestStayHistory_managerSeesOnlyAssignedPropertyBookings() = runTest {
+        val bookingAtAssigned = BookingEntity(
+            id = 1L,
+            propertyId = 1L,
+            roomId = 10L,
+            guestId = 5L,
+            guestName = "Alice",
+            guestEmail = "",
+            checkInEpochDay = 100L,
+            checkOutEpochDay = 102L,
+            status = BookingStatus.CONFIRMED.name
+        )
+        every { bookingDao.observeForGuestAtProperties(5L, listOf(1L, 3L)) } returns flowOf(listOf(bookingAtAssigned))
+        every { propertyDao.observeAll() } returns flowOf(listOf(PropertyEntity(id = 1L, name = "Hill View", address = "", region = "")))
+        every { roomDao.observeAll() } returns flowOf(listOf(RoomEntity(id = 10L, propertyId = 1L, name = "Room A", description = "", pricePerNight = 100.0, capacity = 2, roomType = "DOUBLE")))
+
+        repository.observeGuestStayHistory(5L).test {
+            val history = awaitItem()
+            assertEquals(1, history.size)
+            assertEquals("Hill View", history.first().propertyName)
+            assertEquals("Room A", history.first().roomName)
+            cancelAndIgnoreRemainingEvents()
+        }
+        coVerify(exactly = 0) { bookingDao.observeForGuest(any()) }
+    }
+
+    @Test
+    fun observeGuestStayHistory_chainAdminSeesAllPropertyBookings() = runTest {
+        val adminSession = managerSession.copy(role = StaffRole.CHAIN_ADMIN, assignedPropertyIds = emptySet())
+        sessionFlow.value = adminSession
+        every { authRepository.currentSession() } returns adminSession
+        val booking = BookingEntity(
+            id = 2L,
+            propertyId = 99L,
+            roomId = 20L,
+            guestId = 5L,
+            guestName = "Alice",
+            guestEmail = "",
+            checkInEpochDay = 200L,
+            checkOutEpochDay = 203L
+        )
+        every { bookingDao.observeForGuest(5L) } returns flowOf(listOf(booking))
+        every { propertyDao.observeAll() } returns flowOf(listOf(PropertyEntity(id = 99L, name = "Remote Lodge", address = "", region = "")))
+        every { roomDao.observeAll() } returns flowOf(listOf(RoomEntity(id = 20L, propertyId = 99L, name = "Suite", description = "", pricePerNight = 200.0, capacity = 3, roomType = "SUITE")))
+
+        repository.observeGuestStayHistory(5L).test {
+            val history = awaitItem()
+            assertEquals(1, history.size)
+            assertEquals("Remote Lodge", history.first().propertyName)
+            cancelAndIgnoreRemainingEvents()
+        }
+        coVerify(exactly = 0) { bookingDao.observeForGuestAtProperties(any(), any()) }
     }
 }

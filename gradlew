@@ -114,7 +114,42 @@ case "$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
+# AGP 8.x cannot run on JDK 26+. Prefer Android Studio JBR or JDK 21/17 on macOS.
+pick_compatible_java_home() {
+    AS_JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+    if [ -x "$AS_JBR/bin/java" ]; then
+        JAVA_HOME=$AS_JBR
+        return
+    fi
+    if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+        for jdk_version in 21 17; do
+            candidate=$(/usr/libexec/java_home -v "$jdk_version" 2>/dev/null || true)
+            if [ -n "$candidate" ] && [ -x "$candidate/bin/java" ]; then
+                JAVA_HOME=$candidate
+                return
+            fi
+        done
+    fi
+}
 
+java_major_is_too_new() {
+    if [ ! -x "$1/bin/java" ]; then
+        return 1
+    fi
+    major=$("$1/bin/java" -version 2>&1 | sed -n 's/.* version "\([0-9][0-9]*\).*/\1/p' | head -1)
+    [ -n "$major" ] && [ "$major" -ge 26 ]
+}
+
+if [ "$darwin" = true ]; then
+    if [ -n "$JAVA_HOME" ] && java_major_is_too_new "$JAVA_HOME"; then
+        warn "JAVA_HOME uses Java 26+, which Android Gradle Plugin does not support. Using Android Studio JBR instead."
+        JAVA_HOME=
+    fi
+    if [ -z "$JAVA_HOME" ]; then
+        pick_compatible_java_home
+        export JAVA_HOME
+    fi
+fi
 
 # Determine the Java command to use to start the JVM.
 if [ -n "$JAVA_HOME" ] ; then

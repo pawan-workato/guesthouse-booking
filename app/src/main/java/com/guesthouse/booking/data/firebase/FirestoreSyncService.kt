@@ -95,6 +95,19 @@ class FirestoreSyncService(
                     emptyList()
                 }
         }
+        val blockDates = if (session.isChainAdmin) {
+            runCatching { firestore.fetchBlockDates() }
+                .getOrElse {
+                    errors.add("block_dates: ${it.message ?: it.javaClass.simpleName}")
+                    emptyList()
+                }
+        } else {
+            runCatching { firestore.fetchBlockDatesForProperties(accessiblePropertyIds) }
+                .getOrElse {
+                    errors.add("block_dates: ${it.message ?: it.javaClass.simpleName}")
+                    emptyList()
+                }
+        }
 
         database.withTransaction {
             // Properties must exist before staff_property_assignments (FK).
@@ -113,6 +126,9 @@ class FirestoreSyncService(
             if (bookings.isNotEmpty()) {
                 database.bookingDao().upsertAll(bookings)
             }
+            if (blockDates.isNotEmpty()) {
+                database.blockDateDao().upsertAll(blockDates)
+            }
         }
 
         if (errors.isNotEmpty()) {
@@ -121,7 +137,7 @@ class FirestoreSyncService(
         Log.i(
             TAG,
             "pullRemoteData ${session.email} role=${session.role}: staff=${profiles.size} properties=${properties.size} " +
-                "rooms=${rooms.size} guests=${guests.size} bookings=${bookings.size}"
+                "rooms=${rooms.size} guests=${guests.size} bookings=${bookings.size} blockDates=${blockDates.size}"
         )
 
         return PullRemoteDataResult(
@@ -130,6 +146,7 @@ class FirestoreSyncService(
             roomsCount = rooms.size,
             guestsCount = guests.size,
             bookingsCount = bookings.size,
+            blockDatesCount = blockDates.size,
             errors = errors
         )
     }

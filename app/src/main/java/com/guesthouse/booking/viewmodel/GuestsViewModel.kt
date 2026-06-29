@@ -3,11 +3,16 @@ package com.guesthouse.booking.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.GuestRepository
+import com.guesthouse.booking.data.repository.GuestStayBooking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -18,7 +23,8 @@ data class GuestFormUiState(
 )
 
 class GuestsViewModel(
-    private val guestRepository: GuestRepository
+    private val guestRepository: GuestRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -37,6 +43,18 @@ class GuestsViewModel(
 
     private val _canEditGuest = MutableStateFlow(true)
     val canEditGuest: StateFlow<Boolean> = _canEditGuest.asStateFlow()
+
+    private val _viewingGuestId = MutableStateFlow<Long?>(null)
+
+    val guestStayHistory: StateFlow<List<GuestStayBooking>> = _viewingGuestId
+        .flatMapLatest { guestId ->
+            if (guestId == null) flowOf(emptyList()) else guestRepository.observeGuestStayHistory(guestId)
+        }
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val isChainAdmin: StateFlow<Boolean> = authRepository.session
+        .map { it?.isChainAdmin == true }
+        .stateIn(viewModelScope, ViewModelSharing, false)
 
     val guests: StateFlow<List<GuestEntity>> = combine(
         guestRepository.observeScopedActiveGuests(),
@@ -68,6 +86,7 @@ class GuestsViewModel(
     }
 
     fun loadGuestForEdit(guestId: Long) {
+        _viewingGuestId.value = guestId
         viewModelScope.launch {
             val guest = guestRepository.getGuest(guestId)
             _editAccessDenied.value = guest == null
@@ -77,6 +96,7 @@ class GuestsViewModel(
     }
 
     fun clearEditGuest() {
+        _viewingGuestId.value = null
         _editGuest.value = null
         _editAccessDenied.value = false
         _canEditGuest.value = true

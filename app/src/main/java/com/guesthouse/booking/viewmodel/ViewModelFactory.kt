@@ -26,7 +26,7 @@ class ViewModelFactory(
         return when {
             modelClass.isAssignableFrom(LoginViewModel::class.java) -> LoginViewModel(authRepository) as T
             modelClass.isAssignableFrom(PropertiesViewModel::class.java) -> PropertiesViewModel(propertyRepository, authRepository) as T
-            modelClass.isAssignableFrom(GuestsViewModel::class.java) -> GuestsViewModel(guestRepository) as T
+            modelClass.isAssignableFrom(GuestsViewModel::class.java) -> GuestsViewModel(guestRepository, authRepository) as T
             modelClass.isAssignableFrom(RoomsViewModel::class.java) -> RoomsViewModel(repository, authRepository) as T
             modelClass.isAssignableFrom(BookingViewModel::class.java) ->
                 BookingViewModel(repository, blockDateRepository, guestRepository, authRepository, syncRepository, networkMonitor) as T

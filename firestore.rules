@@ -61,5 +61,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && canAccessProperty(int(request.resource.data.propertyId));
       allow update, delete: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
     }
+
+    match /block_dates/{blockDateId} {
+      allow read: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
+      allow create: if isSignedIn() && canAccessProperty(int(request.resource.data.propertyId));
+      allow update, delete: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
+    }
   }
 }

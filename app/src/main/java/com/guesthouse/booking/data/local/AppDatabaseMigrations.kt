@@ -41,5 +41,11 @@ object AppDatabaseMigrations {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_block_dates_roomId` ON `block_dates` (`roomId`)")
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9, MIGRATION_9_10)
+    val MIGRATION_10_11 = Migration(10, 11) { db ->
+        db.execSQL("ALTER TABLE block_dates ADD COLUMN syncStatus TEXT NOT NULL DEFAULT 'PENDING_SYNC'")
+        db.execSQL("ALTER TABLE block_dates ADD COLUMN markedForDeletion INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_block_dates_syncStatus` ON `block_dates` (`syncStatus`)")
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
 }

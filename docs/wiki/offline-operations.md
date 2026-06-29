@@ -44,14 +44,14 @@ Trigger sync manually via the **sync icon** in the top app bar (badge = pending 
 | **Top bar sync** | Manual sync; badge count |
 | Room calendar | Pending bookings block dates like confirmed stays |
 
-## Block dates (local-only)
+## Block dates
 
-**Room detail** → **Block dates**. Not synced to cloud backends.
+**Room detail** → **Block dates**. Blocks sync to Firestore like bookings: offline creates use **PENDING SYNC** and upload on the next sync; removals while offline are queued and deleted from the server when online.
 
 ## Technical notes
 
-- Room database **version 10** (`block_dates`, `roomType` on rooms, guests/bookings sync fields).
-- Migrations: `MIGRATION_8_9` (room types), `MIGRATION_9_10` (block dates). `fallbackToDestructiveMigration` still enabled for uncovered version jumps — reinstall or clear data if upgrade fails.
+- Room database **version 11** (`block_dates` with `syncStatus` / `markedForDeletion`, `roomType` on rooms, guests/bookings sync fields).
+- Migrations: `MIGRATION_8_9` (room types), `MIGRATION_9_10` (block dates table), `MIGRATION_10_11` (block date sync fields). `fallbackToDestructiveMigration` still enabled for uncovered version jumps — reinstall or clear data if upgrade fails.
 - Overlap checks exclude **CONFLICT** bookings from blocking new entries incorrectly.
 - Permissions: `INTERNET`, `ACCESS_NETWORK_STATE`.
 

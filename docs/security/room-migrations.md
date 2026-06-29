@@ -1,8 +1,8 @@
 # Room database migrations
 
-## Current state (v10)
+## Current state (v11)
 
-`AppDatabase` version **10**. Registered migrations: `MIGRATION_8_9`, `MIGRATION_9_10` in `AppDatabaseMigrations.kt`.
+`AppDatabase` version **11**. Registered migrations: `MIGRATION_8_9`, `MIGRATION_9_10`, `MIGRATION_10_11` in `AppDatabaseMigrations.kt`.
 
 `fallbackToDestructiveMigration` is gated behind `BuildConfig.DEBUG` only — **release builds** will fail on unregistered version jumps rather than silently wiping data. Debug builds retain the destructive fallback for developer convenience.
 
@@ -45,9 +45,17 @@ Synced via Firestore `roomType`.
 
 ## Version 9 → 10 — block dates
 
-Creates `block_dates` table (local-only feature; not synced to Firestore):
+Creates `block_dates` table:
 
 - `propertyId`, `roomId`, `startEpochDay`, `endEpochDay`, `reason`, `createdByStaffId`, `createdAtEpochMs`
+
+## Version 10 → 11 — block date sync
+
+Adds Firestore sync fields to `block_dates`:
+
+- `syncStatus` (default `PENDING_SYNC` for existing rows so they upload on next sync)
+- `markedForDeletion` (soft-delete tombstone for offline removals)
+- Index on `syncStatus`
 
 ## Security (shipped)
 

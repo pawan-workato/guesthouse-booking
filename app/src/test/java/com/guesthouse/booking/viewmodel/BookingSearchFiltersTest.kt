@@ -31,4 +31,49 @@ class BookingSearchFiltersTest {
         assertEquals(1, BookingSearchFilters.filterRooms(rooms, "", RoomType.DOUBLE).size)
         assertEquals(0, BookingSearchFilters.filterRooms(rooms, "suite", null).size)
     }
+
+    @Test
+    fun filterBookingsWithDetails_matchesGuestPropertyRoomRefOrStatus() {
+        val bookings = listOf(
+            BookingWithDetails(
+                booking = com.guesthouse.booking.data.local.entities.BookingEntity(
+                    id = 1L,
+                    propertyId = 1L,
+                    roomId = 1L,
+                    guestName = "Jane Guest",
+                    guestEmail = "jane@example.com",
+                    guestPhone = "555-0100",
+                    checkInEpochDay = 100L,
+                    checkOutEpochDay = 105L,
+                    status = "CONFIRMED",
+                    bookingReference = "GH-1-100"
+                ),
+                propertyName = "Mountain Lodge",
+                roomName = "Summit Double"
+            ),
+            BookingWithDetails(
+                booking = com.guesthouse.booking.data.local.entities.BookingEntity(
+                    id = 2L,
+                    propertyId = 2L,
+                    roomId = 2L,
+                    guestName = "Bob Smith",
+                    guestEmail = "bob@example.com",
+                    guestPhone = "555-0200",
+                    checkInEpochDay = 110L,
+                    checkOutEpochDay = 115L,
+                    status = "CHECKED_IN",
+                    bookingReference = "GH-2-200"
+                ),
+                propertyName = "Coastal Inn",
+                roomName = "Pine Single"
+            )
+        )
+
+        assertEquals(1, BookingSearchFilters.filterBookingsWithDetails(bookings, "jane@example.com").size)
+        assertEquals(1, BookingSearchFilters.filterBookingsWithDetails(bookings, "coastal").size)
+        assertEquals(1, BookingSearchFilters.filterBookingsWithDetails(bookings, "summit").size)
+        assertEquals(1, BookingSearchFilters.filterBookingsWithDetails(bookings, "GH-2").size)
+        assertEquals(1, BookingSearchFilters.filterBookingsWithDetails(bookings, "checked in").size)
+        assertEquals(2, BookingSearchFilters.filterBookingsWithDetails(bookings, "").size)
+    }
 }

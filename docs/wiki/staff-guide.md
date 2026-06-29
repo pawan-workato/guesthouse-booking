@@ -17,7 +17,7 @@ The Android app is **staff-only**. Property managers book rooms for guests; gues
 
 ### Top bar
 
-- **Guests** (person icon) — guest profiles (all staff see profile details; booking history is not shown here)
+- **Guests** (person icon) — guest profiles and property-scoped stay history (all properties for chain admin)
 - **Staff** (group icon, chain admin only) — add/edit property managers and assignments
 - **Sync** (circular arrows) — manual sync when online; badge = pending + conflict count
 - **Sign out**
@@ -41,7 +41,7 @@ From **Guests**:
 - **Remove** — edit screen → **Remove guest** (soft-delete; past bookings keep snapshot fields)
 - **Show removed** — toggle inactive profiles
 
-**All signed-in staff** see every active guest profile (name, email, phone, notes). Guest screens show profile details only — not booking history. **Property managers** can edit or remove guests who appear on bookings at their assigned properties; other profiles open read-only. **Chain admins** can edit any guest.
+**All signed-in staff** see every active guest profile (name, email, phone, notes). Guest detail includes **stay history**: chain admins see bookings at all properties; property managers see only stays at their assigned properties. **Property managers** can edit or remove guests who appear on bookings at their assigned properties; other profiles open read-only. **Chain admins** can edit any guest.
 
 ## Staff management (chain admin)
 

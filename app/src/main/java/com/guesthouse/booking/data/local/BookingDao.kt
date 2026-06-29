@@ -32,6 +32,24 @@ interface BookingDao {
     @Query("SELECT * FROM bookings ORDER BY checkInEpochDay DESC")
     fun observeAll(): Flow<List<BookingEntity>>
 
+    @Query(
+        """
+        SELECT * FROM bookings
+        WHERE guestId = :guestId
+        ORDER BY checkInEpochDay DESC
+        """
+    )
+    fun observeForGuest(guestId: Long): Flow<List<BookingEntity>>
+
+    @Query(
+        """
+        SELECT * FROM bookings
+        WHERE guestId = :guestId AND propertyId IN (:propertyIds)
+        ORDER BY checkInEpochDay DESC
+        """
+    )
+    fun observeForGuestAtProperties(guestId: Long, propertyIds: List<Long>): Flow<List<BookingEntity>>
+
     @Query("SELECT * FROM bookings WHERE id = :id")
     suspend fun getById(id: Long): BookingEntity?
 

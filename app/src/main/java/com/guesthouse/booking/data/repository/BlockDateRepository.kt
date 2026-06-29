@@ -1,10 +1,19 @@
 package com.guesthouse.booking.data.repository
 
+import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.BlockDateEntity
+import com.guesthouse.booking.data.local.entities.SyncStatus
+import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
 
-class BlockDateRepository(private val database: AppDatabase, private val authRepository: AuthRepository) {
+class BlockDateRepository(
+    private val database: AppDatabase,
+    private val authRepository: AuthRepository,
+    private val networkMonitor: NetworkMonitor,
+    private val firestore: FirestoreDataSource = FirestoreDataSource(),
+    private val syncRepository: Lazy<SyncRepository> = lazy { error("SyncRepository not initialized") }
+) {
     fun observeForRoom(roomId: Long): Flow<List<BlockDateEntity>> = database.blockDateDao().observeForRoom(roomId)
 
     suspend fun createBlock(roomId: Long, startEpochDay: Long, endEpochDay: Long, reason: String): Result<Long> {
@@ -20,6 +29,9 @@ class BlockDateRepository(private val database: AppDatabase, private val authRep
         if (database.bookingDao().findOverlapping(roomId, startEpochDay, endEpochDay).isNotEmpty()) {
             return Result.failure(IllegalStateException("These dates overlap an existing booking"))
         }
+
+        val useFirestore = networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
+        val syncStatus = if (useFirestore) SyncStatus.SYNCED.name else SyncStatus.PENDING_SYNC.name
         val id = database.blockDateDao().insert(
             BlockDateEntity(
                 propertyId = room.propertyId,
@@ -27,9 +39,16 @@ class BlockDateRepository(private val database: AppDatabase, private val authRep
                 startEpochDay = startEpochDay,
                 endEpochDay = endEpochDay,
                 reason = reason.trim(),
-                createdByStaffId = session.staffId
+                createdByStaffId = session.staffId,
+                syncStatus = syncStatus
             )
         )
+
+        if (useFirestore) {
+            database.blockDateDao().getById(id)?.let { runCatching { firestore.upsertBlockDate(it) } }
+        } else {
+            syncRepository.value.enqueueSyncWorker()
+        }
         return Result.success(id)
     }
 
@@ -39,7 +58,19 @@ class BlockDateRepository(private val database: AppDatabase, private val authRep
         if (!session.canAccessProperty(block.propertyId)) {
             return Result.failure(IllegalStateException("You don't have access to this property"))
         }
-        database.blockDateDao().deleteById(blockId)
+
+        val useFirestore = networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
+        if (block.syncStatus == SyncStatus.PENDING_SYNC.name && !block.markedForDeletion) {
+            database.blockDateDao().deleteById(blockId)
+            return Result.success(Unit)
+        }
+        if (useFirestore) {
+            runCatching { firestore.deleteBlockDate(blockId) }
+            database.blockDateDao().deleteById(blockId)
+        } else {
+            database.blockDateDao().markForDeletion(blockId, SyncStatus.PENDING_SYNC.name)
+            syncRepository.value.enqueueSyncWorker()
+        }
         return Result.success(Unit)
     }
 }

@@ -2,12 +2,20 @@ package com.guesthouse.booking.data.repository
 
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+
+data class GuestStayBooking(
+    val booking: BookingEntity,
+    val propertyName: String,
+    val roomName: String
+)
 
 class GuestRepository(
     private val database: AppDatabase,
@@ -49,6 +57,37 @@ class GuestRepository(
     }
 
     suspend fun canAccessGuest(guestId: Long): Boolean = canEditGuest(guestId)
+
+    /** Stay history scoped by role: chain admin sees all properties; managers see assigned properties only. */
+    fun observeGuestStayHistory(guestId: Long): Flow<List<GuestStayBooking>> =
+        authRepository.session.flatMapLatest { session ->
+            if (session == null) {
+                return@flatMapLatest flowOf(emptyList())
+            }
+            val bookingsFlow = when {
+                session.isChainAdmin -> database.bookingDao().observeForGuest(guestId)
+                session.assignedPropertyIds.isEmpty() -> flowOf(emptyList())
+                else -> database.bookingDao().observeForGuestAtProperties(
+                    guestId,
+                    session.assignedPropertyIds.toList()
+                )
+            }
+            combine(
+                bookingsFlow,
+                database.propertyDao().observeAll(),
+                database.roomDao().observeAll()
+            ) { bookings, properties, rooms ->
+                val propertyMap = properties.associateBy { it.id }
+                val roomMap = rooms.associateBy { it.id }
+                bookings.map { booking ->
+                    GuestStayBooking(
+                        booking = booking,
+                        propertyName = propertyMap[booking.propertyId]?.name ?: "Unknown property",
+                        roomName = roomMap[booking.roomId]?.name ?: "Unknown room"
+                    )
+                }
+            }
+        }
 
     private fun scopedGuestFlow(allGuests: () -> Flow<List<GuestEntity>>): Flow<List<GuestEntity>> =
         authRepository.session.flatMapLatest { session ->
