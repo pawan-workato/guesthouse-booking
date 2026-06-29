@@ -49,10 +49,11 @@ service cloud.firestore {
     }
 
     match /guests/{guestId} {
-      // All staff (including managers) may read the chain guest list; edit scope is enforced in-app.
+      // All staff may read/create/update guests; soft-delete (isActive) is chain-admin only.
       allow read: if isStaff();
-      // All staff may read/create/update guests; deactivate (soft-delete) is chain-admin only in the app.
-      allow create, update: if isStaff();
+      allow create: if isStaff();
+      allow update: if isStaff()
+        && (isChainAdmin() || request.resource.data.isActive == resource.data.isActive);
       allow delete: if isChainAdmin();
     }
 

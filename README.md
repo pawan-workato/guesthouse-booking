@@ -15,10 +15,10 @@ The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) 
 
 ## Features
 
-- **Properties** — searchable list with Overview occupancy cards; chain admins add, edit, and deactivate properties
+- **Properties** — searchable list with inline occupancy stats per site; chain admins add, edit, and deactivate properties (last bottom tab)
 - **Rooms** — per-property inventory with **room type** (Single, Double, Suite, Family), price, and capacity; staff with property access can add and edit rooms
 - **Availability** — calendar shows booked and **blocked** dates; block/unblock from room detail (syncs to Firestore)
-- **Guests** — profiles with search; all managers can edit any guest; only chain admins remove guests; duplicate detection (read-only unless linked to their properties); chain admins full edit
+- **Guests** — profiles with search; all managers can edit any guest; only chain admins remove/reactivate guests; duplicate detection; stay history
 - **Book** — search properties and rooms (including by type), pick dates, saved guest or manual entry
 - **Today** — arrivals, departures, and in-house board with check-in / check-out actions
 - **Bookings** — list, edit, cancel, check-in/out; sync status and conflict resolution
@@ -84,7 +84,7 @@ On macOS, `./gradlew` also auto-selects Android Studio’s JBR when `JAVA_HOME` 
 | Instrumented (Room DAO) | `./gradlew :app:connectedDebugAndroidTest` — requires device/emulator |
 | Instrumented (Compose UI) | Same command — `app/src/androidTest/.../ui/*UiTest.kt` |
 
-**CI:** `.github/workflows/android-test.yml` — unit tests + API 34 emulator instrumented tests on push/PR to `main`.
+**CI:** `.github/workflows/android-test.yml` — unit tests + API 34 emulator instrumented tests (KVM + AVD snapshot cache) on push/PR to `main`.
 
 ## Roadmap (shipped)
 
@@ -94,6 +94,7 @@ On macOS, `./gradlew` also auto-selects Android Studio’s JBR when `JAVA_HOME` 
 - Sprint 5: Guest profiles ✅
 - Sprint 6: Firebase Auth + Firestore sync ✅
 - Sprint 7: Today board, check-in/out, block dates, edit bookings, room types, room CRUD, booking search ✅
+- Sprint 8: Occupancy on property cards, booking detail, duplicate guest warnings, rebook/extend, morning notifications ✅
 
 ## GitHub
 

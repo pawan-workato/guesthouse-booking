@@ -1,6 +1,6 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-29
+**Last updated:** 2026-06-29 (Properties UX, CI hardening, Firestore guest rule)
 
 Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`main` at `8b673fe` plus uncommitted working-tree changes where noted).
 
@@ -48,7 +48,7 @@ Single source of truth for security remediation, product delivery, and open work
 | KR-12 | Auth | No brute-force protection on login | ✅ Done | Medium | `LoginViewModel`: 5 failures → 30 s lockout; `LoginScreen` live countdown + disabled button | Working tree |
 | KR-13 | Data | Plaintext Room SQLite | ✅ Done | High | SQLCipher 4.16 + Keystore-backed passphrase; plaintext→encrypted migration on first launch | Working tree |
 | KR-14 | Platform | `FLAG_SECURE` on sensitive screens | ✅ Done | Low | App-wide on `MainActivity` | Working tree |
-| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; edit scope in app; **rules published manually** via Firebase Console | `firestore.rules` + manual deploy 2026-06-27 |
+| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; **`isActive` change chain-admin only** at rules level; deploy via Console | `firestore.rules` — redeploy pending |
 
 **Security subagent note:** Session `4cb960be` (Fix security backlog) applied KR-11/12/14/15 + pentest doc refresh; verified in working tree alongside prior PRs [#1](https://github.com/pawan-workato/guesthouse-booking/pull/1) and [#2](https://github.com/pawan-workato/guesthouse-booking/pull/2).
 
@@ -115,7 +115,8 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-S6 | Product | Firebase Auth + Firestore sync | ✅ Done | — | | Sprint 6 |
 | FEAT-S7 | Product | Today board, check-in/out, block dates, edit bookings, room types, room CRUD, booking search | ✅ Done | — | | Sprint 7 / `61dc4ff` merge |
 | FEAT-BOOK-FILTER | Product | Bookings tab hides cancelled by default; **Show cancelled** toggle | ✅ Done | Low | `AdminViewModel` + `AdminScreen` | Working tree |
-| FEAT-NAV | Product | 4 bottom tabs (Properties, Book, Today, Bookings) + Guests/Staff in top bar | ✅ Done | Medium | `AppNavigation.kt` — bottom: Properties, Book, Today, Admin; top: Guests, Staff (admin) | Working tree |
+| FEAT-NAV | Product | 4 bottom tabs + Guests/Staff in top bar | ✅ Done | Medium | Bottom: Book → Today → Bookings → Properties; opens on **Today**; top: Guests, Staff (admin) | `28b8114` |
+| FEAT-PROPS-UX | Product | Unified Properties list with inline occupancy | ✅ Done | Medium | Stats on property cards; chain banner for admin; scroll fix | `4d6c1ea` |
 | FEAT-KTOR | Product | Remove Ktor backend; Firebase-only | ✅ Done | Medium | `backend/` removed from settings; `data/remote/*` deleted; Firebase-only sync | Working tree |
 | FEAT-GUEST | Product | Managers view all guests (read-only unless linked) | ✅ Done | Medium | `GuestRepository.canViewGuest` / `canEditGuest` split | Working tree |
 | FEAT-DOCS | Product | README & wiki docs refresh | ✅ Done | Low | README Firebase-first; wiki offline/migrations updated | Working tree |
@@ -123,11 +124,13 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-GLASS | Product | Apple Liquid Glass UI theme | ✅ Done | Medium | `Glass.kt` — gradient mesh, frosted cards, glass nav/scaffold on all screens | Working tree |
 | FEAT-BLOCK-SYNC | Product | Firestore sync for block dates | ✅ Done | Medium | `block_dates` collection; push/pull in SyncRepository; MIGRATION_10_11 | Working tree |
 | FEAT-GUEST-HISTORY | Product | Guest stay history on guest detail (property-scoped for managers) | ✅ Done | Medium | `GuestRepository.observeGuestStayHistory`; `GuestFormScreen` stay section | Working tree |
-| FEAT-S8-OCC | Product | Occupancy dashboard | ✅ Done | Medium | Properties Overview section | Working tree |
+| FEAT-S8-OCC | Product | Occupancy dashboard | ✅ Done | Medium | Inline stats on Properties cards + optional chain banner | `4d6c1ea` |
 | FEAT-S8-DETAIL | Product | Booking detail screen | ✅ Done | Medium | Bookings/Today → detail | Working tree |
 | FEAT-S8-DUP | Product | Duplicate guest detection | ✅ Done | Medium | Similar guest warning | Working tree |
 | FEAT-S8-REBOOK | Product | Rebook / extend stay | ✅ Done | Medium | Book again + extend checkout | Working tree |
 | FEAT-S8-NOTIF | Product | Morning notifications | ✅ Done | Medium | WorkManager ~7 AM | Working tree |
+| CI-EMU | Ops | GitHub Actions instrumented test flakiness | ✅ Done | Medium | KVM, AVD cache, 20 min boot timeout | `28b8114` |
+| DOC-P2 | Security | P2 manual pentest checklist | ✅ Done | High | [pentest-run-p2-checklist.md](./security/pentest-run-p2-checklist.md) | Working tree |
 
 ---
 
@@ -149,7 +152,7 @@ Single source of truth for security remediation, product delivery, and open work
 |-------|------|--------|-------|
 | P0 | Dev self-assessment (SAST, manifest) | ✅ Done | Tracker + pentest doc refreshed |
 | P1 | Internal pentest | ✅ Done (automated) | [pentest-run-2026-06-27.md](./security/pentest-run-2026-06-27.md); manual P2 follow-up |
-| P2 | Pre-production gate | ⏳ Pending | Before pilot devices |
+| P2 | Pre-production gate | ⏳ Pending | [pentest-run-p2-checklist.md](./security/pentest-run-p2-checklist.md) — before pilot devices |
 | P3 | Backend/API pentest | ❌ Deferred | No Ktor API in current direction |
 | P4 | Annual regression | ⏳ Pending | — |
 

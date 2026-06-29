@@ -10,10 +10,10 @@ The Android app is **staff-only**. Property managers book rooms for guests; gues
 
 | Tab | Who | Purpose |
 |-----|-----|---------|
-| **Properties** | All staff | Browse assigned locations; open room lists |
 | **Book** | All staff | Create a booking with search and calendar |
-| **Today** | All staff | Arrivals, departures, in-house; check-in/out |
+| **Today** | All staff | Arrivals, departures, in-house; check-in/out (opens on launch) |
 | **Bookings** | All staff | All reservations for your properties; edit, cancel, check-in/out |
+| **Properties** | All staff | Browse assigned locations; occupancy on each card; open room lists |
 
 ### Top bar
 
@@ -26,11 +26,12 @@ There is no separate **Sync** tab. **Guests** and **Staff** are in the top bar s
 
 ### Typical workflow
 
-1. **Properties** → review **Overview — tonight** cards, then pick a site (search by name or region).
-2. Open the property → review **room type breakdown** (e.g. `4 Double · 2 Single`) and rooms.
-3. Tap a room → calendar (booked + blocked dates) → **Book for guest**, or use the **Book** tab.
-4. On **Book**: search property/room, filter by room type chips, select dates, pick saved guest or enter details.
-5. Confirm under **Bookings**; use **Today** on arrival/departure day.
+1. **Today** — check arrivals, departures, and in-house guests; check-in/out as needed.
+2. **Properties** (last tab) — each card shows tonight’s occupancy; tap a site to open rooms (search by name or region).
+3. Open the property → review **room type breakdown** (e.g. `4 Double · 2 Single`) and rooms.
+4. Tap a room → calendar (booked + blocked dates) → **Book for guest**, or use the **Book** tab.
+5. On **Book**: search property/room, filter by room type chips, select dates, pick saved guest or enter details.
+6. Confirm under **Bookings**; use **Today** on arrival/departure day.
 
 ## Guest management
 
@@ -55,9 +56,11 @@ Cannot remove the last active chain admin.
 
 ## Property management (chain admin)
 
-**Properties** tab:
+**Properties** tab (last bottom tab):
 
-- **Add** / **Edit** / **Remove** (deactivate)
+- Each property card shows **occupied / arrivals / departures / vacant** for tonight
+- Chain admins with multiple sites see an **All properties — tonight** summary at the top
+- **Add** / **Edit** / **Remove** (deactivate) — **Add property** button and **+** FAB
 - **Show removed** — reactivate
 
 Managers only see **active** properties assigned to them.
