@@ -48,4 +48,8 @@ interface RoomDao {
 
     @Update
     suspend fun update(room: RoomEntity)
+
+    @Query("SELECT COUNT(*) FROM rooms WHERE propertyId = :propertyId")
+    suspend fun countForProperty(propertyId: Long): Int
+
 }

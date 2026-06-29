@@ -189,6 +189,71 @@ class BookingRepository(
         return Result.success(Unit)
     }
 
+
+    suspend fun extendCheckout(
+        bookingId: Long,
+        newCheckOutEpochDay: Long,
+        isOnline: Boolean
+    ): Result<Unit> {
+        val session = authRepository.currentSession()
+            ?: return Result.failure(IllegalStateException("Not signed in"))
+        val existing = database.bookingDao().getById(bookingId)
+            ?: return Result.failure(IllegalArgumentException("Booking not found"))
+        if (!session.canAccessProperty(existing.propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        if (existing.status != BookingStatus.CONFIRMED.name &&
+            existing.status != BookingStatus.CHECKED_IN.name
+        ) {
+            return Result.failure(IllegalStateException("Only active bookings can be extended"))
+        }
+        if (newCheckOutEpochDay <= existing.checkOutEpochDay) {
+            return Result.failure(IllegalArgumentException("New check-out must be after the current check-out"))
+        }
+        if (newCheckOutEpochDay <= existing.checkInEpochDay) {
+            return Result.failure(IllegalArgumentException("Check-out must be after check-in"))
+        }
+        if (database.bookingDao().findOverlapping(
+                existing.roomId,
+                existing.checkOutEpochDay,
+                newCheckOutEpochDay,
+                excludeId = bookingId
+            ).isNotEmpty()
+        ) {
+            return Result.failure(IllegalStateException("Room is not available for the extended dates"))
+        }
+        if (database.blockDateDao().findOverlapping(
+                existing.roomId,
+                existing.checkOutEpochDay,
+                newCheckOutEpochDay
+            ).isNotEmpty()
+        ) {
+            return Result.failure(IllegalStateException("Extended dates overlap a blocked period"))
+        }
+
+        val updated = existing.copy(
+            checkOutEpochDay = newCheckOutEpochDay,
+            syncStatus = SyncStatus.PENDING_SYNC.name,
+            updatedAtEpochMs = System.currentTimeMillis()
+        )
+        database.bookingDao().update(updated)
+
+        val useFirestore = isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
+        if (useFirestore) {
+            val reference = existing.bookingReference.ifBlank {
+                SyncRepository.formatReference(existing.propertyId, bookingId)
+            }
+            val synced = updated.copy(syncStatus = SyncStatus.SYNCED.name, bookingReference = reference)
+            runCatching { firestore.upsertBooking(synced) }
+                .onSuccess { database.bookingDao().update(synced) }
+        } else if (isOnline) {
+            runCatching { syncRepository.value.syncNow() }
+        } else {
+            syncRepository.value.enqueueSyncWorker()
+        }
+        return Result.success(Unit)
+    }
+
     suspend fun createRoom(
         propertyId: Long,
         name: String,

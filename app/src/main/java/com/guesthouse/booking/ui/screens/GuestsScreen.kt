@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.GuestsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,10 +84,7 @@ fun GuestsScreen(
 
 @Composable
 private fun GuestCard(guest: GuestEntity, onEdit: () -> Unit) {
-    Card(
-        Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically

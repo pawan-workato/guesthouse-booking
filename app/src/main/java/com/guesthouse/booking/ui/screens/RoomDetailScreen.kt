@@ -11,12 +11,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.ui.components.AvailabilityCalendar
 import com.guesthouse.booking.ui.components.bookedDaysFromRanges
+import com.guesthouse.booking.ui.theme.GlassCard
+import com.guesthouse.booking.ui.theme.glassTopAppBarColors
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -39,8 +42,11 @@ fun RoomDetailScreen(
     var showBlockDialog by remember { mutableStateOf(false) }
     LaunchedEffect(blockUiState.successMessage) { if (blockUiState.successMessage != null) { showBlockDialog = false; viewModel.clearBlockMessages() } }
 
-    Scaffold(topBar = {
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = {
         TopAppBar(
+            colors = glassTopAppBarColors(),
             title = { Text(room?.name ?: "Room") },
             navigationIcon = {
                 IconButton(onClick = onBack) {
@@ -78,7 +84,7 @@ fun RoomDetailScreen(
 }
 
 @Composable private fun BlockRow(block: BlockDateEntity, fmt: DateTimeFormatter, onUnblock: () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    GlassCard(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) { Text("${LocalDate.ofEpochDay(block.startEpochDay).format(fmt)} – ${LocalDate.ofEpochDay(block.endEpochDay).format(fmt)}"); if (block.reason.isNotBlank()) Text(block.reason, style = MaterialTheme.typography.bodySmall) }
             IconButton(onClick = onUnblock) { Icon(Icons.Default.Close, contentDescription = "Unblock") }
@@ -89,7 +95,7 @@ fun RoomDetailScreen(
 @Composable private fun BlockDialog(roomId: Long, vm: BookingViewModel, booked: Set<Long>, blocked: Set<Long>, state: com.guesthouse.booking.viewmodel.BlockUiState, dismiss: () -> Unit) {
     var start by remember { mutableStateOf<Long?>(null) }; var end by remember { mutableStateOf<Long?>(null) }; var reason by remember { mutableStateOf("") }
     Dialog(onDismissRequest = dismiss) {
-        Card(Modifier.fillMaxWidth().padding(16.dp)) {
+        GlassCard(Modifier.fillMaxWidth().padding(16.dp)) {
             Column(Modifier.padding(16.dp)) {
                 Text("Block dates", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                 AvailabilityCalendar(bookedEpochDays = booked, blockedEpochDays = blocked, selectedCheckIn = start, selectedCheckOut = end, onDateSelected = { d -> when { start == null || end != null -> { start = d; end = null }; d <= start!! -> start = d; else -> end = d } }, modifier = Modifier.fillMaxWidth())

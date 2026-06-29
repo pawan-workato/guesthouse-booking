@@ -1,15 +1,12 @@
 /**
- * Demo seed data for Firebase seed script
+ * Demo seed data for Firebase seed script.
+ * Auth passwords are supplied at seed time via scripts/seed-env.mjs (never stored here).
  */
-
-export const ADMIN_PASSWORD = 'admin123';
-export const MANAGER_PASSWORD = 'manager123';
 
 export const staffProfiles = [
   {
     staffId: 1,
     email: 'admin@chain.com',
-    password: ADMIN_PASSWORD,
     displayName: 'Chain Admin',
     role: 'CHAIN_ADMIN',
     assignedPropertyIds: [],
@@ -17,7 +14,6 @@ export const staffProfiles = [
   {
     staffId: 2,
     email: 'manager.mountain@chain.com',
-    password: MANAGER_PASSWORD,
     displayName: 'Alex Mountain',
     role: 'PROPERTY_MANAGER',
     assignedPropertyIds: [1, 3, 7, 11],
@@ -25,7 +21,6 @@ export const staffProfiles = [
   {
     staffId: 3,
     email: 'manager.coastal@chain.com',
-    password: MANAGER_PASSWORD,
     displayName: 'Sam Coastal',
     role: 'PROPERTY_MANAGER',
     assignedPropertyIds: [2, 4, 8],
@@ -33,7 +28,6 @@ export const staffProfiles = [
   {
     staffId: 4,
     email: 'manager.southwest@chain.com',
-    password: MANAGER_PASSWORD,
     displayName: 'Jordan Southwest',
     role: 'PROPERTY_MANAGER',
     assignedPropertyIds: [6, 9],
@@ -41,7 +35,6 @@ export const staffProfiles = [
   {
     staffId: 5,
     email: 'manager.east@chain.com',
-    password: MANAGER_PASSWORD,
     displayName: 'Taylor East',
     role: 'PROPERTY_MANAGER',
     assignedPropertyIds: [5, 10, 12],

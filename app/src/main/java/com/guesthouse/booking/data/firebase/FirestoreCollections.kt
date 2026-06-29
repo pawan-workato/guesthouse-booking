@@ -6,6 +6,7 @@ object FirestoreCollections {
     const val ROOMS = "rooms"
     const val BOOKINGS = "bookings"
     const val GUESTS = "guests"
+    const val BLOCK_DATES = "block_dates"
     const val STAFF_ASSIGNMENTS = "staff_assignments"
 }
 
@@ -44,4 +45,10 @@ object FirestoreFields {
 
     const val PHONE = "phone"
     const val NOTES = "notes"
+
+    const val START_EPOCH_DAY = "startEpochDay"
+    const val END_EPOCH_DAY = "endEpochDay"
+    const val REASON = "reason"
+    const val CREATED_BY_STAFF_ID = "createdByStaffId"
+    const val MARKED_FOR_DELETION = "markedForDeletion"
 }

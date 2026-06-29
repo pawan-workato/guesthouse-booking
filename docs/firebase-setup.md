@@ -38,6 +38,10 @@ npx -y firebase-tools@latest use --add   # select your project
 npx -y firebase-tools@latest deploy --only firestore:rules
 ```
 
+**Manual deploy (Console):** If CLI login fails, open **Firestore → Rules** in the Firebase Console, paste the contents of `firestore.rules` from this repo, and click **Publish**.
+
+**Current status (2026-06-29):** Rules are **published** on the pilot Firebase project via Console and match repo `firestore.rules`, including the guest `isActive` chain-admin-only constraint.
+
 ## 4. Seed demo data (recommended)
 
 Run the automated seed script — it creates Auth users, Firestore staff docs, and (if empty) properties, rooms, and guests:
@@ -50,15 +54,15 @@ npm run seed
 
 See [scripts/README.md](../scripts/README.md) for the 3-step guide (download service account key → place file → run).
 
-**Demo logins after seeding:**
+**Demo logins after seeding** (passwords from `scripts/.env`, min 12 characters):
 
-| Email | Password |
-|-------|----------|
-| admin@chain.com | admin123 |
-| manager.mountain@chain.com | manager123 |
-| manager.coastal@chain.com | manager123 |
-| manager.southwest@chain.com | manager123 |
-| manager.east@chain.com | manager123 |
+| Email | Password source |
+|-------|-----------------|
+| admin@chain.com | `SEED_ADMIN_PASSWORD` |
+| manager.mountain@chain.com | `SEED_MANAGER_PASSWORD` |
+| manager.coastal@chain.com | `SEED_MANAGER_PASSWORD` |
+| manager.southwest@chain.com | `SEED_MANAGER_PASSWORD` |
+| manager.east@chain.com | `SEED_MANAGER_PASSWORD` |
 
 ### Manual fallback
 
@@ -81,10 +85,11 @@ The `guests` collection in `firestore.rules`:
 | Operation | Who |
 |-----------|-----|
 | **Read** | Any signed-in staff member (`staff/{uid}` doc must exist) — managers see the full chain guest list |
-| **Create / update** | Any staff member (guest docs have no `propertyId`; edit scope for managers is enforced in the Android app via `GuestRepository.canEditGuest`) |
+| **Create / update** | Any staff member |
+| **Soft-delete (`isActive`)** | Chain admin only — enforced in Firestore rules (`isActive` must not change unless `isChainAdmin()`) and in the app (`GuestRepository.canDeleteGuest`) |
 | **Delete** | Chain admin only |
 
-Deploy rules after changes: `npx firebase-tools deploy --only firestore:rules`.
+Redeploy after rule changes: `npx firebase-tools deploy --only firestore:rules`, or paste into Console and **Publish** (as on 2026-06-29).
 
 ## Security notes
 

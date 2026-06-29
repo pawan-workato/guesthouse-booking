@@ -25,22 +25,28 @@ class AdminViewModel(
 ) : ViewModel() {
     private val _showCancelled = MutableStateFlow(false)
     val showCancelled: StateFlow<Boolean> = _showCancelled.asStateFlow()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     private val _actionMessage = MutableStateFlow<String?>(null)
     val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
     private val _actionError = MutableStateFlow<String?>(null)
     val actionError: StateFlow<String?> = _actionError.asStateFlow()
+
+    private val listFilters = combine(_showCancelled, _searchQuery) { showCancelled, query ->
+        showCancelled to query
+    }
 
     val bookingsWithDetails: StateFlow<List<BookingWithDetails>> = combine(
         repository.observeBookings(),
         repository.observeRooms(),
         repository.observeProperties(),
         authRepository.session,
-        _showCancelled
-    ) { bookings, rooms, properties, session, showCancelled ->
+        listFilters
+    ) { bookings, rooms, properties, session, (showCancelled, query) ->
         if (session == null) return@combine emptyList()
         val roomMap = rooms.associateBy { it.id }
         val propertyMap = properties.associateBy { it.id }
-        bookings
+        val scoped = bookings
             .filter { session.canAccessProperty(it.propertyId) }
             .filter { showCancelled || it.status != BookingStatus.CANCELLED.name }
             .map { booking ->
@@ -50,10 +56,15 @@ class AdminViewModel(
                     roomName = roomMap[booking.roomId]?.name ?: "Unknown room"
                 )
             }
+        BookingSearchFilters.filterBookingsWithDetails(scoped, query)
     }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     fun setShowCancelled(show: Boolean) {
         _showCancelled.value = show
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
     fun cancelBooking(bookingId: Long) {

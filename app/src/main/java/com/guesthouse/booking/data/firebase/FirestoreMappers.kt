@@ -1,11 +1,13 @@
 package com.guesthouse.booking.data.firebase
 
+import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.RoomType
 import com.guesthouse.booking.data.local.entities.StaffPropertyAssignmentEntity
+import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.google.firebase.firestore.DocumentSnapshot
 
 data class StaffProfile(
@@ -144,3 +146,33 @@ fun StaffPropertyAssignmentEntity.toFirestoreMap(): Map<String, Any?> = mapOf(
     FirestoreFields.STAFF_ID to staffId,
     FirestoreFields.PROPERTY_ID to propertyId
 )
+
+fun BlockDateEntity.toFirestoreMap(): Map<String, Any?> = mapOf(
+    FirestoreFields.PROPERTY_ID to propertyId,
+    FirestoreFields.ROOM_ID to roomId,
+    FirestoreFields.START_EPOCH_DAY to startEpochDay,
+    FirestoreFields.END_EPOCH_DAY to endEpochDay,
+    FirestoreFields.REASON to reason,
+    FirestoreFields.CREATED_BY_STAFF_ID to createdByStaffId,
+    FirestoreFields.CREATED_AT_EPOCH_MS to createdAtEpochMs,
+    FirestoreFields.SYNC_STATUS to syncStatus,
+    FirestoreFields.MARKED_FOR_DELETION to markedForDeletion
+)
+
+fun DocumentSnapshot.toBlockDateEntity(): BlockDateEntity? {
+    val docId = id.toLongOrNull() ?: return null
+    val propertyId = getLong(FirestoreFields.PROPERTY_ID) ?: return null
+    val roomId = getLong(FirestoreFields.ROOM_ID) ?: return null
+    return BlockDateEntity(
+        id = docId,
+        propertyId = propertyId,
+        roomId = roomId,
+        startEpochDay = getLong(FirestoreFields.START_EPOCH_DAY) ?: return null,
+        endEpochDay = getLong(FirestoreFields.END_EPOCH_DAY) ?: return null,
+        reason = getString(FirestoreFields.REASON) ?: "",
+        createdByStaffId = getLong(FirestoreFields.CREATED_BY_STAFF_ID),
+        createdAtEpochMs = getLong(FirestoreFields.CREATED_AT_EPOCH_MS) ?: System.currentTimeMillis(),
+        syncStatus = SyncStatus.SYNCED.name,
+        markedForDeletion = getBoolean(FirestoreFields.MARKED_FOR_DELETION) ?: false
+    )
+}

@@ -18,8 +18,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 
 data class BlockUiState(val isSubmitting: Boolean = false, val successMessage: String? = null, val errorMessage: String? = null)
@@ -30,7 +34,7 @@ data class BookingUiState(
     val errorMessage: String? = null
 )
 
-@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class, FlowPreview::class)
 class BookingViewModel(
     private val repository: BookingRepository,
     private val blockDateRepository: BlockDateRepository,
@@ -93,6 +97,18 @@ class BookingViewModel(
     private val _blockUiState = MutableStateFlow(BlockUiState())
     val blockUiState: StateFlow<BlockUiState> = _blockUiState.asStateFlow()
     private val _preselectedRoomId = MutableStateFlow<Long?>(null)
+    private val _preselectedGuestId = MutableStateFlow<Long?>(null)
+    private val _guestLookup = MutableStateFlow(Triple("", "", ""))
+
+    val similarGuests: StateFlow<List<GuestEntity>> = _guestLookup
+        .debounce(400)
+        .distinctUntilChanged()
+        .flatMapLatest { (name, email, phone) ->
+            flow {
+                emit(guestRepository.findSimilarGuests(name, email, phone))
+            }
+        }
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     fun selectProperty(propertyId: Long) {
         _selectedPropertyId.value = propertyId
@@ -120,6 +136,24 @@ class BookingViewModel(
         _selectedPropertyId.value = propertyId
         _preselectedRoomId.value = roomId
     }
+    fun preselectGuest(guestId: Long) {
+        _preselectedGuestId.value = guestId
+    }
+
+    fun consumePreselectedGuest(): Long? {
+        val id = _preselectedGuestId.value
+        _preselectedGuestId.value = null
+        return id
+    }
+
+    fun updateGuestLookup(name: String, email: String, phone: String, manualEntry: Boolean) {
+        _guestLookup.value = if (manualEntry) Triple(name, email, phone) else Triple("", "", "")
+    }
+
+    fun clearGuestLookup() {
+        _guestLookup.value = Triple("", "", "")
+    }
+
     fun consumePreselectedRoom(): Long? {
         val id = _preselectedRoomId.value
         _preselectedRoomId.value = null

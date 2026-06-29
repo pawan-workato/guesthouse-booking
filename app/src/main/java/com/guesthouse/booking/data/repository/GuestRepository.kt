@@ -1,13 +1,22 @@
 package com.guesthouse.booking.data.repository
 
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
+import com.guesthouse.booking.data.guest.GuestMatching
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+
+data class GuestStayBooking(
+    val booking: BookingEntity,
+    val propertyName: String,
+    val roomName: String
+)
 
 class GuestRepository(
     private val database: AppDatabase,
@@ -40,20 +49,72 @@ class GuestRepository(
         return database.guestDao().getById(guestId) != null
     }
 
-    suspend fun canEditGuest(guestId: Long): Boolean {
+    suspend fun canEditGuest(guestId: Long): Boolean = canViewGuest(guestId)
+
+    suspend fun canDeleteGuest(guestId: Long): Boolean {
         val session = authRepository.currentSession() ?: return false
-        if (session.isChainAdmin) return true
-        val propertyIds = session.assignedPropertyIds.toList()
-        if (propertyIds.isEmpty()) return false
-        return database.bookingDao().getGuestIdsForProperties(propertyIds).contains(guestId)
+        return session.isChainAdmin && canViewGuest(guestId)
     }
 
-    suspend fun canAccessGuest(guestId: Long): Boolean = canEditGuest(guestId)
+    suspend fun canAccessGuest(guestId: Long): Boolean = canViewGuest(guestId)
+
+    /** Stay history scoped by role: chain admin sees all properties; managers see assigned properties only. */
+    fun observeGuestStayHistory(guestId: Long): Flow<List<GuestStayBooking>> =
+        authRepository.session.flatMapLatest { session ->
+            if (session == null) {
+                return@flatMapLatest flowOf(emptyList())
+            }
+            val bookingsFlow = when {
+                session.isChainAdmin -> database.bookingDao().observeForGuest(guestId)
+                session.assignedPropertyIds.isEmpty() -> flowOf(emptyList())
+                else -> database.bookingDao().observeForGuestAtProperties(
+                    guestId,
+                    session.assignedPropertyIds.toList()
+                )
+            }
+            combine(
+                bookingsFlow,
+                database.propertyDao().observeAll(),
+                database.roomDao().observeAll()
+            ) { bookings, properties, rooms ->
+                val propertyMap = properties.associateBy { it.id }
+                val roomMap = rooms.associateBy { it.id }
+                bookings.map { booking ->
+                    GuestStayBooking(
+                        booking = booking,
+                        propertyName = propertyMap[booking.propertyId]?.name ?: "Unknown property",
+                        roomName = roomMap[booking.roomId]?.name ?: "Unknown room"
+                    )
+                }
+            }
+        }
 
     private fun scopedGuestFlow(allGuests: () -> Flow<List<GuestEntity>>): Flow<List<GuestEntity>> =
         authRepository.session.flatMapLatest { session ->
             if (session == null) flowOf(emptyList()) else allGuests()
         }
+
+
+    suspend fun findSimilarGuests(
+        name: String,
+        email: String,
+        phone: String,
+        excludeGuestId: Long? = null
+    ): List<GuestEntity> {
+        if (authRepository.currentSession() == null) return emptyList()
+        val trimmedName = name.trim()
+        val normalizedEmail = GuestMatching.normalizeEmail(email)
+        val normalizedPhone = GuestMatching.normalizePhone(phone)
+        if (trimmedName.length < 2 && normalizedEmail.isBlank() && normalizedPhone.length < 7) {
+            return emptyList()
+        }
+        return database.guestDao().getAllActive()
+            .filter { guest ->
+                guest.id != excludeGuestId &&
+                    GuestMatching.matches(guest, name, email, phone)
+            }
+            .take(5)
+    }
 
     suspend fun createGuest(name: String, email: String, phone: String, notes: String): Result<Long> {
         if (authRepository.currentSession() == null) {
@@ -104,7 +165,7 @@ class GuestRepository(
     }
 
     suspend fun setGuestActive(guestId: Long, active: Boolean) {
-        if (!canEditGuest(guestId)) return
+        if (!canDeleteGuest(guestId)) return
         val guest = database.guestDao().getById(guestId) ?: return
         val updated = guest.copy(
             isActive = active,

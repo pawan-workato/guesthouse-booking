@@ -1,5 +1,6 @@
 package com.guesthouse.booking.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.SyncStatus
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.AdminViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -21,9 +23,11 @@ import java.time.format.DateTimeFormatter
 fun AdminScreen(
     viewModel: AdminViewModel,
     onDismissConflict: (Long) -> Unit = {},
-    onEditBooking: (Long) -> Unit = {}
+    onEditBooking: (Long) -> Unit = {},
+    onBookingClick: (Long) -> Unit = {}
 ) {
     val bookings by viewModel.bookingsWithDetails.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val showCancelled by viewModel.showCancelled.collectAsStateWithLifecycle()
     val actionMessage by viewModel.actionMessage.collectAsStateWithLifecycle()
     val actionError by viewModel.actionError.collectAsStateWithLifecycle()
@@ -44,12 +48,19 @@ fun AdminScreen(
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Row(
-            Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            Modifier.fillMaxWidth().padding(bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Show cancelled", modifier = Modifier.weight(1f))
             Switch(checked = showCancelled, onCheckedChange = viewModel::setShowCancelled)
         }
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = viewModel::setSearchQuery,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            placeholder = { Text("Search guest, property, room, ref, or status") },
+            singleLine = true
+        )
         actionMessage?.let {
             Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
         }
@@ -63,7 +74,7 @@ fun AdminScreen(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(bookings, key = { it.booking.id }) { item ->
                     val b = item.booking
-                    Card(Modifier.fillMaxWidth()) {
+                    GlassCard(Modifier.fillMaxWidth().clickable { onBookingClick(b.id) }) {
                         Column(Modifier.padding(16.dp)) {
                             Text(item.propertyName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                             Text(item.roomName, fontWeight = FontWeight.SemiBold)

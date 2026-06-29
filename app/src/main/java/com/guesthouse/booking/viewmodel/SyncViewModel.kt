@@ -2,6 +2,7 @@ package com.guesthouse.booking.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
@@ -19,6 +20,12 @@ data class SyncUiState(
     val error: String? = null
 )
 
+data class BlockDateWithDetails(
+    val block: BlockDateEntity,
+    val propertyName: String,
+    val roomName: String
+)
+
 class SyncViewModel(
     private val syncRepository: SyncRepository,
     private val bookingRepository: BookingRepository,
@@ -28,12 +35,16 @@ class SyncViewModel(
     val lastSyncEpochMs: StateFlow<Long> = syncRepository.lastSyncEpochMs
     val issueCount: StateFlow<Int> = combine(
         syncRepository.observePending(),
+        syncRepository.observePendingBlocks(),
         syncRepository.observeConflicts(),
+        syncRepository.observeBlockConflicts(),
         authRepository.session
-    ) { pending, conflicts, session ->
+    ) { pendingBookings, pendingBlocks, bookingConflicts, blockConflicts, session ->
         if (session == null) 0
-        else pending.count { session.canAccessProperty(it.propertyId) } +
-            conflicts.count { session.canAccessProperty(it.propertyId) }
+        else pendingBookings.count { session.canAccessProperty(it.propertyId) } +
+            pendingBlocks.count { session.canAccessProperty(it.propertyId) } +
+            bookingConflicts.count { session.canAccessProperty(it.propertyId) } +
+            blockConflicts.count { session.canAccessProperty(it.propertyId) }
     }.stateIn(viewModelScope, ViewModelSharing, 0)
 
     val pending: StateFlow<List<BookingEntity>> = combine(
@@ -50,6 +61,78 @@ class SyncViewModel(
     ) { bookings, session ->
         if (session == null) emptyList()
         else bookings.filter { session.canAccessProperty(it.propertyId) }
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val pendingBookingsWithDetails: StateFlow<List<BookingWithDetails>> = combine(
+        pending,
+        bookingRepository.observeProperties(),
+        bookingRepository.observeRooms()
+    ) { bookings, properties, rooms ->
+        val propertyMap = properties.associateBy { it.id }
+        val roomMap = rooms.associateBy { it.id }
+        bookings.map { booking ->
+            BookingWithDetails(
+                booking = booking,
+                propertyName = propertyMap[booking.propertyId]?.name ?: "Unknown property",
+                roomName = roomMap[booking.roomId]?.name ?: "Unknown room"
+            )
+        }
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val conflictBookingsWithDetails: StateFlow<List<BookingWithDetails>> = combine(
+        conflicts,
+        bookingRepository.observeProperties(),
+        bookingRepository.observeRooms()
+    ) { bookings, properties, rooms ->
+        val propertyMap = properties.associateBy { it.id }
+        val roomMap = rooms.associateBy { it.id }
+        bookings.map { booking ->
+            BookingWithDetails(
+                booking = booking,
+                propertyName = propertyMap[booking.propertyId]?.name ?: "Unknown property",
+                roomName = roomMap[booking.roomId]?.name ?: "Unknown room"
+            )
+        }
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val pendingBlocksWithDetails: StateFlow<List<BlockDateWithDetails>> = combine(
+        syncRepository.observePendingBlocks(),
+        bookingRepository.observeProperties(),
+        bookingRepository.observeRooms(),
+        authRepository.session
+    ) { blocks, properties, rooms, session ->
+        if (session == null) return@combine emptyList()
+        val propertyMap = properties.associateBy { it.id }
+        val roomMap = rooms.associateBy { it.id }
+        blocks
+            .filter { session.canAccessProperty(it.propertyId) }
+            .map { block ->
+                BlockDateWithDetails(
+                    block = block,
+                    propertyName = propertyMap[block.propertyId]?.name ?: "Unknown property",
+                    roomName = roomMap[block.roomId]?.name ?: "Unknown room"
+                )
+            }
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val blockConflictsWithDetails: StateFlow<List<BlockDateWithDetails>> = combine(
+        syncRepository.observeBlockConflicts(),
+        bookingRepository.observeProperties(),
+        bookingRepository.observeRooms(),
+        authRepository.session
+    ) { blocks, properties, rooms, session ->
+        if (session == null) return@combine emptyList()
+        val propertyMap = properties.associateBy { it.id }
+        val roomMap = rooms.associateBy { it.id }
+        blocks
+            .filter { session.canAccessProperty(it.propertyId) }
+            .map { block ->
+                BlockDateWithDetails(
+                    block = block,
+                    propertyName = propertyMap[block.propertyId]?.name ?: "Unknown property",
+                    roomName = roomMap[block.roomId]?.name ?: "Unknown room"
+                )
+            }
     }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     private val _uiState = MutableStateFlow(SyncUiState())

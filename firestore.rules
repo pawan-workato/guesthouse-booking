@@ -49,14 +49,21 @@ service cloud.firestore {
     }
 
     match /guests/{guestId} {
-      // All staff (including managers) may read the chain guest list; edit scope is enforced in-app.
+      // All staff may read/create/update guests; soft-delete (isActive) is chain-admin only.
       allow read: if isStaff();
-      // Guest docs have no propertyId — create/update allowed for any staff; managers edit only linked guests in app.
-      allow create, update: if isStaff();
+      allow create: if isStaff();
+      allow update: if isStaff()
+        && (isChainAdmin() || request.resource.data.isActive == resource.data.isActive);
       allow delete: if isChainAdmin();
     }
 
     match /bookings/{bookingId} {
+      allow read: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
+      allow create: if isSignedIn() && canAccessProperty(int(request.resource.data.propertyId));
+      allow update, delete: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
+    }
+
+    match /block_dates/{blockDateId} {
       allow read: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
       allow create: if isSignedIn() && canAccessProperty(int(request.resource.data.propertyId));
       allow update, delete: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));

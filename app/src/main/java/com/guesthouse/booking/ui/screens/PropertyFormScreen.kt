@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.PropertyEntity
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,9 +64,9 @@ fun PropertyFormScreen(
         return
     }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBar(
+            GlassTopAppBar(
                 title = { Text(if (isEdit) "Edit property" else "Add property") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -1,7 +1,7 @@
 # Penetration Test Plan — Guesthouse Booking (Android)
 
 **Document version:** 1.0  
-**Last updated:** 2026-06-29  
+**Last updated:** 2026-06-29 (Sync status, guest RBAC, Firebase-only)  
 **Application:** `com.guesthouse.booking` (staff-only Android app)  
 **Repository:** [guesthouse-booking](https://github.com/pawan-workato/guesthouse-booking)
 
@@ -19,11 +19,11 @@
 | **Business logic** | Booking creation, cancellation, guest CRUD, property management, offline sync queue |
 | **Android platform surface** | Manifest permissions, exported components, backup, WorkManager sync workers |
 | **Client-side controls** | Navigation routes, ViewModel authorization, repository-layer enforcement gaps |
-| **Future API (planned)** | Ktor API is implemented; include `POST/PUT /api/rooms`, JWT RBAC, and dual Firebase path in API-phase tests |
+| **Cloud sync** | Firebase Auth + Firestore (bookings, guests, block dates, staff); no separate REST API in current product |
 
 ### 1.2 Out of scope (current phase)
 
-- Cloud infrastructure hosting the **optional** Ktor API (in scope for P3 API pentest, not P0 mobile-only)
+- Separate REST/backend API (removed — Firebase-only; P3 API pentest deferred)
 - Third-party SaaS integrations (payments, email, analytics)
 - Physical security of guesthouse premises
 - Social engineering of real staff (unless explicitly authorized red-team exercise)
@@ -68,11 +68,11 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  UI Layer (Compose / Navigation)                            │
-│  Routes: properties, guests, book, today, bookings, staff (admin) │
+│  Routes: book, today, bookings (admin), properties, guests, sync, staff (admin) │
 ├─────────────────────────────────────────────────────────────┤
-│  ViewModels (RBAC enforced inconsistently)                   │
+│  ViewModels (RBAC enforced; repository checks on mutations)   │
 ├─────────────────────────────────────────────────────────────┤
-│  Repositories (minimal auth checks — BookingRepository)     │
+│  Repositories (property checks on booking/guest mutations)    │
 ├─────────────────────────────────────────────────────────────┤
 │  Room DB + SharedPreferences + Android Backup               │
 └─────────────────────────────────────────────────────────────┘
@@ -136,13 +136,13 @@
 
 | ID | Test case | Steps | Expected | Code reference |
 |----|-----------|-------|----------|----------------|
-| AUTH-01 | Valid login | Login `admin@chain.com` / `admin123` | Session established, main nav shown | `AuthRepository.login()` |
+| AUTH-01 | Valid login | Login `admin@chain.com` with password from `scripts/.env` (`SEED_ADMIN_PASSWORD`) | Session established, main nav shown | `AuthRepository.login()` |
 | AUTH-02 | Invalid password | Wrong password 5× | Generic error, no user enumeration | `AuthRepository.login()` |
 | AUTH-03 | Brute force resistance | Automated login attempts (100+) | Rate limit or lockout (currently **none** — document as finding) | `LoginViewModel` |
-| AUTH-04 | Session persistence | Login, kill app, reopen | Session restored from prefs | `restoreSession()` |
-| AUTH-05 | **Prefs tampering — privilege escalation** | Root/adb: set `guesthouse_auth` `staff_id` to `1` (chain admin) | App loads admin session without password | `KEY_STAFF_ID` in prefs |
-| AUTH-06 | **Prefs tampering — invalid staff** | Set `staff_id` to deleted/invalid ID | Session cleared, login screen | `loadSession()` null path |
-| AUTH-07 | Logout completeness | Logout, inspect prefs | `staff_id` removed; back stack cleared | `clearPersistedSession()` |
+| AUTH-04 | Session persistence | Login, kill app, reopen | Session restored from **Firebase Auth** + staff profile lookup by UID | `restoreSession()` |
+| AUTH-05 | **Prefs tampering — privilege escalation** | Root/adb: set legacy `staff_id` in old prefs | **No effect** — prefs not read; session derived from Firebase UID | `LegacySessionStorage.purge()` |
+| AUTH-06 | **Prefs tampering — invalid staff** | Set legacy `staff_id` to invalid ID | **No effect** — same as AUTH-05 | N/A (prefs unused) |
+| AUTH-07 | Logout completeness | Logout, inspect prefs | Legacy session prefs deleted; Firebase sign-out | `LegacySessionStorage.purge()` |
 | AUTH-08 | Session fixation | Login as manager, logout, login as admin | No stale property filters or cached ViewModels | `MainActivity` |
 | AUTH-09 | Password hash extraction | SQLite: read `staff.password_hash` | Hashes present; assess crackability | `PasswordHasher`, `StaffEntity` |
 | AUTH-10 | Offline login | Disable network, login with valid creds | Login succeeds (local DB) | No network dependency |
@@ -164,7 +164,7 @@
 | AUTHZ-09 | **Guest edit cross-chain** | Navigate `guest/1/edit` — guest may be unrelated to assigned properties | Edit succeeds? Document exposure | `GuestFormScreen` route — no property guard |
 | AUTHZ-10 | Create booking cross-property | Submit booking for room outside assigned properties via `BookingViewModel` | Error: no access | `submitBooking()` checks `canAccessProperty` |
 | AUTHZ-11 | Chain admin property CRUD | Manager calls `createProperty` via Frida | Silent no-op | `PropertiesViewModel` early return |
-| AUTHZ-12 | Direct SQLite — role change | Update `staff.role` to `CHAIN_ADMIN` in DB | Next `restoreSession` grants admin | DB integrity not protected |
+| AUTHZ-12 | Direct SQLite — role change | Update `staff.role` to `CHAIN_ADMIN` in DB | **Online:** session from Firestore SERVER only — tampered SQLite ignored. **Offline:** local cache used until reconnect; `refreshSessionBinding()` re-validates | `AuthRepository.loadFirebaseSession()`, `refreshSessionBinding()` |
 
 ### 5.3 Data at rest
 
@@ -184,7 +184,7 @@
 |----|-----------|-------|----------|---------|
 | CRYP-01 | Password algorithm | Review `PasswordHasher.kt` | Strong adaptive hash (bcrypt/Argon2) | **SHA-256 + static salt `guesthouse-chain-v1`** |
 | CRYP-02 | Salt uniqueness | Compare hashes for two users with same password | Per-user salt required | **Shared static salt** |
-| CRYP-03 | Hash crack test | Extract hash, run hashcat/john with wordlist | `manager123` cracks quickly | Demo password weakness |
+| CRYP-03 | Hash crack test | Extract hash, run hashcat/john with wordlist | Weak seeded passwords crack if chosen poorly — use strong `SEED_*` values | Demo password policy in `scripts/seed-env.mjs` |
 | CRYP-04 | No secrets in APK | strings / apktool search | No production API keys (N/A today) | `INTERNET` only |
 | CRYP-05 | TLS (future) | When API added: test weak TLS, pinning bypass | TLS 1.2+, pinning enforced | Not applicable yet |
 
@@ -252,10 +252,10 @@ These items were identified in code review; pentest should confirm exploitabilit
 | **KR-01** | SHA-256 password hashing with static salt | **Critical** | `PasswordHasher.kt` | CRYP-01, CRYP-03 |
 | **KR-02** | Session = `staff_id` only in SharedPreferences (no token, no binding) | **High** | `AuthRepository.kt` | AUTH-05 |
 | **KR-03** | `allowBackup=true` enables PII/hash extraction | **High** | `AndroidManifest.xml` | DATA-02 |
-| **KR-04** | Hardcoded demo passwords in Firebase seed script and wiki | **High** | `scripts/seed-firebase-demo.mjs`, `scripts/seed-data.mjs`, `staff-guide.md` | AUTH-09, CRYP-03 |
+| **KR-04** | Hardcoded demo passwords in Firebase seed script and wiki | **High** | `scripts/seed-env.mjs`, `scripts/.env.example`, wiki | **Fixed** — passwords from env only; docs redacted | AUTH-09, CRYP-03 |
 | **KR-05** | `AdminViewModel.cancelBooking` — no property authorization | **High** | `AdminViewModel.kt:44-47` | AUTHZ-05, AUTHZ-06 |
 | **KR-06** | `SyncViewModel.dismissConflict` — no property check | **Medium** | `SyncViewModel.kt:75-78` | AUTHZ-07 |
-| **KR-07** | `GuestsViewModel` — no property-scoped guest access | **Medium** | `GuestsViewModel.kt` | AUTHZ-08 |
+| **KR-07** | Chain-wide guest list visible to all managers | **Medium** (accepted) | `GuestRepository.kt` | AUTHZ-08 — product decision; all managers may edit any guest |
 | **KR-08** | `RoomDetail` route — no property access guard | **Medium** | `AppNavigation.kt:173-188` | AUTHZ-03 |
 | **KR-09** | `BookingRepository` — no repository-layer auth | **High** | `BookingRepository.kt` | AUTHZ-06 |
 | **KR-10** | Destructive DB migrations wipe all data | **Medium** (ops) | `AppDatabase.kt:44` | DATA-07 |
@@ -263,20 +263,9 @@ These items were identified in code review; pentest should confirm exploitabilit
 | **KR-12** | No brute-force protection on login | **Medium** | `LoginViewModel.kt` | AUTH-03 |
 | **KR-13** | Plaintext Room SQLite (guest PII, password hashes) | **High** | `AppDatabase.kt` | DATA-03 — **Fixed** (SQLCipher + Keystore-backed passphrase) |
 
-### AdminViewModel cancel authorization (verified)
+### AdminViewModel cancel authorization — **Fixed** ✅
 
-The UI filters bookings by `session.canAccessProperty(it.propertyId)` in the `bookingsWithDetails` flow, but **`cancelBooking(bookingId)` calls `repository.cancelBooking(bookingId)` without verifying the booking belongs to an accessible property**. A property manager who learns another property's booking ID (e.g., via SQLite, Frida, or future API) can cancel it if they can invoke the method.
-
-```kotlin
-// AdminViewModel.kt — display filtered, action not filtered
-fun cancelBooking(bookingId: Long) {
-    viewModelScope.launch {
-        repository.cancelBooking(bookingId)  // no auth check
-    }
-}
-```
-
-**Recommended remediation (for dev team, not pentest):** Add property check in `AdminViewModel` and enforce in `BookingRepository` with session context.
+`AdminViewModel.cancelBooking` and `BookingRepository.cancelBooking` now verify `canAccessProperty` before cancelling. Retest with AUTHZ-05 / AUTHZ-06.
 
 ---
 
@@ -401,13 +390,13 @@ Copy into issue tracker or spreadsheet for each finding:
 
 | ID | Severity | Status | Sprint | Notes |
 |----|----------|--------|--------|-------|
-| KR-01 | Critical | **Open** | 8 | SHA-256 + static salt — Firebase Auth is the prod auth provider; local hash is demo-only |
-| KR-02 | High | **Fixed** ✅ | 8 | `AuthRepository` uses `EncryptedSharedPreferences` (AES256-GCM, Android Keystore) |
-| KR-03 | High | **Open** | 9 | `allowBackup=true` — add `android:dataExtractionRules` config before pilot |
-| KR-04 | High | **Open** (accepted/dev) | — | Demo creds documented as dev-only in `staff-guide.md`; not in production Firebase |
+| KR-01 | Critical | **Fixed** ✅ | 8 | BCrypt cost 12; legacy SHA-256 verify path for migration only |
+| KR-02 | High | **Fixed** ✅ | 8 | Session from Firebase Auth UID only; no `staff_id` in prefs; legacy prefs purged |
+| KR-03 | High | **Fixed** ✅ | 9 | `android:allowBackup="false"` in manifest |
+| KR-04 | High | **Fixed** ✅ | — | Passwords from `SEED_*` env; `scripts/.env` gitignored; wiki/docs redacted |
 | KR-05 | High | **Fixed** ✅ | 8 | `AdminViewModel.cancelBooking` checks `session.canAccessProperty(booking.propertyId)` |
 | KR-06 | Medium | **Fixed** ✅ | 8 | `SyncViewModel.dismissConflict` checks session + property before delegating |
-| KR-07 | Medium | **Fixed** ✅ | 8 | `GuestRepository.canEditGuest` scopes edits; `AppNavigation` shows access-denied screen |
+| KR-07 | Medium | **Accepted** | 8 | Chain-wide guest visibility; all managers edit any guest; stay history property-scoped for managers |
 | KR-08 | Medium | **Fixed** ✅ | 8 | `RoomDetail` route checks `canAccessProperty(propertyId)` before rendering |
 | KR-09 | High | **Fixed** ✅ | 8 | `BookingRepository.cancelBooking` checks session + `canAccessProperty` |
 | KR-10 | Medium | **Documented** | 8 | `fallbackToDestructiveMigration` marked dev-only; explicit migrations v8→9→10 in place |
@@ -415,7 +404,7 @@ Copy into issue tracker or spreadsheet for each finding:
 | KR-12 | Medium | **Fixed** ✅ | 8 | `LoginViewModel`: lockout after 5 failures, 30 s cooldown (in-memory per session) |
 | KR-13 | High | **Fixed** ✅ | 8 | SQLCipher: 32-byte random key in Android Keystore; plaintext DB migration on upgrade |
 | KR-14 | Low | **Fixed** ✅ | 8 | `FLAG_SECURE` on `MainActivity` — prevents screenshots/recents across all screens |
-| KR-15 | Medium | **Fixed** ✅ | 8 | Firestore `guests/{id}`: `delete` requires `isChainAdmin()`; create/read/update → signed-in |
+| KR-15 | Medium | **Fixed** ✅ | 8 | Firestore `guests`: staff read/create/update; delete + `isActive` change chain-admin only |
 
 ---
 
@@ -438,15 +427,15 @@ Copy into issue tracker or spreadsheet for each finding:
 
 ## Appendix B — Demo test accounts
 
-From `docs/wiki/staff-guide.md` (do not use in production):
+From `docs/wiki/staff-guide.md` (do not use in production). Set passwords in `scripts/.env` before `npm run seed`:
 
 | Email | Password | Role | Properties |
 |-------|----------|------|------------|
-| `admin@chain.com` | `admin123` | Chain Admin | All (1–12) |
-| `manager.mountain@chain.com` | `manager123` | Property Manager | 1, 3, 7, 11 |
-| `manager.coastal@chain.com` | `manager123` | Property Manager | 2, 4, 8 |
-| `manager.southwest@chain.com` | `manager123` | Property Manager | 6, 9 |
-| `manager.east@chain.com` | `manager123` | Property Manager | 5, 10, 12 |
+| `admin@chain.com` | `SEED_ADMIN_PASSWORD` | Chain Admin | All (1–12) |
+| `manager.mountain@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 1, 3, 7, 11 |
+| `manager.coastal@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 2, 4, 8 |
+| `manager.southwest@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 6, 9 |
+| `manager.east@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 5, 10, 12 |
 
 ---
 
@@ -455,6 +444,7 @@ From `docs/wiki/staff-guide.md` (do not use in production):
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-06-27 | Engineering | Initial pentest plan for local-only Android app |
-| 1.1 | 2026-06-29 | Engineering | Firebase + optional Ktor API, Sprint 7 scope, toolbar sync (no Sync tab), room CRUD |
+| 1.1 | 2026-06-29 | Engineering | Firebase-only sync, Sprint 7 scope, toolbar sync opens Sync status screen, room CRUD |
 | 1.2 | 2026-06-29 | Engineering | KR-13 SQLCipher Room encryption, plaintext migration documented |
 | 1.3 | 2026-06-29 | Engineering | Sprint 8 security fixes: KR-02,05–15 marked Fixed; dashboard updated; KR-03 deferred to Sprint 9 |
+| 1.4 | 2026-06-29 | Engineering | Firebase-only scope; Sync status screen; guest RBAC; KR-01/03 Fixed; KR-07 accepted product decision |

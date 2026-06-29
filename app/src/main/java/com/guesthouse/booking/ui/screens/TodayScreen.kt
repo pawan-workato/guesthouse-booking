@@ -1,5 +1,6 @@
 package com.guesthouse.booking.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -9,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.PropertyEntity
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.BookingWithDetails
 import com.guesthouse.booking.viewmodel.TodayViewModel
 import java.time.LocalDate
@@ -16,7 +18,7 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayScreen(viewModel: TodayViewModel) {
+fun TodayScreen(viewModel: TodayViewModel, onBookingClick: (Long) -> Unit = {}) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
     LaunchedEffect(state.actionMessage, state.actionError) {
@@ -29,9 +31,9 @@ fun TodayScreen(viewModel: TodayViewModel) {
         state.actionMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp)) }
         state.actionError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp)) }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item { TodaySection("Arrivals", "No arrivals today.", state.arrivals, formatter, "Check in", viewModel::checkIn) }
-            item { TodaySection("Departures", "No departures today.", state.departures, formatter, "Check out", viewModel::checkOut) }
-            item { TodaySection("In-house", "No guests in-house.", state.inHouse, formatter, null, null) }
+            item { TodaySection("Arrivals", "No arrivals today.", state.arrivals, formatter, "Check in", viewModel::checkIn, onBookingClick) }
+            item { TodaySection("Departures", "No departures today.", state.departures, formatter, "Check out", viewModel::checkOut, onBookingClick) }
+            item { TodaySection("In-house", "No guests in-house.", state.inHouse, formatter, null, null, onBookingClick) }
         }
     }
 }
@@ -49,13 +51,13 @@ fun TodayScreen(viewModel: TodayViewModel) {
     }
 }
 
-@Composable private fun TodaySection(title: String, emptyMessage: String, bookings: List<BookingWithDetails>, formatter: DateTimeFormatter, actionLabel: String?, onAction: ((Long) -> Unit)?) {
+@Composable private fun TodaySection(title: String, emptyMessage: String, bookings: List<BookingWithDetails>, formatter: DateTimeFormatter, actionLabel: String?, onAction: ((Long) -> Unit)?, onBookingClick: (Long) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         if (bookings.isEmpty()) Text(emptyMessage, color = MaterialTheme.colorScheme.onSurfaceVariant)
         else bookings.forEach { item ->
             val booking = item.booking
-            Card(Modifier.fillMaxWidth()) {
+            GlassCard(Modifier.fillMaxWidth().clickable { onBookingClick(booking.id) }) {
                 Column(Modifier.padding(16.dp)) {
                     Text(item.propertyName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     Text(item.roomName, fontWeight = FontWeight.SemiBold)

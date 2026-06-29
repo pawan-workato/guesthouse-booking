@@ -1,12 +1,16 @@
 package com.guesthouse.booking.viewmodel
 
 import app.cash.turbine.test
+import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.data.local.entities.StaffRole
+import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.GuestRepository
 import com.guesthouse.booking.testutil.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -22,6 +26,8 @@ class GuestsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val guestRepository = mockk<GuestRepository>()
+    private val authRepository = mockk<AuthRepository>()
+    private val sessionFlow = MutableStateFlow<StaffSession?>(null)
 
     private val guests = listOf(
         GuestEntity(id = 1L, name = "Alice Anderson", email = "alice@test.com", phone = "555-0101"),
@@ -31,10 +37,12 @@ class GuestsViewModelTest {
 
     @Test
     fun guests_filtersBySearchQueryAcrossNameEmailAndPhone() = runTest {
+        every { authRepository.session } returns sessionFlow
         every { guestRepository.observeScopedActiveGuests() } returns flowOf(guests)
         every { guestRepository.observeScopedAllGuests() } returns flowOf(guests)
+        every { guestRepository.observeGuestStayHistory(any()) } returns flowOf(emptyList())
 
-        val viewModel = GuestsViewModel(guestRepository)
+        val viewModel = GuestsViewModel(guestRepository, authRepository)
         advanceUntilIdle()
         viewModel.setSearchQuery("555-0102")
         advanceUntilIdle()
@@ -50,10 +58,12 @@ class GuestsViewModelTest {
 
     @Test
     fun guests_searchIsCaseInsensitive() = runTest {
+        every { authRepository.session } returns sessionFlow
         every { guestRepository.observeScopedActiveGuests() } returns flowOf(guests)
         every { guestRepository.observeScopedAllGuests() } returns flowOf(guests)
+        every { guestRepository.observeGuestStayHistory(any()) } returns flowOf(emptyList())
 
-        val viewModel = GuestsViewModel(guestRepository)
+        val viewModel = GuestsViewModel(guestRepository, authRepository)
         advanceUntilIdle()
         viewModel.setSearchQuery("carol")
         advanceUntilIdle()
@@ -68,18 +78,20 @@ class GuestsViewModelTest {
     }
 
     @Test
-    fun loadGuestForEdit_setsReadOnlyWhenManagerCannotEditGuest() = runTest {
+    fun loadGuestForEdit_allowsManagerToEditAnyGuest() = runTest {
         val guest = guests.first()
+        every { authRepository.session } returns sessionFlow
         coEvery { guestRepository.getGuest(guest.id) } returns guest
-        coEvery { guestRepository.canEditGuest(guest.id) } returns false
+        coEvery { guestRepository.canEditGuest(guest.id) } returns true
         every { guestRepository.observeScopedActiveGuests() } returns flowOf(guests)
         every { guestRepository.observeScopedAllGuests() } returns flowOf(guests)
+        every { guestRepository.observeGuestStayHistory(guest.id) } returns flowOf(emptyList())
 
-        val viewModel = GuestsViewModel(guestRepository)
+        val viewModel = GuestsViewModel(guestRepository, authRepository)
         viewModel.loadGuestForEdit(guest.id)
         advanceUntilIdle()
 
-        assertFalse(viewModel.canEditGuest.value)
+        assertTrue(viewModel.canEditGuest.value)
         assertEquals(guest, viewModel.editGuest.value)
     }
 }

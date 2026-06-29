@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.RoomType
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
 import com.guesthouse.booking.viewmodel.RoomsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,9 +72,9 @@ fun RoomFormScreen(
         return
     }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBar(
+            GlassTopAppBar(
                 title = { Text(if (isEdit) "Edit room" else "Add room") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.repository.AuthRepository
+import com.guesthouse.booking.data.repository.ChainOccupancyTotals
+import com.guesthouse.booking.data.repository.OccupancyRepository
+import com.guesthouse.booking.data.repository.PropertyOccupancyStats
 import com.guesthouse.booking.data.repository.PropertyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -19,8 +23,10 @@ data class PropertyFormUiState(
     val savedPropertyId: Long? = null
 )
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class PropertiesViewModel(
     private val propertyRepository: PropertyRepository,
+    private val occupancyRepository: OccupancyRepository,
     private val authRepository: AuthRepository
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
@@ -55,6 +61,21 @@ class PropertiesViewModel(
             }
         }
     }.stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val occupancyStats: StateFlow<List<PropertyOccupancyStats>> = properties
+        .flatMapLatest { props ->
+            flow {
+                emit(occupancyRepository.getStatsForProperties(props.filter { it.isActive }))
+            }
+        }
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val chainTotals: StateFlow<ChainOccupancyTotals?> = combine(
+        occupancyStats,
+        authRepository.session
+    ) { stats, session ->
+        if (session?.isChainAdmin == true && stats.isNotEmpty()) ChainOccupancyTotals.from(stats) else null
+    }.stateIn(viewModelScope, ViewModelSharing, null)
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query

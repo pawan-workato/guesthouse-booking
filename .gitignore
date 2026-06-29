@@ -13,6 +13,7 @@ app/build/
 app/build/
 app/google-services.json
 scripts/serviceAccountKey.json
+scripts/.env
 scripts/node_modules/
 scripts/package-lock.json
 backend/build/

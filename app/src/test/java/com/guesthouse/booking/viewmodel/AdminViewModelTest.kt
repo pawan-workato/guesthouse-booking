@@ -42,13 +42,41 @@ class AdminViewModelTest {
     private fun setupBookings(vararg bookings: BookingEntity) {
         every { bookingRepository.observeBookings() } returns flowOf(bookings.toList())
         every { bookingRepository.observeRooms() } returns flowOf(
-            listOf(RoomEntity(id = 1L, propertyId = 1L, name = "Room 1", description = "", pricePerNight = 100.0, capacity = 2))
+            listOf(
+                RoomEntity(id = 1L, propertyId = 1L, name = "Room 1", description = "", pricePerNight = 100.0, capacity = 2),
+                RoomEntity(id = 2L, propertyId = 2L, name = "Ocean Suite", description = "", pricePerNight = 150.0, capacity = 3)
+            )
         )
         every { bookingRepository.observeProperties() } returns flowOf(
-            listOf(PropertyEntity(id = 1L, name = "Mountain Lodge", address = "X", region = "Colorado"))
+            listOf(
+                PropertyEntity(id = 1L, name = "Mountain Lodge", address = "X", region = "Colorado"),
+                PropertyEntity(id = 2L, name = "Coastal Inn", address = "Y", region = "Pacific")
+            )
         )
         every { authRepository.session } returns sessionFlow
     }
+
+    private fun booking(
+        id: Long,
+        propertyId: Long = 1L,
+        roomId: Long = 1L,
+        guestName: String = "Guest $id",
+        guestEmail: String = "",
+        guestPhone: String = "",
+        bookingReference: String = "",
+        status: String = BookingStatus.CONFIRMED.name
+    ) = BookingEntity(
+        id = id,
+        propertyId = propertyId,
+        roomId = roomId,
+        guestName = guestName,
+        guestEmail = guestEmail,
+        guestPhone = guestPhone,
+        checkInEpochDay = 100L,
+        checkOutEpochDay = 105L,
+        status = status,
+        bookingReference = bookingReference
+    )
 
     @Test
     fun bookingsWithDetails_hidesCancelledByDefault() = runTest {
@@ -149,6 +177,47 @@ class AdminViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 0) { bookingRepository.cancelBooking(any()) }
+    }
+
+    @Test
+    fun bookingsWithDetails_filtersBySearchQuery() = runTest {
+        setupBookings(
+            booking(
+                id = 1L,
+                guestName = "Jane Guest",
+                guestEmail = "jane@example.com",
+                bookingReference = "GH-1-100"
+            ),
+            booking(
+                id = 2L,
+                propertyId = 2L,
+                roomId = 2L,
+                guestName = "Bob Smith",
+                guestEmail = "bob@example.com",
+                bookingReference = "GH-2-200"
+            )
+        )
+        sessionFlow.value = managerSession(propertyIds = setOf(1L, 2L))
+
+        val viewModel = AdminViewModel(bookingRepository, authRepository)
+        backgroundScope.launch { viewModel.bookingsWithDetails.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setSearchQuery("coastal")
+        advanceUntilIdle()
+        assertEquals(listOf(2L), viewModel.bookingsWithDetails.value.map { it.booking.id })
+
+        viewModel.setSearchQuery("jane@example.com")
+        advanceUntilIdle()
+        assertEquals(listOf(1L), viewModel.bookingsWithDetails.value.map { it.booking.id })
+
+        viewModel.setSearchQuery("GH-1")
+        advanceUntilIdle()
+        assertEquals(listOf(1L), viewModel.bookingsWithDetails.value.map { it.booking.id })
+
+        viewModel.setSearchQuery("")
+        advanceUntilIdle()
+        assertEquals(listOf(1L, 2L), viewModel.bookingsWithDetails.value.map { it.booking.id })
     }
 
     @Test

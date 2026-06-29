@@ -18,7 +18,7 @@ Twelve. See [chain overview](chain-overview.md).
 
 ### Where is the Sync tab?
 
-There is no Sync tab. Use the **sync icon** in the top app bar (next to sign out). The badge shows pending uploads and conflicts.
+There is no Sync tab. Tap the **sync icon** in the top app bar (next to sign out) to open **Sync status** — online/offline, last sync time, pending uploads, conflicts, and **Sync now**. The badge shows pending items for your properties.
 
 ## Bookings
 
@@ -70,7 +70,7 @@ See [staff guide — manager map](staff-guide.md#manager--property-map).
 
 ### Why don't I see every guest?
 
-All signed-in staff can view every guest profile (name, email, phone, notes). Guest screens do not show booking history. Property managers can only edit guests linked to bookings at **their** properties; chain admins can edit any guest.
+All signed-in staff can view and **edit any guest profile** (name, email, phone, notes). **Stay history** on guest detail shows past and upcoming bookings — chain admins see all properties; property managers see only stays at **their assigned properties**. **Only chain admins** can remove or reactivate guests.
 
 ## Demo / development
 
@@ -78,8 +78,8 @@ All signed-in staff can view every guest profile (name, email, phone, notes). Gu
 
 | Account | Password |
 |---------|----------|
-| `admin@chain.com` | `admin123` |
-| All `manager.*@chain.com` | `manager123` |
+| `admin@chain.com` | `SEED_ADMIN_PASSWORD` in `scripts/.env` |
+| All `manager.*@chain.com` | `SEED_MANAGER_PASSWORD` in `scripts/.env` |
 
 ### Why don't I see bookings from another phone?
 

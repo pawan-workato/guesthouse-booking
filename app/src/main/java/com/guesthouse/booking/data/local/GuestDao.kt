@@ -56,4 +56,8 @@ interface GuestDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(guests: List<GuestEntity>)
+
+    @Query("SELECT * FROM guests WHERE isActive = 1 ORDER BY name ASC")
+    suspend fun getAllActive(): List<GuestEntity>
+
 }

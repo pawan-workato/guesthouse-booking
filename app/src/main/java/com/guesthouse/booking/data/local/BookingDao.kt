@@ -32,6 +32,24 @@ interface BookingDao {
     @Query("SELECT * FROM bookings ORDER BY checkInEpochDay DESC")
     fun observeAll(): Flow<List<BookingEntity>>
 
+    @Query(
+        """
+        SELECT * FROM bookings
+        WHERE guestId = :guestId
+        ORDER BY checkInEpochDay DESC
+        """
+    )
+    fun observeForGuest(guestId: Long): Flow<List<BookingEntity>>
+
+    @Query(
+        """
+        SELECT * FROM bookings
+        WHERE guestId = :guestId AND propertyId IN (:propertyIds)
+        ORDER BY checkInEpochDay DESC
+        """
+    )
+    fun observeForGuestAtProperties(guestId: Long, propertyIds: List<Long>): Flow<List<BookingEntity>>
+
     @Query("SELECT * FROM bookings WHERE id = :id")
     suspend fun getById(id: Long): BookingEntity?
 
@@ -115,4 +133,50 @@ interface BookingDao {
         serverId: Long,
         updatedAtEpochMs: Long
     )
+
+    @Query(
+        """
+        SELECT DISTINCT roomId FROM bookings
+        WHERE propertyId = :propertyId
+        AND status IN ('CONFIRMED', 'CHECKED_IN')
+        AND syncStatus != :conflictStatus
+        AND checkInEpochDay <= :epochDay AND checkOutEpochDay > :epochDay
+        """
+    )
+    suspend fun getOccupiedRoomIds(
+        propertyId: Long,
+        epochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): List<Long>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM bookings
+        WHERE propertyId = :propertyId
+        AND status = 'CONFIRMED'
+        AND syncStatus != :conflictStatus
+        AND checkInEpochDay = :epochDay
+        """
+    )
+    suspend fun countArrivalsToday(
+        propertyId: Long,
+        epochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): Int
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM bookings
+        WHERE propertyId = :propertyId
+        AND status = 'CHECKED_IN'
+        AND syncStatus != :conflictStatus
+        AND checkOutEpochDay = :epochDay
+        """
+    )
+    suspend fun countDeparturesToday(
+        propertyId: Long,
+        epochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): Int
+
 }

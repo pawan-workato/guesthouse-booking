@@ -20,8 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
+import com.guesthouse.booking.ui.theme.glassNavigationBarContainerColor
+import com.guesthouse.booking.ui.theme.glassTopAppBarColors
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -32,21 +37,26 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.guesthouse.booking.ui.screens.AdminScreen
+import com.guesthouse.booking.ui.screens.BookingDetailScreen
 import com.guesthouse.booking.ui.screens.BookingFormScreen
 import com.guesthouse.booking.ui.screens.GuestFormScreen
 import com.guesthouse.booking.ui.screens.GuestsScreen
 import com.guesthouse.booking.ui.screens.PropertiesScreen
+import com.guesthouse.booking.ui.screens.ReportsScreen
 import com.guesthouse.booking.ui.screens.PropertyFormScreen
 import com.guesthouse.booking.ui.screens.PropertyRoomsScreen
 import com.guesthouse.booking.ui.screens.RoomDetailScreen
 import com.guesthouse.booking.ui.screens.RoomFormScreen
 import com.guesthouse.booking.ui.screens.StaffFormScreen
 import com.guesthouse.booking.ui.screens.StaffScreen
+import com.guesthouse.booking.ui.screens.SyncStatusScreen
 import com.guesthouse.booking.ui.screens.TodayScreen
 import com.guesthouse.booking.viewmodel.AdminViewModel
+import com.guesthouse.booking.viewmodel.BookingDetailViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import com.guesthouse.booking.viewmodel.GuestsViewModel
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
+import com.guesthouse.booking.viewmodel.ReportsViewModel
 import com.guesthouse.booking.viewmodel.RoomsViewModel
 import com.guesthouse.booking.viewmodel.StaffViewModel
 import com.guesthouse.booking.viewmodel.SyncViewModel
@@ -56,6 +66,9 @@ sealed class Screen(val route: String, val label: String) {
     data object Properties : Screen("properties", "Properties")
     data object Book : Screen("book", "Book")
     data object Today : Screen("today", "Today")
+    data object BookingDetail : Screen("booking/{bookingId}", "Booking detail") {
+        fun createRoute(bookingId: Long) = "booking/$bookingId"
+    }
     data object BookingEdit : Screen("booking/{bookingId}/edit", "Edit booking") {
         fun createRoute(bookingId: Long) = "booking/$bookingId/edit"
     }
@@ -77,6 +90,8 @@ sealed class Screen(val route: String, val label: String) {
         fun createRoute(propertyId: Long) = "property/$propertyId/edit"
     }
     data object Guests : Screen("guests", "Guests")
+    data object Sync : Screen("sync", "Sync status")
+    data object Reports : Screen("reports", "Occupancy report")
     data object GuestAdd : Screen("guest/add", "Add guest")
     data object GuestEdit : Screen("guest/{guestId}/edit", "Edit guest") {
         fun createRoute(guestId: Long) = "guest/$guestId/edit"
@@ -88,6 +103,11 @@ sealed class Screen(val route: String, val label: String) {
     }
 }
 
+
+private fun NavController.navigateToBookTab(bookingVm: BookingViewModel, guestId: Long? = null) {
+    guestId?.let { bookingVm.preselectGuest(it) }
+    navigateToMainTab(Screen.Book.route)
+}
 
 private fun NavController.navigateToMainTab(route: String) {
     if (currentBackStackEntry?.destination?.route == route) return
@@ -112,14 +132,13 @@ fun GuesthouseNavHost(
     val navController = rememberNavController()
     val syncVm: SyncViewModel = viewModel(factory = viewModelFactory)
     val issueCount by syncVm.issueCount.collectAsStateWithLifecycle()
-    val isOnline by syncVm.isOnline.collectAsStateWithLifecycle()
     val syncUiState by syncVm.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val bottomNavItems = listOf(
-        Screen.Properties,
         Screen.Book,
         Screen.Today,
-        Screen.Admin
+        Screen.Admin,
+        Screen.Properties
     )
     val topNavItems = buildList {
         add(Screen.Guests)
@@ -145,10 +164,12 @@ fun GuesthouseNavHost(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (showMainChrome) {
                 TopAppBar(
+                    colors = glassTopAppBarColors(),
                     title = {
                         Column {
                             Text("Guesthouse Booking")
@@ -177,15 +198,14 @@ fun GuesthouseNavHost(
                             }
                         }
                         IconButton(
-                            onClick = { syncVm.clearMessage(); syncVm.syncNow() },
-                            enabled = isOnline && !syncUiState.isSyncing
+                            onClick = { navController.navigate(Screen.Sync.route) }
                         ) {
                             if (issueCount > 0) {
                                 BadgedBox(badge = { Badge { Text(issueCount.toString()) } }) {
-                                    Icon(Icons.Default.Sync, contentDescription = "Sync now")
+                                    Icon(Icons.Default.Sync, contentDescription = "Sync status")
                                 }
                             } else {
-                                Icon(Icons.Default.Sync, contentDescription = "Sync now")
+                                Icon(Icons.Default.Sync, contentDescription = "Sync status")
                             }
                         }
                         IconButton(onClick = onLogout) {
@@ -197,7 +217,7 @@ fun GuesthouseNavHost(
         },
         bottomBar = {
             if (showMainChrome) {
-                NavigationBar {
+                NavigationBar(containerColor = glassNavigationBarContainerColor()) {
                     bottomNavItems.forEach { screen ->
                         NavigationBarItem(
                             icon = {
@@ -224,7 +244,7 @@ fun GuesthouseNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Properties.route,
+            startDestination = Screen.Today.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Properties.route) {
@@ -234,7 +254,10 @@ fun GuesthouseNavHost(
                     isChainAdmin = isChainAdmin,
                     onPropertyClick = { navController.navigate(Screen.PropertyRooms.createRoute(it)) },
                     onAddProperty = { navController.navigate(Screen.PropertyAdd.route) },
-                    onEditProperty = { navController.navigate(Screen.PropertyEdit.createRoute(it)) }
+                    onEditProperty = { navController.navigate(Screen.PropertyEdit.createRoute(it)) },
+                    onOpenReports = if (isChainAdmin) {
+                        { navController.navigate(Screen.Reports.route) }
+                    } else null
                 )
             }
             composable(Screen.PropertyRooms.route) { entry ->
@@ -315,6 +338,26 @@ fun GuesthouseNavHost(
                 }
             }
 
+            composable(Screen.Reports.route) {
+                if (!isChainAdmin) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    val reportsVm: ReportsViewModel = viewModel(factory = viewModelFactory)
+                    ReportsScreen(
+                        viewModel = reportsVm,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
+            composable(Screen.Sync.route) {
+                SyncStatusScreen(
+                    viewModel = syncVm,
+                    isFirebaseConfigured = isFirebaseConfigured,
+                    onBack = { navController.popBackStack() },
+                    onOpenBooking = { navController.navigate(Screen.BookingDetail.createRoute(it)) },
+                    onDismissConflict = { syncVm.dismissConflict(it) }
+                )
+            }
             composable(Screen.Guests.route) {
                 val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
                 GuestsScreen(
@@ -335,6 +378,7 @@ fun GuesthouseNavHost(
             composable(Screen.GuestEdit.route) { entry ->
                 val guestId = entry.arguments?.getString("guestId")?.toLongOrNull() ?: return@composable
                 val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
+                val bookingVm: BookingViewModel = viewModel(factory = viewModelFactory)
                 val accessDenied by vm.editAccessDenied.collectAsStateWithLifecycle()
                 val canEdit by vm.canEditGuest.collectAsStateWithLifecycle()
                 LaunchedEffect(guestId) { vm.loadGuestForEdit(guestId) }
@@ -346,24 +390,51 @@ fun GuesthouseNavHost(
                         viewModel = vm,
                         readOnly = !canEdit,
                         onSaved = { navController.popBackStack() },
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onBookAgain = { navController.navigateToBookTab(bookingVm, guestId) }
                     )
                 }
             }
             composable(Screen.Book.route) {
                 val vm: BookingViewModel = viewModel(factory = viewModelFactory)
+                LaunchedEffect(Unit) {
+                    vm.consumePreselectedGuest()?.let { guestId ->
+                        // preselect handled in BookingFormScreen via activeGuests
+                    }
+                }
                 BookingFormScreen(viewModel = vm)
             }
             composable(Screen.Today.route) {
                 val vm: TodayViewModel = viewModel(factory = viewModelFactory)
-                TodayScreen(viewModel = vm)
+                TodayScreen(
+                    viewModel = vm,
+                    onBookingClick = { navController.navigate(Screen.BookingDetail.createRoute(it)) }
+                )
             }
             composable(Screen.Admin.route) {
                 val vm: AdminViewModel = viewModel(factory = viewModelFactory)
                 AdminScreen(
                     viewModel = vm,
                     onDismissConflict = { syncVm.dismissConflict(it) },
-                    onEditBooking = { navController.navigate(Screen.BookingEdit.createRoute(it)) }
+                    onEditBooking = { navController.navigate(Screen.BookingEdit.createRoute(it)) },
+                    onBookingClick = { navController.navigate(Screen.BookingDetail.createRoute(it)) }
+                )
+            }
+
+            composable(Screen.BookingDetail.route) { entry ->
+                val bookingId = entry.arguments?.getString("bookingId")?.toLongOrNull() ?: return@composable
+                val vm: BookingDetailViewModel = viewModel(factory = viewModelFactory)
+                val bookingVm: BookingViewModel = viewModel(factory = viewModelFactory)
+                BookingDetailScreen(
+                    bookingId = bookingId,
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() },
+                    onEditBooking = { navController.navigate(Screen.BookingEdit.createRoute(it)) },
+                    onOpenGuest = { navController.navigate(Screen.GuestEdit.createRoute(it)) },
+                    onBookAgain = { guestId ->
+                        navController.navigateToBookTab(bookingVm, guestId)
+                    },
+                    onDismissConflict = { syncVm.dismissConflict(it) }
                 )
             }
             composable(Screen.BookingEdit.route) { entry ->
@@ -457,9 +528,9 @@ fun GuesthouseNavHost(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PropertyAccessDenied(onBack: () -> Unit) {
-    Scaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBar(
+            GlassTopAppBar(
                 title = { Text("Access denied") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

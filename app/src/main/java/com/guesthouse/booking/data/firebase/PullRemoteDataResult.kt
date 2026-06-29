@@ -6,9 +6,10 @@ data class PullRemoteDataResult(
     val roomsCount: Int = 0,
     val guestsCount: Int = 0,
     val bookingsCount: Int = 0,
+    val blockDatesCount: Int = 0,
     val errors: List<String> = emptyList()
 ) {
     val hasErrors: Boolean get() = errors.isNotEmpty()
     val hasData: Boolean get() =
-        staffCount + propertiesCount + roomsCount + guestsCount + bookingsCount > 0
+        staffCount + propertiesCount + roomsCount + guestsCount + bookingsCount + blockDatesCount > 0
 }

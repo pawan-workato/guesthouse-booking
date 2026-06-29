@@ -15,7 +15,11 @@ import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.RoomTypeSummary
 import com.guesthouse.booking.data.local.entities.RoomType
 import com.guesthouse.booking.ui.components.AvailabilityCalendar
+import com.guesthouse.booking.ui.components.SimilarGuestWarning
 import com.guesthouse.booking.ui.components.bookedDaysFromRanges
+import com.guesthouse.booking.ui.theme.GlassCard
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -39,6 +43,7 @@ fun BookingFormScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val activeGuests by viewModel.activeGuests.collectAsState()
+    val similarGuests by viewModel.similarGuests.collectAsState()
     val editBooking by viewModel.editBooking.collectAsState()
     val isEdit = bookingId != null
 
@@ -81,8 +86,30 @@ fun BookingFormScreen(
         }
     }
 
+    var consumedGuestPreselect by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         if (!isEdit) viewModel.consumePreselectedRoom()?.let { selectedRoomId = it }
+    }
+
+    LaunchedEffect(activeGuests, isEdit, consumedGuestPreselect) {
+        if (!isEdit && !consumedGuestPreselect) {
+            viewModel.consumePreselectedGuest()?.let { guestId ->
+                consumedGuestPreselect = true
+                selectedGuestId = guestId
+                activeGuests.find { it.id == guestId }?.let { guest ->
+                    guestName = guest.name
+                    guestEmail = guest.email
+                    guestPhone = guest.phone
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(guestName, guestEmail, guestPhone, selectedGuestId) {
+        if (!isEdit) {
+            viewModel.updateGuestLookup(guestName, guestEmail, guestPhone, manualEntry = selectedGuestId == null)
+        }
     }
 
     LaunchedEffect(selectedPropertyId, filteredRooms, isEdit, editBooking) {
@@ -118,8 +145,8 @@ fun BookingFormScreen(
 
     val formContent: @Composable ColumnScope.() -> Unit = {
         if (!isOnline) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            GlassCard(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
             ) {
                 Text(
@@ -330,6 +357,19 @@ fun BookingFormScreen(
             }
         }
 
+        if (!isEdit && selectedGuestId == null) {
+            SimilarGuestWarning(
+                similarGuests = similarGuests,
+                onUseExisting = { guest ->
+                    selectedGuestId = guest.id
+                    guestName = guest.name
+                    guestEmail = guest.email
+                    guestPhone = guest.phone
+                    viewModel.clearGuestLookup()
+                }
+            )
+        }
+
         OutlinedTextField(guestName, { guestName = it; selectedGuestId = null }, label = { Text("Guest name *") },
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
         OutlinedTextField(guestPhone, { guestPhone = it; selectedGuestId = null }, label = { Text("Phone") },
@@ -377,9 +417,9 @@ fun BookingFormScreen(
     }
 
     if (isEdit) {
-        Scaffold(
+        GlassScaffold(
             topBar = {
-                TopAppBar(
+                GlassTopAppBar(
                     title = { Text("Edit booking") },
                     navigationIcon = {
                         IconButton(onClick = { onBack?.invoke() }) {

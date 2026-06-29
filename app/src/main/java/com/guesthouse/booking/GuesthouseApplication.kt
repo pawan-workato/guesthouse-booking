@@ -13,8 +13,17 @@ import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.data.repository.StaffRepository
 import com.guesthouse.booking.data.repository.SyncRepository
 import com.guesthouse.booking.data.sync.NetworkMonitor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 class GuesthouseApplication : Application() {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    lateinit var database: AppDatabase
+        private set
     lateinit var repository: BookingRepository
         private set
     lateinit var blockDateRepository: BlockDateRepository
@@ -41,7 +50,8 @@ class GuesthouseApplication : Application() {
             // No google-services.json (e.g. CI): Room instrumented tests only need the process.
             return
         }
-        val database = AppDatabase.getInstance(this)
+        database = AppDatabase.getInstance(this)
+        val database = this.database
         val firestore = FirestoreDataSource()
         val syncService = FirestoreSyncService(database, firestore)
         networkMonitor = NetworkMonitor(this)
@@ -49,10 +59,17 @@ class GuesthouseApplication : Application() {
 
         authRepository = AuthRepository(
             database = database,
-            context = this,
+            appContext = this,
+            networkMonitor = networkMonitor,
             firestore = firestore,
             syncService = syncService
         )
+
+        applicationScope.launch {
+            networkMonitor.isOnline.drop(1).filter { it }.collect {
+                authRepository.refreshSessionBinding()
+            }
+        }
 
         syncRepository = SyncRepository(
             database = database,
@@ -70,7 +87,13 @@ class GuesthouseApplication : Application() {
             firestore,
             lazy { syncRepository }
         )
-        blockDateRepository = BlockDateRepository(database, authRepository)
+        blockDateRepository = BlockDateRepository(
+            database,
+            authRepository,
+            networkMonitor,
+            firestore,
+            lazy { syncRepository }
+        )
         propertyRepository = PropertyRepository(database, networkMonitor, firestore)
         guestRepository = GuestRepository(
             database,

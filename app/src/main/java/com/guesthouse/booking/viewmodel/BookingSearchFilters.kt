@@ -5,6 +5,25 @@ import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.RoomType
 
 object BookingSearchFilters {
+    fun filterBookingsWithDetails(
+        bookings: List<BookingWithDetails>,
+        query: String
+    ): List<BookingWithDetails> {
+        val q = query.trim()
+        if (q.isBlank()) return bookings
+        return bookings.filter { item ->
+            val b = item.booking
+            b.guestName.contains(q, ignoreCase = true) ||
+                b.guestEmail.contains(q, ignoreCase = true) ||
+                b.guestPhone.contains(q, ignoreCase = true) ||
+                item.propertyName.contains(q, ignoreCase = true) ||
+                item.roomName.contains(q, ignoreCase = true) ||
+                b.bookingReference.contains(q, ignoreCase = true) ||
+                b.status.contains(q, ignoreCase = true) ||
+                b.status.replace('_', ' ').contains(q, ignoreCase = true)
+        }
+    }
+
     fun filterProperties(properties: List<PropertyEntity>, query: String): List<PropertyEntity> {
         val q = query.trim()
         if (q.isBlank()) return properties

@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.LoginViewModel
 
 @Composable
@@ -20,66 +21,74 @@ fun LoginScreen(viewModel: LoginViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    Column(
+    Box(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            "Guesthouse Booking",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Staff sign in",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Guesthouse Booking",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Staff sign in",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 32.dp)
+                )
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
-        )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    shape = MaterialTheme.shapes.medium
+                )
 
-        uiState.errorMessage?.let {
-            Text(
-                it,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 12.dp)
-            )
-        }
+                uiState.errorMessage?.let {
+                    Text(
+                        it,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
 
-        if (uiState.isLockedOut && uiState.lockoutSecondsRemaining > 0) {
-            LaunchedEffect(uiState.lockoutSecondsRemaining) {
-                kotlinx.coroutines.delay(1000)
-                viewModel.refreshLockoutCountdown()
+                if (uiState.isLockedOut && uiState.lockoutSecondsRemaining > 0) {
+                    LaunchedEffect(uiState.lockoutSecondsRemaining) {
+                        kotlinx.coroutines.delay(1000)
+                        viewModel.refreshLockoutCountdown()
+                    }
+                }
+
+                Button(
+                    onClick = { viewModel.login(email, password) },
+                    enabled = !uiState.isLoading && !uiState.isLockedOut && email.isNotBlank() && password.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Text(if (uiState.isLoading) "Signing in..." else "Sign in")
+                }
             }
         }
-
-        Button(
-            onClick = { viewModel.login(email, password) },
-            enabled = !uiState.isLoading && !uiState.isLockedOut && email.isNotBlank() && password.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
-        ) {
-            Text(if (uiState.isLoading) "Signing in..." else "Sign in")
-        }
-
     }
 }
