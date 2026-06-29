@@ -9,7 +9,7 @@ Staff reference for the 12-property guesthouse chain. Use alongside the Android 
 | [Chain overview](chain-overview.md) | Purpose and list of all 12 properties |
 | [Staff guide](staff-guide.md) | Navigation, roles, room/booking features, demo accounts |
 | [Booking procedures](booking-procedures.md) | Create, edit, cancel, check-in/out, block dates |
-| [Offline operations](offline-operations.md) | Offline queue, top-bar sync, conflicts |
+| [Offline operations](offline-operations.md) | Offline queue, Sync status screen, conflicts |
 | [FAQ](faq.md) | Common staff questions |
 
 ## Properties by region

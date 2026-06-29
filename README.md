@@ -95,6 +95,7 @@ On macOS, `./gradlew` also auto-selects Android Studio’s JBR when `JAVA_HOME` 
 - Sprint 6: Firebase Auth + Firestore sync ✅
 - Sprint 7: Today board, check-in/out, block dates, edit bookings, room types, room CRUD, booking search ✅
 - Sprint 8: Occupancy on property cards, booking detail, duplicate guest warnings, rebook/extend, morning notifications ✅
+- Sprint 9: Sync status screen, guest deactivate rules (Firestore + app), CI KVM/AVD cache ✅
 
 ## GitHub
 

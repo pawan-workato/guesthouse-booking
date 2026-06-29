@@ -70,4 +70,4 @@ Each room has a **capacity** field. The app does not block over-capacity booking
 
 ## Block dates
 
-From **room detail** → **Block dates**. Blocked ranges appear in orange on the calendar and prevent new overlapping bookings. Stored **locally** (`block_dates` table); not synced to Firestore.
+From **room detail** → **Block dates**. Blocked ranges appear in orange on the calendar and prevent new overlapping bookings. Block dates sync to Firestore like bookings (offline creates queue as **PENDING SYNC** until upload).

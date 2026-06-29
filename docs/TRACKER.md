@@ -1,8 +1,8 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-29 (Properties UX, CI hardening, Firestore guest rule)
+**Last updated:** 2026-06-29 (Sync status screen, guest RBAC, pentest doc refresh)
 
-Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`main` at `8b673fe` plus uncommitted working-tree changes where noted).
+Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`merge-main` at `2cd4f6c`).
 
 **Status legend:** ✅ Done · 🔄 In progress · ⏳ Pending · ❌ Deferred / accepted risk
 
@@ -12,7 +12,7 @@ Single source of truth for security remediation, product delivery, and open work
 
 | Status | Count | Examples |
 |--------|------:|----------|
-| ✅ Done | 54 | KR-02, KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
+| ✅ Done | 56 | KR-02, KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-SYNC, guest RBAC |
 | 🔄 In progress | 0 | — |
 | ⏳ Pending | 1 | Sprint 10 P2 manual pentest |
 | ❌ Deferred | 2 | KR-07 chain-wide guest read (product), AUTHZ-08 |
@@ -40,7 +40,7 @@ Single source of truth for security remediation, product delivery, and open work
 | KR-04 | Crypto / ops | Hardcoded demo passwords in seed scripts & wiki | ✅ Done | High | Passwords from `SEED_*` env only; `scripts/.env.example`; docs redacted | Working tree |
 | KR-05 | AuthZ | `AdminViewModel.cancelBooking` — no property check | ✅ Done | High | Property check in ViewModel + repository | On `main` (post PR #2) |
 | KR-06 | AuthZ | `SyncViewModel.dismissConflict` — no property check | ✅ Done | Medium | `canAccessProperty` before dismiss | On `main` |
-| KR-07 | AuthZ | Managers see all chain guests | ❌ Deferred | Medium | **Product decision:** managers view all guests read-only; edit limited to guests linked via bookings on assigned properties (`GuestRepository.canEditGuest`) | Uncommitted guest visibility change |
+| KR-07 | AuthZ | Managers see all chain guests | ❌ Deferred | Medium | **Product decision:** all staff view full guest list; all managers may edit any guest; stay history property-scoped for managers | `bf8f746` |
 | KR-08 | AuthZ | `RoomDetail` route — no property guard | ✅ Done | Medium | `AppNavigation` checks `canAccessProperty(propertyId)` | On `main` |
 | KR-09 | AuthZ | `BookingRepository` — no repository-layer auth | ✅ Done | High | `canAccessProperty` on cancel, check-in/out, create/update | On `main` |
 | KR-10 | Data / ops | Destructive DB migrations | ✅ Done | Medium | `fallbackToDestructiveMigration` gated behind `BuildConfig.DEBUG`; release builds fail on unregistered jumps | Working tree |
@@ -48,7 +48,7 @@ Single source of truth for security remediation, product delivery, and open work
 | KR-12 | Auth | No brute-force protection on login | ✅ Done | Medium | `LoginViewModel`: 5 failures → 30 s lockout; `LoginScreen` live countdown + disabled button | Working tree |
 | KR-13 | Data | Plaintext Room SQLite | ✅ Done | High | SQLCipher 4.16 + Keystore-backed passphrase; plaintext→encrypted migration on first launch | Working tree |
 | KR-14 | Platform | `FLAG_SECURE` on sensitive screens | ✅ Done | Low | App-wide on `MainActivity` | Working tree |
-| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; **`isActive` change chain-admin only** at rules level; deploy via Console | `firestore.rules` — redeploy pending |
+| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; **`isActive` change chain-admin only** on update; deployed via Console | `firestore.rules` — `2fa405d` |
 
 **Security subagent note:** Session `4cb960be` (Fix security backlog) applied KR-11/12/14/15 + pentest doc refresh; verified in working tree alongside prior PRs [#1](https://github.com/pawan-workato/guesthouse-booking/pull/1) and [#2](https://github.com/pawan-workato/guesthouse-booking/pull/2).
 
@@ -66,7 +66,7 @@ Single source of truth for security remediation, product delivery, and open work
 | AUTHZ-06 | AuthZ | Cancel via DB/Frida | ✅ Done | High | Repository enforces property scope | On `main` |
 | AUTHZ-07 | AuthZ | Cross-property dismiss conflict | ✅ Done | Medium | `SyncViewModel.dismissConflict` checks property | On `main` |
 | AUTHZ-08 | AuthZ | Guest list chain-wide for managers | ❌ Deferred | Medium | Intentional: all guests visible; edit gated | Product spec / README |
-| AUTHZ-09 | AuthZ | Guest edit cross-chain | ✅ Done | Medium | Edit denied (`readOnly`) when guest not linked to manager properties; view allowed | Working tree |
+| AUTHZ-09 | AuthZ | Guest edit cross-chain | ✅ Done | Medium | All managers edit any guest; remove/reactivate chain-admin only (app + Firestore `isActive` rule) | `bf8f746`, `2fa405d` |
 | AUTHZ-10 | AuthZ | Create booking cross-property blocked | ✅ Done | High | `BookingViewModel.submitBooking` | On `main` |
 | AUTHZ-11 | AuthZ | Manager property CRUD via Frida | ✅ Done | Medium | ViewModel early return for non-admin | On `main` |
 | AUTHZ-12 | AuthZ | Direct SQLite role change | ✅ Done | Medium | Online: Firestore SERVER-only session; offline: Firestore cache then local; `refreshSessionBinding` on reconnect | Working tree |
@@ -86,7 +86,7 @@ Single source of truth for security remediation, product delivery, and open work
 | SEC-SQL | Data | SQLCipher encrypted Room | ✅ Done | High | `net.zetetic:sqlcipher-android:4.16.0` in `app/build.gradle.kts` | Working tree |
 | SEC-FIRE | Cloud | Firestore rules — guest write too open | ✅ Done | High | `isStaff()` required for guest read/create/update; delete chain-admin only; **deployed manually** to Firebase Console (CLI login blocked) | `firestore.rules` + manual deploy 2026-06-27 |
 | SEC-BF | Auth | Login brute-force / lockout | ✅ Done | Medium | Same as KR-12 | Working tree |
-| DOC-01 | Docs | Pentest plan stale vs code | ✅ Done | Low | §6 dashboard updated KR-01–KR-15 | Working tree |
+| DOC-01 | Docs | Pentest plan stale vs code | ✅ Done | Low | §6 dashboard + Firebase-only scope; KR-01/03 Fixed | `2cd4f6c` (this commit) |
 
 ---
 
@@ -115,11 +115,12 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-S6 | Product | Firebase Auth + Firestore sync | ✅ Done | — | | Sprint 6 |
 | FEAT-S7 | Product | Today board, check-in/out, block dates, edit bookings, room types, room CRUD, booking search | ✅ Done | — | | Sprint 7 / `61dc4ff` merge |
 | FEAT-BOOK-FILTER | Product | Bookings tab hides cancelled by default; **Show cancelled** toggle | ✅ Done | Low | `AdminViewModel` + `AdminScreen` | Working tree |
-| FEAT-NAV | Product | 4 bottom tabs + Guests/Staff in top bar | ✅ Done | Medium | Bottom: Book → Today → Bookings → Properties; opens on **Today**; top: Guests, Staff (admin) | `28b8114` |
+| FEAT-NAV | Product | 4 bottom tabs + Guests/Staff in top bar | ✅ Done | Medium | Bottom: Book → Today → Bookings → Properties; opens on **Today**; top: Guests, Staff (admin) | `4d6c1ea` |
 | FEAT-PROPS-UX | Product | Unified Properties list with inline occupancy | ✅ Done | Medium | Stats on property cards; chain banner for admin; scroll fix | `4d6c1ea` |
-| FEAT-KTOR | Product | Remove Ktor backend; Firebase-only | ✅ Done | Medium | `backend/` removed from settings; `data/remote/*` deleted; Firebase-only sync | Working tree |
-| FEAT-GUEST | Product | Managers view all guests (read-only unless linked) | ✅ Done | Medium | `GuestRepository.canViewGuest` / `canEditGuest` split | Working tree |
-| FEAT-DOCS | Product | README & wiki docs refresh | ✅ Done | Low | README Firebase-first; wiki offline/migrations updated | Working tree |
+| FEAT-KTOR | Product | Remove Ktor backend; Firebase-only | ✅ Done | Medium | `backend/` removed from settings; `data/remote/*` deleted; Firebase-only sync | `870f80f` |
+| FEAT-GUEST | Product | All managers edit any guest; admin-only remove/reactivate | ✅ Done | Medium | `GuestRepository.canEditGuest` = any existing guest; `canDeleteGuest` chain-admin only | `bf8f746` |
+| FEAT-SYNC | Product | Sync status screen (toolbar sync icon) | ✅ Done | Medium | Pending uploads, conflicts, last sync, **Sync now**; badge on icon | `2cd4f6c` |
+| FEAT-DOCS | Product | README & wiki docs refresh | ✅ Done | Low | Sprint 8–9 UX, Sync status, guest RBAC, block-date sync | `2cd4f6c` (this commit) |
 | FEAT-WIKI | Product | Property wiki **Type** column | ✅ Done | Low | All 7 region property pages include Type column | Working tree |
 | FEAT-GLASS | Product | Apple Liquid Glass UI theme | ✅ Done | Medium | `Glass.kt` — gradient mesh, frosted cards, glass nav/scaffold on all screens | Working tree |
 | FEAT-BLOCK-SYNC | Product | Firestore sync for block dates | ✅ Done | Medium | `block_dates` collection; push/pull in SyncRepository; MIGRATION_10_11 | Working tree |
@@ -179,4 +180,4 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 | 2026-06-27 | KR-02 — session identity from Firebase UID only; legacy session prefs removed |
 | 2026-06-27 | FEAT-GLASS — Liquid Glass UI theme (`4a90eef`) |
 | 2026-06-29 | BUG-FLICKER — tab/screen flicker fixes (ViewModel flow sharing, nav chrome) |
-| 2026-06-29 | BUG-CHK-UI, SEC-FIRE, KR-10/DATA-07, FEAT-NAV/KTOR/GUEST/DOCS/WIKI, login lockout UX |
+| 2026-06-29 | FEAT-SYNC — Sync status screen; guest RBAC (all managers edit); pentest §6 refresh |

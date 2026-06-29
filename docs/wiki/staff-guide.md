@@ -22,7 +22,7 @@ The Android app is **staff-only**. Property managers book rooms for guests; gues
 - **Sync** (circular arrows) — opens **Sync status** (pending uploads, conflicts, **Sync now**); badge = pending + conflict count
 - **Sign out**
 
-There is no separate **Sync** tab. **Guests** and **Staff** are in the top bar so the bottom navigation stays uncluttered for chain admins. Pending bookings and conflicts appear on **Bookings** (sync status + **Cancel this booking** for conflicts).
+There is no separate **Sync** tab. **Guests** and **Staff** are in the top bar so the bottom navigation stays uncluttered for chain admins. Pending uploads and conflicts also appear on **Bookings** and on the **Sync status** screen (opened from the sync icon).
 
 ### Typical workflow
 
@@ -84,14 +84,14 @@ After sign-in, ~**7:00 AM local** arrival summary (property-scoped). Allow notif
 - **Book** tab — dynamic search for properties (name, region, city) and rooms (name, description, type)
 - **Edit booking** — **Bookings** → **Edit** on a confirmed reservation
 - **Check-in / check-out** — **Bookings** or **Today** (when dates allow)
-- **Block dates** — room detail → **Block dates** (local only; orange on calendar)
+- **Block dates** — room detail → **Block dates** (syncs to Firestore; orange on calendar)
 
 ## Staff roles
 
 | Role | Access |
 |------|--------|
 | **Chain admin** | All 12 properties; all guests (full edit); staff admin; full bookings |
-| **Property manager** | Assigned properties only; view all guest profiles (edit scoped to property bookings); rooms CRUD at assigned sites |
+| **Property manager** | Assigned properties only; view and **edit any guest profile**; stay history limited to assigned properties; rooms CRUD at assigned sites |
 
 Demo assignments come from seed data — see [seeding guide](../../seeding.md).
 

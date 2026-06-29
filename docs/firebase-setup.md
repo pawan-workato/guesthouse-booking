@@ -83,7 +83,8 @@ The `guests` collection in `firestore.rules`:
 | Operation | Who |
 |-----------|-----|
 | **Read** | Any signed-in staff member (`staff/{uid}` doc must exist) — managers see the full chain guest list |
-| **Create / update** | Any staff member (guest docs have no `propertyId`; edit scope for managers is enforced in the Android app via `GuestRepository.canEditGuest`) |
+| **Create / update** | Any staff member |
+| **Soft-delete (`isActive`)** | Chain admin only — enforced in Firestore rules (`isActive` must not change unless `isChainAdmin()`) and in the app (`GuestRepository.canDeleteGuest`) |
 | **Delete** | Chain admin only |
 
 Deploy rules after changes: `npx firebase-tools deploy --only firestore:rules`.
