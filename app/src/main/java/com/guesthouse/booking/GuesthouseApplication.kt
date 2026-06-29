@@ -41,7 +41,10 @@ class GuesthouseApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        FirebaseInitializer.initialize(this)
+        if (!FirebaseInitializer.initialize(this)) {
+            // No google-services.json (e.g. CI): Room instrumented tests only need the process.
+            return
+        }
         val database = AppDatabase.getInstance(this)
         val firestore = FirestoreDataSource()
         val syncService = FirestoreSyncService(database, firestore)
