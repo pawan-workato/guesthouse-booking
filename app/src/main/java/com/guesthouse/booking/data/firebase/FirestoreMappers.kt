@@ -73,7 +73,7 @@ fun DocumentSnapshot.toRoomEntity(): RoomEntity? {
         propertyId = propertyId,
         name = getString(FirestoreFields.NAME) ?: return null,
         description = getString(FirestoreFields.DESCRIPTION) ?: "",
-        pricePerNight = getDouble(FirestoreFields.PRICE_PER_NIGHT) ?: 0.0,
+        pricePerNight = (get(FirestoreFields.PRICE_PER_NIGHT) as? Number)?.toDouble() ?: 0.0,
         capacity = getLong(FirestoreFields.CAPACITY)?.toInt() ?: 1
     )
 }

@@ -8,6 +8,7 @@ import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 
 class FirestoreDataSource(
@@ -17,7 +18,10 @@ class FirestoreDataSource(
     val isSignedIn: Boolean get() = auth.currentUser != null
 
     suspend fun getStaffByUid(uid: String): StaffProfile? {
-        val snapshot = firestore.collection(FirestoreCollections.STAFF).document(uid).get().await()
+        val snapshot = firestore.collection(FirestoreCollections.STAFF)
+            .document(uid)
+            .get(Source.SERVER)
+            .await()
         return if (snapshot.exists()) snapshot.toStaffProfile() else null
     }
 
@@ -32,28 +36,61 @@ class FirestoreDataSource(
 
     suspend fun fetchAllStaff(): List<StaffProfile> =
         firestore.collection(FirestoreCollections.STAFF)
-            .get().await()
+            .get(Source.SERVER)
+            .await()
             .documents.mapNotNull { it.toStaffProfile() }
 
     suspend fun fetchProperties(): List<PropertyEntity> =
         firestore.collection(FirestoreCollections.PROPERTIES)
-            .get().await()
+            .get(Source.SERVER)
+            .await()
             .documents.mapNotNull { it.toPropertyEntity() }
+
+    suspend fun fetchPropertiesByIds(propertyIds: Collection<Long>): List<PropertyEntity> =
+        propertyIds.mapNotNull { propertyId ->
+            firestore.collection(FirestoreCollections.PROPERTIES)
+                .document(propertyId.toString())
+                .get(Source.SERVER)
+                .await()
+                .takeIf { it.exists() }
+                ?.toPropertyEntity()
+        }
 
     suspend fun fetchRooms(): List<RoomEntity> =
         firestore.collection(FirestoreCollections.ROOMS)
-            .get().await()
+            .get(Source.SERVER)
+            .await()
             .documents.mapNotNull { it.toRoomEntity() }
+
+    suspend fun fetchRoomsForProperties(propertyIds: Collection<Long>): List<RoomEntity> =
+        propertyIds.chunked(WHERE_IN_LIMIT).flatMap { chunk ->
+            firestore.collection(FirestoreCollections.ROOMS)
+                .whereIn(FirestoreFields.PROPERTY_ID, chunk)
+                .get(Source.SERVER)
+                .await()
+                .documents.mapNotNull { it.toRoomEntity() }
+        }
 
     suspend fun fetchGuests(): List<GuestEntity> =
         firestore.collection(FirestoreCollections.GUESTS)
-            .get().await()
+            .get(Source.SERVER)
+            .await()
             .documents.mapNotNull { it.toGuestEntity() }
 
     suspend fun fetchBookings(): List<BookingEntity> =
         firestore.collection(FirestoreCollections.BOOKINGS)
-            .get().await()
+            .get(Source.SERVER)
+            .await()
             .documents.mapNotNull { it.toBookingEntity() }
+
+    suspend fun fetchBookingsForProperties(propertyIds: Collection<Long>): List<BookingEntity> =
+        propertyIds.chunked(WHERE_IN_LIMIT).flatMap { chunk ->
+            firestore.collection(FirestoreCollections.BOOKINGS)
+                .whereIn(FirestoreFields.PROPERTY_ID, chunk)
+                .get(Source.SERVER)
+                .await()
+                .documents.mapNotNull { it.toBookingEntity() }
+        }
 
     suspend fun upsertProperty(property: PropertyEntity) {
         firestore.collection(FirestoreCollections.PROPERTIES)
@@ -101,5 +138,9 @@ class FirestoreDataSource(
             .document(bookingId.toString())
             .update(FirestoreFields.STATUS, status)
             .await()
+    }
+
+    private companion object {
+        const val WHERE_IN_LIMIT = 10
     }
 }

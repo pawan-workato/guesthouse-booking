@@ -36,12 +36,28 @@ class FirestoreSyncService(
     }
 
     suspend fun pullRemoteData(session: StaffSession) {
-        val profiles = firestore.fetchAllStaff()
-        val properties = firestore.fetchProperties()
-        val rooms = firestore.fetchRooms()
+        val profiles = if (session.isChainAdmin) {
+            firestore.fetchAllStaff()
+        } else {
+            emptyList()
+        }
+        val accessiblePropertyIds = session.assignedPropertyIds
+        val properties = if (session.isChainAdmin) {
+            firestore.fetchProperties()
+        } else {
+            firestore.fetchPropertiesByIds(accessiblePropertyIds)
+        }
+        val rooms = if (session.isChainAdmin) {
+            firestore.fetchRooms()
+        } else {
+            firestore.fetchRoomsForProperties(accessiblePropertyIds)
+        }
         val guests = firestore.fetchGuests()
-        val bookings = firestore.fetchBookings()
-            .filter { session.canAccessProperty(it.propertyId) }
+        val bookings = if (session.isChainAdmin) {
+            firestore.fetchBookings()
+        } else {
+            firestore.fetchBookingsForProperties(accessiblePropertyIds)
+        }
 
         database.withTransaction {
             for (profile in profiles) {
