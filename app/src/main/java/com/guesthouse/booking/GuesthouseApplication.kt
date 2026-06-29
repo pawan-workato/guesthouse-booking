@@ -5,6 +5,7 @@ import com.guesthouse.booking.data.firebase.FirebaseInitializer
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.firebase.FirestoreSyncService
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.repository.AuditRepository
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.BookingRepository
@@ -38,6 +39,8 @@ class GuesthouseApplication : Application() {
         private set
     lateinit var syncRepository: SyncRepository
         private set
+    lateinit var auditRepository: AuditRepository
+        private set
     lateinit var networkMonitor: NetworkMonitor
         private set
 
@@ -47,7 +50,6 @@ class GuesthouseApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         if (!FirebaseInitializer.initialize(this)) {
-            // No google-services.json (e.g. CI): Room instrumented tests only need the process.
             return
         }
         database = AppDatabase.getInstance(this)
@@ -71,6 +73,8 @@ class GuesthouseApplication : Application() {
             }
         }
 
+        auditRepository = AuditRepository(database, authRepository)
+
         syncRepository = SyncRepository(
             database = database,
             networkMonitor = networkMonitor,
@@ -85,21 +89,24 @@ class GuesthouseApplication : Application() {
             authRepository,
             networkMonitor,
             firestore,
-            lazy { syncRepository }
+            lazy { syncRepository },
+            auditRepository
         )
         blockDateRepository = BlockDateRepository(
             database,
             authRepository,
             networkMonitor,
             firestore,
-            lazy { syncRepository }
+            lazy { syncRepository },
+            auditRepository
         )
-        propertyRepository = PropertyRepository(database, networkMonitor, firestore)
+        propertyRepository = PropertyRepository(database, networkMonitor, firestore, auditRepository)
         guestRepository = GuestRepository(
             database,
             authRepository,
             networkMonitor,
-            firestore
+            firestore,
+            auditRepository
         )
         staffRepository = StaffRepository(database)
         syncRepository.schedulePeriodicSync()

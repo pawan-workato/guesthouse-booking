@@ -2,6 +2,8 @@ package com.guesthouse.booking.data.repository
 
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.local.entities.AuditAction
+import com.guesthouse.booking.data.local.entities.AuditEntityType
 import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
@@ -12,7 +14,8 @@ class BlockDateRepository(
     private val authRepository: AuthRepository,
     private val networkMonitor: NetworkMonitor,
     private val firestore: FirestoreDataSource = FirestoreDataSource(),
-    private val syncRepository: Lazy<SyncRepository> = lazy { error("SyncRepository not initialized") }
+    private val syncRepository: Lazy<SyncRepository> = lazy { error("SyncRepository not initialized") },
+    private val auditRepository: AuditRepository? = null
 ) {
     fun observeForRoom(roomId: Long): Flow<List<BlockDateEntity>> = database.blockDateDao().observeForRoom(roomId)
 
@@ -49,6 +52,7 @@ class BlockDateRepository(
         } else {
             syncRepository.value.enqueueSyncWorker()
         }
+        auditRepository?.append(AuditAction.CREATE, AuditEntityType.BLOCK_DATE, "Blocked room dates: ${reason.trim()}", room.propertyId, id)
         return Result.success(id)
     }
 
@@ -71,6 +75,7 @@ class BlockDateRepository(
             database.blockDateDao().markForDeletion(blockId, SyncStatus.PENDING_SYNC.name)
             syncRepository.value.enqueueSyncWorker()
         }
+        auditRepository?.append(AuditAction.DELETE, AuditEntityType.BLOCK_DATE, "Removed block date #${blockId}", block.propertyId, blockId)
         return Result.success(Unit)
     }
 }

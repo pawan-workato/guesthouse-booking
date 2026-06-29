@@ -37,6 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.guesthouse.booking.ui.screens.AdminScreen
+import com.guesthouse.booking.ui.screens.AuditLogScreen
 import com.guesthouse.booking.ui.screens.BookingDetailScreen
 import com.guesthouse.booking.ui.screens.BookingFormScreen
 import com.guesthouse.booking.ui.screens.GuestFormScreen
@@ -52,6 +53,7 @@ import com.guesthouse.booking.ui.screens.StaffScreen
 import com.guesthouse.booking.ui.screens.SyncStatusScreen
 import com.guesthouse.booking.ui.screens.TodayScreen
 import com.guesthouse.booking.viewmodel.AdminViewModel
+import com.guesthouse.booking.viewmodel.AuditLogViewModel
 import com.guesthouse.booking.viewmodel.BookingDetailViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import com.guesthouse.booking.viewmodel.GuestsViewModel
@@ -92,6 +94,7 @@ sealed class Screen(val route: String, val label: String) {
     data object Guests : Screen("guests", "Guests")
     data object Sync : Screen("sync", "Sync status")
     data object Reports : Screen("reports", "Occupancy report")
+    data object AuditLog : Screen("audit_log", "Audit log")
     data object GuestAdd : Screen("guest/add", "Add guest")
     data object GuestEdit : Screen("guest/{guestId}/edit", "Edit guest") {
         fun createRoute(guestId: Long) = "guest/$guestId/edit"
@@ -127,6 +130,8 @@ fun GuesthouseNavHost(
     staffName: String,
     isChainAdmin: Boolean,
     isFirebaseConfigured: Boolean,
+    openSyncOnLaunch: Boolean = false,
+    onSyncLaunchHandled: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -154,6 +159,13 @@ fun GuesthouseNavHost(
     val selectedRoutes by remember {
         derivedStateOf {
             navBackStackEntry?.destination?.hierarchy?.mapNotNull { it.route }?.toSet().orEmpty()
+        }
+    }
+
+    LaunchedEffect(openSyncOnLaunch) {
+        if (openSyncOnLaunch) {
+            navController.navigate(Screen.Sync.route)
+            onSyncLaunchHandled()
         }
     }
 
@@ -257,7 +269,8 @@ fun GuesthouseNavHost(
                     onEditProperty = { navController.navigate(Screen.PropertyEdit.createRoute(it)) },
                     onOpenReports = if (isChainAdmin) {
                         { navController.navigate(Screen.Reports.route) }
-                    } else null
+                    } else null,
+                    onOpenAuditLog = { navController.navigate(Screen.AuditLog.route) }
                 )
             }
             composable(Screen.PropertyRooms.route) { entry ->
@@ -345,9 +358,17 @@ fun GuesthouseNavHost(
                     val reportsVm: ReportsViewModel = viewModel(factory = viewModelFactory)
                     ReportsScreen(
                         viewModel = reportsVm,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onOpenAuditLog = { navController.navigate(Screen.AuditLog.route) }
                     )
                 }
+            }
+            composable(Screen.AuditLog.route) {
+                val auditVm: AuditLogViewModel = viewModel(factory = viewModelFactory)
+                AuditLogScreen(
+                    viewModel = auditVm,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(Screen.Sync.route) {
                 SyncStatusScreen(

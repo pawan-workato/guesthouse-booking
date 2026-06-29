@@ -2,6 +2,8 @@ package com.guesthouse.booking.data.repository
 
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.local.entities.AuditAction
+import com.guesthouse.booking.data.local.entities.AuditEntityType
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +11,8 @@ import kotlinx.coroutines.flow.Flow
 class PropertyRepository(
     private val database: AppDatabase,
     private val networkMonitor: NetworkMonitor,
-    private val firestore: FirestoreDataSource = FirestoreDataSource()
+    private val firestore: FirestoreDataSource = FirestoreDataSource(),
+    private val auditRepository: AuditRepository? = null
 ) {
     fun observeActiveProperties(): Flow<List<PropertyEntity>> = database.propertyDao().observeAll()
 
@@ -48,6 +51,7 @@ class PropertyRepository(
         if (networkMonitor.isCurrentlyOnline()) {
             runCatching { firestore.upsertProperty(saved) }
         }
+        auditRepository?.append(AuditAction.CREATE, AuditEntityType.PROPERTY, "Created property ${trimmedName}", id, id)
         return Result.success(id)
     }
 
@@ -64,6 +68,7 @@ class PropertyRepository(
         if (networkMonitor.isCurrentlyOnline()) {
             runCatching { firestore.upsertProperty(updated) }
         }
+        auditRepository?.append(AuditAction.UPDATE, AuditEntityType.PROPERTY, "Updated property ${updated.name}", property.id, property.id)
         return Result.success(Unit)
     }
 
@@ -73,5 +78,6 @@ class PropertyRepository(
         if (networkMonitor.isCurrentlyOnline()) {
             runCatching { firestore.upsertProperty(property) }
         }
+        auditRepository?.append(if (active) AuditAction.ACTIVATE else AuditAction.DEACTIVATE, AuditEntityType.PROPERTY, (if (active) "Reactivated" else "Removed") + " property ${property.name}", propertyId, propertyId)
     }
 }

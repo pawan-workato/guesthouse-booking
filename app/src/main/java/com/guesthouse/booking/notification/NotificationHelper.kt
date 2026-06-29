@@ -10,6 +10,9 @@ import androidx.core.app.NotificationManagerCompat
 object NotificationHelper {
     const val CHANNEL_ID = "morning_arrivals"
     const val CHANNEL_NAME = "Daily arrivals"
+    const val SYNC_CHANNEL_ID = "sync_alerts"
+    const val SYNC_CHANNEL_NAME = "Sync alerts"
+    const val EXTRA_OPEN_SYNC = "open_sync"
     private const val NOTIFICATION_ID = 1001
 
     fun ensureChannel(context: Context) {
@@ -23,6 +26,23 @@ object NotificationHelper {
             description = "Morning summary of today's guest arrivals"
         }
         manager.createNotificationChannel(channel)
+    }
+
+    fun ensureSyncChannel(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            SYNC_CHANNEL_ID,
+            SYNC_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Alerts when sync has pending items or conflicts"
+        }
+        manager.createNotificationChannel(channel)
+    }
+
+    fun showSyncAlert(context: Context, issueCount: Int) {
+        SyncAlertNotifier.notifyIfNeeded(context, issueCount)
     }
 
     fun showMorningArrivals(context: Context, title: String, body: String) {

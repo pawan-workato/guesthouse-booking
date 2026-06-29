@@ -11,6 +11,7 @@ import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.StaffEntity
 import com.guesthouse.booking.data.local.entities.StaffPropertyAssignmentEntity
 import com.guesthouse.booking.data.local.entities.StaffRole
+import com.guesthouse.booking.data.repository.AuditRepository
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.BookingRepository
@@ -64,6 +65,7 @@ class UiTestEnvironment(
         lazy { syncRepository }
     )
     val staffRepository = StaffRepository(database)
+    val auditRepository = AuditRepository(database, authRepository)
 
     val viewModelFactory = ViewModelFactory(
         database = database,
@@ -74,7 +76,8 @@ class UiTestEnvironment(
         authRepository = authRepository,
         syncRepository = syncRepository,
         staffRepository = staffRepository,
-        networkMonitor = networkMonitor
+        networkMonitor = networkMonitor,
+        auditRepository = auditRepository
     )
 
     init {

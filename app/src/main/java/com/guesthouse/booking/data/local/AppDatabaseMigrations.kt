@@ -47,5 +47,23 @@ object AppDatabaseMigrations {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_block_dates_syncStatus` ON `block_dates` (`syncStatus`)")
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+    val MIGRATION_11_12 = Migration(11, 12) { db ->
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `audit_events` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `staffId` INTEGER NOT NULL,
+                `staffName` TEXT NOT NULL,
+                `propertyId` INTEGER,
+                `action` TEXT NOT NULL,
+                `entityType` TEXT NOT NULL,
+                `entityId` INTEGER,
+                `summary` TEXT NOT NULL,
+                `createdAtEpochMs` INTEGER NOT NULL
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_audit_events_propertyId` ON `audit_events` (`propertyId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_audit_events_createdAtEpochMs` ON `audit_events` (`createdAtEpochMs`)")
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
 }

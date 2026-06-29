@@ -2,7 +2,9 @@ package com.guesthouse.booking.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.guesthouse.booking.data.repository.AuditRepository
 import com.guesthouse.booking.data.repository.AuthRepository
+import com.guesthouse.booking.data.repository.ReportsRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.GuestRepository
@@ -23,6 +25,7 @@ class ViewModelFactory(
     private val syncRepository: SyncRepository,
     private val staffRepository: StaffRepository,
     private val networkMonitor: NetworkMonitor,
+    private val auditRepository: AuditRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -43,7 +46,14 @@ class ViewModelFactory(
             modelClass.isAssignableFrom(StaffViewModel::class.java) ->
                 StaffViewModel(staffRepository, propertyRepository, authRepository) as T
             modelClass.isAssignableFrom(ReportsViewModel::class.java) ->
-                ReportsViewModel(propertyRepository, OccupancyRepository(database), authRepository) as T
+                ReportsViewModel(
+                    propertyRepository,
+                    OccupancyRepository(database),
+                    ReportsRepository(database),
+                    authRepository
+                ) as T
+            modelClass.isAssignableFrom(AuditLogViewModel::class.java) ->
+                AuditLogViewModel(auditRepository) as T
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
         }
     }

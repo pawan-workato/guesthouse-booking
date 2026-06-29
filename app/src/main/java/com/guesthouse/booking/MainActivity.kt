@@ -1,6 +1,7 @@
 package com.guesthouse.booking
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -11,6 +12,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,6 +24,7 @@ import com.guesthouse.booking.ui.theme.GlassBackground
 import com.guesthouse.booking.ui.theme.GuesthouseTheme
 import com.guesthouse.booking.notification.MorningReminderScheduler
 import com.guesthouse.booking.notification.NotificationHelper
+import com.guesthouse.booking.notification.SyncAlertScheduler
 import com.guesthouse.booking.viewmodel.LoginViewModel
 import com.guesthouse.booking.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
@@ -40,11 +45,14 @@ class MainActivity : ComponentActivity() {
             app.authRepository,
             app.syncRepository,
             app.staffRepository,
-            app.networkMonitor
+            app.networkMonitor,
+            app.auditRepository
         )
+        val openSyncOnLaunch = intent.getBooleanExtra(NotificationHelper.EXTRA_OPEN_SYNC, false)
 
         setContent {
             val session by app.authRepository.session.collectAsStateWithLifecycle()
+            var pendingOpenSync by remember { mutableStateOf(openSyncOnLaunch) }
             GuesthouseTheme {
                 GlassBackground {
                     if (session == null) {
@@ -54,14 +62,19 @@ class MainActivity : ComponentActivity() {
                         val notificationPermissionLauncher = rememberLauncherForActivityResult(
                             ActivityResultContracts.RequestPermission()
                         ) { granted ->
-                            if (granted) MorningReminderScheduler.schedule(this@MainActivity)
+                            if (granted) {
+                                MorningReminderScheduler.schedule(this@MainActivity)
+                                SyncAlertScheduler.schedule(this@MainActivity)
+                            }
                         }
                         LaunchedEffect(session?.staffId) {
                             NotificationHelper.ensureChannel(this@MainActivity)
+                            NotificationHelper.ensureSyncChannel(this@MainActivity)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             } else {
                                 MorningReminderScheduler.schedule(this@MainActivity)
+                                SyncAlertScheduler.schedule(this@MainActivity)
                             }
                         }
                         GuesthouseNavHost(
@@ -69,8 +82,11 @@ class MainActivity : ComponentActivity() {
                             staffName = session!!.displayName,
                             isChainAdmin = session!!.isChainAdmin,
                             isFirebaseConfigured = app.isFirebaseConfigured,
+                            openSyncOnLaunch = pendingOpenSync,
+                            onSyncLaunchHandled = { pendingOpenSync = false },
                             onLogout = {
                                 MorningReminderScheduler.cancel(this@MainActivity)
+                                SyncAlertScheduler.cancel(this@MainActivity)
                                 app.authRepository.logout()
                             }
                         )
@@ -78,5 +94,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 }

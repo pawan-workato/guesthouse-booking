@@ -30,7 +30,8 @@ fun PropertiesScreen(
     onPropertyClick: (Long) -> Unit,
     onAddProperty: () -> Unit,
     onEditProperty: (Long) -> Unit,
-    onOpenReports: (() -> Unit)? = null
+    onOpenReports: (() -> Unit)? = null,
+    onOpenAuditLog: (() -> Unit)? = null
 ) {
     val properties by viewModel.properties.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -65,6 +66,13 @@ fun PropertiesScreen(
                 item(key = "open_reports") {
                     TextButton(onClick = onOpenReports, modifier = Modifier.fillMaxWidth()) {
                         Text("Occupancy report")
+                    }
+                }
+            }
+            if (onOpenAuditLog != null) {
+                item(key = "open_audit_log") {
+                    TextButton(onClick = onOpenAuditLog, modifier = Modifier.fillMaxWidth()) {
+                        Text("Audit log")
                     }
                 }
             }

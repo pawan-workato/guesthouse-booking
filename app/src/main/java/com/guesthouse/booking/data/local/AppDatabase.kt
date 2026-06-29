@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.guesthouse.booking.BuildConfig
+import com.guesthouse.booking.data.local.entities.AuditEventEntity
 import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
@@ -22,9 +23,10 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         BlockDateEntity::class,
         GuestEntity::class,
         StaffEntity::class,
-        StaffPropertyAssignmentEntity::class
+        StaffPropertyAssignmentEntity::class,
+        AuditEventEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun blockDateDao(): BlockDateDao
     abstract fun guestDao(): GuestDao
     abstract fun staffDao(): StaffDao
+    abstract fun auditEventDao(): AuditEventDao
 
     companion object {
         private const val DB_NAME = "guesthouse.db"
@@ -69,7 +72,6 @@ abstract class AppDatabase : RoomDatabase() {
                 .openHelperFactory(factory)
                 .addMigrations(*AppDatabaseMigrations.ALL)
             if (BuildConfig.DEBUG) {
-                // DEV-ONLY safety net for version jumps without a registered migration path.
                 builder.fallbackToDestructiveMigration(dropAllTables = true)
             }
             return builder.build()

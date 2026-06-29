@@ -2,6 +2,8 @@ package com.guesthouse.booking.data.repository
 
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.local.entities.AuditAction
+import com.guesthouse.booking.data.local.entities.AuditEntityType
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.PropertyEntity
@@ -19,7 +21,8 @@ class BookingRepository(
     private val authRepository: AuthRepository,
     private val networkMonitor: NetworkMonitor,
     private val firestore: FirestoreDataSource = FirestoreDataSource(),
-    private val syncRepository: Lazy<SyncRepository> = lazy { error("SyncRepository not initialized") }
+    private val syncRepository: Lazy<SyncRepository> = lazy { error("SyncRepository not initialized") },
+    private val auditRepository: AuditRepository? = null
 ) {
     fun observeProperties(): Flow<List<PropertyEntity>> = database.propertyDao().observeAll()
     fun observeProperty(propertyId: Long): Flow<PropertyEntity?> = database.propertyDao().observeById(propertyId)
@@ -67,6 +70,7 @@ class BookingRepository(
             val reference = SyncRepository.formatReference(room.propertyId, id)
             database.bookingDao().updateSync(id, SyncStatus.SYNCED.name, reference)
             database.bookingDao().getById(id)?.let { runCatching { firestore.upsertBooking(it) } }
+            auditRepository?.append(AuditAction.CREATE, AuditEntityType.BOOKING, "Created booking for ${guestName.trim()} (${room.name})", room.propertyId, id)
             return Result.success(BookingCreateOutcome(id, reference, savedOffline = false))
         }
 
@@ -74,6 +78,7 @@ class BookingRepository(
         database.bookingDao().updateSync(id, SyncStatus.PENDING_SYNC.name, offlineRef)
         if (isOnline) runCatching { syncRepository.value.syncNow() }
         else syncRepository.value.enqueueSyncWorker()
+        auditRepository?.append(AuditAction.CREATE, AuditEntityType.BOOKING, "Created booking for ${guestName.trim()} (${room.name})", room.propertyId, id)
         return Result.success(BookingCreateOutcome(id, offlineRef, savedOffline = true))
     }
 
@@ -137,6 +142,7 @@ class BookingRepository(
         } else {
             syncRepository.value.enqueueSyncWorker()
         }
+        auditRepository?.append(AuditAction.UPDATE, AuditEntityType.BOOKING, "Updated booking #${bookingId} for ${guestName.trim()}", room.propertyId, bookingId)
         return Result.success(Unit)
     }
 
@@ -148,6 +154,7 @@ class BookingRepository(
         if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
             runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CANCELLED.name) }
         }
+        auditRepository?.append(AuditAction.CANCEL, AuditEntityType.BOOKING, "Cancelled booking #${bookingId} (${booking.guestName})", booking.propertyId, bookingId)
     }
 
     suspend fun checkInBooking(bookingId: Long, todayEpochDay: Long = LocalDate.now().toEpochDay()): Result<Unit> {
@@ -168,6 +175,7 @@ class BookingRepository(
         if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
             runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CHECKED_IN.name) }
         }
+        auditRepository?.append(AuditAction.CHECK_IN, AuditEntityType.BOOKING, "Checked in booking #${bookingId} (${booking.guestName})", booking.propertyId, bookingId)
         return Result.success(Unit)
     }
 
@@ -186,6 +194,7 @@ class BookingRepository(
         if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
             runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CHECKED_OUT.name) }
         }
+        auditRepository?.append(AuditAction.CHECK_OUT, AuditEntityType.BOOKING, "Checked out booking #${bookingId} (${booking.guestName})", booking.propertyId, bookingId)
         return Result.success(Unit)
     }
 
@@ -251,6 +260,7 @@ class BookingRepository(
         } else {
             syncRepository.value.enqueueSyncWorker()
         }
+        auditRepository?.append(AuditAction.UPDATE, AuditEntityType.BOOKING, "Extended booking #${bookingId} checkout", existing.propertyId, bookingId)
         return Result.success(Unit)
     }
 
@@ -286,6 +296,7 @@ class BookingRepository(
         if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
             runCatching { firestore.upsertRoom(saved) }
         }
+        auditRepository?.append(AuditAction.CREATE, AuditEntityType.ROOM, "Created room ${trimmedName}", propertyId, id)
         return Result.success(id)
     }
 
@@ -308,6 +319,7 @@ class BookingRepository(
         if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
             runCatching { firestore.upsertRoom(updated) }
         }
+        auditRepository?.append(AuditAction.UPDATE, AuditEntityType.ROOM, "Updated room ${updated.name}", updated.propertyId, updated.id)
         return Result.success(Unit)
     }
 }

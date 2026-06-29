@@ -1,8 +1,8 @@
 # Room database migrations
 
-## Current state (v11)
+## Current state (v12)
 
-`AppDatabase` version **11**. Registered migrations: `MIGRATION_8_9`, `MIGRATION_9_10`, `MIGRATION_10_11` in `AppDatabaseMigrations.kt`.
+`AppDatabase` version **12**. Registered migrations: `MIGRATION_8_9`, `MIGRATION_9_10`, `MIGRATION_10_11`, `MIGRATION_11_12` in `AppDatabaseMigrations.kt`.
 
 `fallbackToDestructiveMigration` is gated behind `BuildConfig.DEBUG` only — **release builds** will fail on unregistered version jumps rather than silently wiping data. Debug builds retain the destructive fallback for developer convenience.
 
@@ -66,3 +66,13 @@ Adds Firestore sync fields to `block_dates`:
 ## Pre-pilot (KR-10)
 
 ✅ Release builds no longer use destructive fallback (debug-only). Add explicit migrations for any future version bumps before rollout.
+
+
+## Version 11 → 12 — audit events (Sprint 10 Tier 1)
+
+Creates `audit_events` table for local staff action logging:
+
+- `staffId`, `staffName`, `propertyId` (nullable), `action`, `entityType`, `entityId`, `summary`, `createdAtEpochMs`
+- Indexes on `propertyId` and `createdAtEpochMs`
+
+Tier 2 (housekeeping, guest preferences, booking source, handover log) uses a separate migration path on branch `feature/sprint10-tier2`.

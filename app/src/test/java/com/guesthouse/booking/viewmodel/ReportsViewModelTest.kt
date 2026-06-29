@@ -8,6 +8,8 @@ import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.OccupancyRepository
 import com.guesthouse.booking.data.repository.PropertyOccupancyStats
 import com.guesthouse.booking.data.repository.PropertyRepository
+import com.guesthouse.booking.data.repository.PropertyRevenueStats
+import com.guesthouse.booking.data.repository.ReportsRepository
 import com.guesthouse.booking.testutil.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -29,6 +31,7 @@ class ReportsViewModelTest {
 
     private val propertyRepository = mockk<PropertyRepository>()
     private val occupancyRepository = mockk<OccupancyRepository>()
+    private val reportsRepository = mockk<ReportsRepository>()
     private val authRepository = mockk<AuthRepository>()
     private val sessionFlow = MutableStateFlow<StaffSession?>(null)
 
@@ -48,7 +51,7 @@ class ReportsViewModelTest {
             assignedPropertyIds = setOf(1L)
         )
 
-        val viewModel = ReportsViewModel(propertyRepository, occupancyRepository, authRepository)
+        val viewModel = ReportsViewModel(propertyRepository, occupancyRepository, reportsRepository, authRepository)
         advanceUntilIdle()
 
         viewModel.properties.test {
@@ -61,6 +64,9 @@ class ReportsViewModelTest {
     fun shiftReportDate_reloadStatsForNewDay() = runTest {
         every { propertyRepository.observeActiveProperties() } returns flowOf(properties)
         every { authRepository.session } returns sessionFlow
+        coEvery { reportsRepository.getRevenueStats(any(), any()) } returns listOf(
+                PropertyRevenueStats(propertyId = 1L, propertyName = "Mountain Lodge", bookingCount = 1, totalRevenue = 240.0)
+            )
         coEvery { occupancyRepository.getStatsForProperties(any(), any()) } answers {
             val day = secondArg<Long>()
             listOf(
@@ -84,7 +90,7 @@ class ReportsViewModelTest {
             assignedPropertyIds = emptySet()
         )
 
-        val viewModel = ReportsViewModel(propertyRepository, occupancyRepository, authRepository)
+        val viewModel = ReportsViewModel(propertyRepository, occupancyRepository, reportsRepository, authRepository)
         advanceUntilIdle()
 
         viewModel.occupancyStats.test {

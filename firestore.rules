@@ -68,5 +68,14 @@ service cloud.firestore {
       allow create: if isSignedIn() && canAccessProperty(int(request.resource.data.propertyId));
       allow update, delete: if isSignedIn() && canAccessProperty(int(resource.data.propertyId));
     }
+
+    // Sprint 10 Tier 1 — audit events (local-only for now; enable when cloud sync ships)
+    // match /audit_events/{eventId} {
+    //   allow read: if isChainAdmin()
+    //     || (isStaff() && canAccessProperty(int(resource.data.propertyId)));
+    //   allow create: if isStaff()
+    //     && request.resource.data.staffId == staffData().staffId;
+    //   allow update, delete: if false;
+    // }
   }
 }

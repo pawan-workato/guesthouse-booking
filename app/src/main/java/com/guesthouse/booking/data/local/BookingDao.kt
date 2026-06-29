@@ -179,4 +179,38 @@ interface BookingDao {
         conflictStatus: String = SyncStatus.CONFLICT.name
     ): Int
 
+    @Query(
+        """
+        SELECT * FROM bookings
+        WHERE status != 'CANCELLED'
+        AND syncStatus != :conflictStatus
+        ORDER BY checkInEpochDay DESC
+        """
+    )
+    fun observeAllNonCancelled(conflictStatus: String = SyncStatus.CONFLICT.name): Flow<List<BookingEntity>>
+
+    @Query(
+        """
+        SELECT * FROM bookings
+        WHERE status != 'CANCELLED'
+        AND syncStatus != :conflictStatus
+        ORDER BY checkInEpochDay DESC
+        """
+    )
+    suspend fun getAllNonCancelled(conflictStatus: String = SyncStatus.CONFLICT.name): List<BookingEntity>
+
+    @Query(
+        """
+        SELECT * FROM bookings
+        WHERE status != 'CANCELLED'
+        AND syncStatus != :conflictStatus
+        AND checkInEpochDay < :endEpochDay AND checkOutEpochDay > :startEpochDay
+        """
+    )
+    suspend fun getOverlappingDateRange(
+        startEpochDay: Long,
+        endEpochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): List<BookingEntity>
+
 }

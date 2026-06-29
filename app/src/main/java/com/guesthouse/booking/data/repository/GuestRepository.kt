@@ -4,6 +4,8 @@ import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.guest.GuestMatching
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.BookingEntity
+import com.guesthouse.booking.data.local.entities.AuditAction
+import com.guesthouse.booking.data.local.entities.AuditEntityType
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
@@ -22,7 +24,8 @@ class GuestRepository(
     private val database: AppDatabase,
     private val authRepository: AuthRepository,
     private val networkMonitor: NetworkMonitor,
-    private val firestore: FirestoreDataSource = FirestoreDataSource()
+    private val firestore: FirestoreDataSource = FirestoreDataSource(),
+    private val auditRepository: AuditRepository? = null
 ) {
     fun observeActiveGuests(): Flow<List<GuestEntity>> = observeScopedActiveGuests()
 
@@ -138,6 +141,7 @@ class GuestRepository(
                 database.guestDao().update(saved.copy(syncStatus = SyncStatus.SYNCED.name))
             }
         }
+        auditRepository?.append(AuditAction.CREATE, AuditEntityType.GUEST, "Created guest ${trimmedName}", entityId = id)
         return Result.success(id)
     }
 
@@ -161,6 +165,7 @@ class GuestRepository(
                 database.guestDao().update(updated.copy(syncStatus = SyncStatus.SYNCED.name))
             }
         }
+        auditRepository?.append(AuditAction.UPDATE, AuditEntityType.GUEST, "Updated guest ${updated.name}", entityId = guest.id)
         return Result.success(Unit)
     }
 
@@ -179,5 +184,6 @@ class GuestRepository(
                 database.guestDao().update(updated.copy(syncStatus = SyncStatus.SYNCED.name))
             }
         }
+        auditRepository?.append(if (active) AuditAction.ACTIVATE else AuditAction.DEACTIVATE, AuditEntityType.GUEST, (if (active) "Reactivated" else "Removed") + " guest ${guest.name}", entityId = guestId)
     }
 }

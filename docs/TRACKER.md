@@ -1,6 +1,6 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-29 (Firestore rules deployed via Console — guest `isActive` chain-admin-only)
+**Last updated:** 2026-06-29 (Sprint 10 Tier 1) (Firestore rules deployed via Console — guest `isActive` chain-admin-only)
 
 Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`merge-main` at `07a4a36`).
 
@@ -132,6 +132,10 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-S8-REBOOK | Product | Rebook / extend stay | ✅ Done | Medium | Book again + extend checkout | Working tree |
 | FEAT-S8-NOTIF | Product | Morning notifications | ✅ Done | Medium | WorkManager ~7 AM | Working tree |
 | CI-EMU | Ops | GitHub Actions instrumented test flakiness | ✅ Done | Medium | KVM, AVD cache, 20 min boot timeout | `28b8114` |
+| FEAT-S10-AUDIT | Product | Local audit log (bookings, guests, properties, rooms, blocks) | ✅ Done | Medium | `AuditEventEntity`, `AuditRepository`, `AuditLogScreen` | Working tree |
+| FEAT-S10-REV | Product | Reports revenue + 7-day forecast | ✅ Done | Medium | `RevenueCalculator`, `ReportsRepository`, Reports screen | Working tree |
+| FEAT-S10-CSV | Product | CSV export bookings & guests | ✅ Done | Low | `CsvExporter`, CreateDocument + share from Reports | Working tree |
+| FEAT-S10-SYNC | Product | Sync issue notifications | ✅ Done | Medium | `SyncAlertWorker`, `SyncAlertScheduler`, `SyncAlertNotifier` | Working tree |
 | DOC-P2 | Security | P2 manual pentest checklist | ✅ Done | High | [pentest-run-p2-checklist.md](./security/pentest-run-p2-checklist.md) | Working tree |
 
 ---

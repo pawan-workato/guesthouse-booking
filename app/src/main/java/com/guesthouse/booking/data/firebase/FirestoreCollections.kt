@@ -8,6 +8,7 @@ object FirestoreCollections {
     const val GUESTS = "guests"
     const val BLOCK_DATES = "block_dates"
     const val STAFF_ASSIGNMENTS = "staff_assignments"
+    const val AUDIT_EVENTS = "audit_events"
 }
 
 object FirestoreFields {
@@ -51,4 +52,9 @@ object FirestoreFields {
     const val REASON = "reason"
     const val CREATED_BY_STAFF_ID = "createdByStaffId"
     const val MARKED_FOR_DELETION = "markedForDeletion"
+
+    const val ACTION = "action"
+    const val ENTITY_TYPE = "entityType"
+    const val ENTITY_ID = "entityId"
+    const val SUMMARY = "summary"
 }
