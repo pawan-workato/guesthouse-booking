@@ -17,6 +17,7 @@ import com.guesthouse.booking.viewmodel.GuestsViewModel
 fun GuestFormScreen(
     guestId: Long?,
     viewModel: GuestsViewModel,
+    readOnly: Boolean = false,
     onSaved: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -62,7 +63,11 @@ fun GuestFormScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEdit) "Edit guest" else "Add guest") },
+                title = { Text(when {
+                    readOnly -> "Guest details"
+                    isEdit -> "Edit guest"
+                    else -> "Add guest"
+                }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -83,21 +88,27 @@ fun GuestFormScreen(
                 onValueChange = { name = it },
                 label = { Text("Guest name") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                readOnly = readOnly,
+                enabled = !readOnly
             )
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
                 label = { Text("Phone") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                readOnly = readOnly,
+                enabled = !readOnly
             )
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                readOnly = readOnly,
+                enabled = !readOnly
             )
             OutlinedTextField(
                 value = notes,
@@ -105,30 +116,41 @@ fun GuestFormScreen(
                 label = { Text("Notes") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
-                placeholder = { Text("Preferences, accessibility needs, etc.") }
+                placeholder = { Text("Preferences, accessibility needs, etc.") },
+                readOnly = readOnly,
+                enabled = !readOnly
             )
+
+            if (readOnly) {
+                Text(
+                    "Profile details only — booking history is not shown here.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             formState.errorMessage?.let {
                 Text(it, color = MaterialTheme.colorScheme.error)
             }
 
-            Button(
-                onClick = {
-                    if (isEdit && editGuest != null) {
-                        viewModel.updateGuest(
-                            editGuest!!.copy(name = name, email = email, phone = phone, notes = notes)
-                        )
-                    } else {
-                        viewModel.createGuest(name, email, phone, notes)
-                    }
-                },
-                enabled = !formState.isSaving,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (formState.isSaving) "Saving..." else if (isEdit) "Save changes" else "Add guest")
-            }
+            if (!readOnly) {
+                Button(
+                    onClick = {
+                        if (isEdit && editGuest != null) {
+                            viewModel.updateGuest(
+                                editGuest!!.copy(name = name, email = email, phone = phone, notes = notes)
+                            )
+                        } else {
+                            viewModel.createGuest(name, email, phone, notes)
+                        }
+                    },
+                    enabled = !formState.isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (formState.isSaving) "Saving..." else if (isEdit) "Save changes" else "Add guest")
+                }
 
-            if (isEdit && editGuest?.isActive == true) {
+                if (isEdit && editGuest?.isActive == true) {
                 OutlinedButton(
                     onClick = { showDeactivateDialog = true },
                     modifier = Modifier.fillMaxWidth(),
@@ -136,7 +158,7 @@ fun GuestFormScreen(
                 ) {
                     Text("Remove guest")
                 }
-            } else if (isEdit && editGuest?.isActive == false) {
+                } else if (isEdit && editGuest?.isActive == false) {
                 OutlinedButton(
                     onClick = {
                         viewModel.setGuestActive(guestId!!, true)
@@ -145,6 +167,7 @@ fun GuestFormScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Reactivate guest")
+                }
                 }
             }
         }

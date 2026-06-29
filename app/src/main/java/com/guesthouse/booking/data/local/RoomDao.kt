@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -41,4 +42,10 @@ interface RoomDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(rooms: List<RoomEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(room: RoomEntity): Long
+
+    @Update
+    suspend fun update(room: RoomEntity)
 }

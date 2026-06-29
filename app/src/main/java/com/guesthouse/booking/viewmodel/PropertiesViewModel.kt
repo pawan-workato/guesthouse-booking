@@ -6,7 +6,6 @@ import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -55,7 +54,7 @@ class PropertiesViewModel(
                     it.address.contains(q, ignoreCase = true)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query

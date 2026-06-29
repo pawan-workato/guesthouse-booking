@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -21,16 +23,39 @@ fun AdminScreen(
     onDismissConflict: (Long) -> Unit = {},
     onEditBooking: (Long) -> Unit = {}
 ) {
-    val bookings by viewModel.bookingsWithDetails.collectAsState()
+    val bookings by viewModel.bookingsWithDetails.collectAsStateWithLifecycle()
+    val showCancelled by viewModel.showCancelled.collectAsStateWithLifecycle()
+    val actionMessage by viewModel.actionMessage.collectAsStateWithLifecycle()
+    val actionError by viewModel.actionError.collectAsStateWithLifecycle()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
+
+    LaunchedEffect(actionMessage, actionError) {
+        if (actionMessage != null || actionError != null) {
+            kotlinx.coroutines.delay(3000)
+            viewModel.dismissActionFeedback()
+        }
+    }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Bookings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(
-            "Your assigned properties",
+            "${bookings.size} ${if (showCancelled) "total" else "active"} bookings for your assigned properties",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 12.dp)
         )
+        Row(
+            Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Show cancelled", modifier = Modifier.weight(1f))
+            Switch(checked = showCancelled, onCheckedChange = viewModel::setShowCancelled)
+        }
+        actionMessage?.let {
+            Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
+        }
+        actionError?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp))
+        }
 
         if (bookings.isEmpty()) {
             Text("No bookings yet.")

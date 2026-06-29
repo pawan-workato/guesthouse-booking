@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.guesthouse.booking.BuildConfig
 import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.firebase.FirebaseInitializer
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
@@ -12,28 +11,18 @@ import com.guesthouse.booking.data.firebase.FirestoreSyncService
 import com.guesthouse.booking.data.firebase.PullRemoteDataResult
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.StaffRole
-import com.guesthouse.booking.data.remote.GuesthouseApi
-import com.guesthouse.booking.data.remote.KtorApiSyncService
-import com.guesthouse.booking.data.remote.LoginRequest
-import com.guesthouse.booking.data.remote.TokenStorage
-import com.guesthouse.booking.data.sync.NetworkMonitor
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
-import retrofit2.HttpException
 
 class AuthRepository(
     private val database: AppDatabase,
     context: Context,
     private val firestore: FirestoreDataSource = FirestoreDataSource(),
-    private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore),
-    private val api: GuesthouseApi? = null,
-    private val tokenStorage: TokenStorage? = null,
-    private val networkMonitor: NetworkMonitor? = null,
-    private val ktorSync: Lazy<KtorApiSyncService>? = null
+    private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore)
 ) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firebaseEnabled = FirebaseInitializer.isConfigured(context)
@@ -48,26 +37,6 @@ class AuthRepository(
     val session: StateFlow<StaffSession?> = _session.asStateFlow()
 
     suspend fun restoreSession() {
-        if (BuildConfig.USE_KTOR_API) {
-            val storage = tokenStorage ?: return
-            if (!storage.hasToken()) return
-            val staff = storage.loadStaff()
-            if (staff == null) {
-                storage.clear()
-                return
-            }
-            val session = buildSession(staff.id, staff.email, staff.displayName, staff.role)
-                ?: run {
-                    storage.clear()
-                    return
-                }
-            _session.value = session
-            if (networkMonitor?.isCurrentlyOnline() == true) {
-                runCatching { ktorSync?.value?.pullBootstrap(session) }
-            }
-            return
-        }
-
         if (!firebaseEnabled) {
             clearPersistedSession()
             return
@@ -107,19 +76,6 @@ class AuthRepository(
     }
 
     suspend fun login(email: String, password: String): Result<StaffSession> {
-        if (BuildConfig.USE_KTOR_API &&
-            networkMonitor?.isCurrentlyOnline() == true &&
-            api != null &&
-            tokenStorage != null
-        ) {
-            val ktorResult = loginWithKtor(email, password)
-            if (ktorResult.isSuccess) return ktorResult
-            val message = ktorResult.exceptionOrNull()?.message.orEmpty()
-            val isKtorUnreachable = message.contains("Network error", ignoreCase = true) ||
-                message.contains("Unable to resolve host", ignoreCase = true) ||
-                message.contains("Failed to connect", ignoreCase = true)
-            if (!isKtorUnreachable) return ktorResult
-        }
         if (!firebaseEnabled) {
             return Result.failure(IllegalStateException("Firebase is not configured"))
         }
@@ -127,34 +83,12 @@ class AuthRepository(
     }
 
     fun logout() {
-        if (BuildConfig.USE_KTOR_API) {
-            tokenStorage?.clear()
-        }
         if (firebaseEnabled) auth.signOut()
         clearPersistedSession()
         _session.value = null
     }
 
     fun currentSession(): StaffSession? = _session.value
-
-    private suspend fun loginWithKtor(email: String, password: String): Result<StaffSession> {
-        val apiClient = api ?: return Result.failure(IllegalStateException("API client not configured"))
-        val storage = tokenStorage ?: return Result.failure(IllegalStateException("Token storage not configured"))
-        return runCatching {
-            val response = apiClient.login(LoginRequest(email.trim(), password))
-            val staffDto = response.toStaffDto()
-            storage.saveSession(response.token, staffDto)
-            val session = buildSession(staffDto.id, staffDto.email, staffDto.displayName, staffDto.role)
-                ?: throw IllegalStateException("Staff account is misconfigured")
-            persistSession(session.staffId)
-            _session.value = session
-            ktorSync?.value?.pullBootstrap(session)
-            session
-        }.fold(
-            onSuccess = { Result.success(it) },
-            onFailure = { Result.failure(mapKtorError(it)) }
-        )
-    }
 
     private suspend fun loginWithFirebase(email: String, password: String): Result<StaffSession> {
         return runCatching {
@@ -170,7 +104,6 @@ class AuthRepository(
             session
         }.fold(onSuccess = { Result.success(it) }, onFailure = { Result.failure(mapFirebaseError(it)) })
     }
-
 
     private suspend fun loadFirebaseSession(uid: String): StaffSession? {
         val profile = firestore.getStaffByUid(uid)
@@ -199,7 +132,6 @@ class AuthRepository(
         )
     }
 
-
     private suspend fun buildSession(
         staffId: Long,
         email: String,
@@ -220,22 +152,6 @@ class AuthRepository(
 
     private fun clearPersistedSession() {
         prefs.edit().clear().apply()
-    }
-
-    private fun mapKtorError(error: Throwable): Throwable {
-        if (error is HttpException) {
-            return when (error.code()) {
-                401 -> IllegalArgumentException("Invalid email or password")
-                in 500..599 -> IllegalStateException("Server error — try again later")
-                else -> IllegalStateException("Network error — try again when online")
-            }
-        }
-        val message = error.message.orEmpty()
-        return if (message.contains("Unable to resolve host", true) || message.contains("Failed to connect", true)) {
-            IllegalStateException("Network error — try again when online")
-        } else {
-            error
-        }
     }
 
     private fun mapFirebaseError(error: Throwable): Throwable {

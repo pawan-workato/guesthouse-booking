@@ -7,6 +7,7 @@ import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
+import com.guesthouse.booking.data.local.entities.RoomType
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.BookingRepository
@@ -14,7 +15,6 @@ import com.guesthouse.booking.data.repository.GuestRepository
 import com.guesthouse.booking.data.repository.SyncRepository
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -47,10 +47,26 @@ class BookingViewModel(
     ) { properties, session ->
         if (session == null) emptyList()
         else properties.filter { session.canAccessProperty(it.id) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    private val _propertySearchQuery = MutableStateFlow("")
+    val propertySearchQuery: StateFlow<String> = _propertySearchQuery.asStateFlow()
+
+    private val _roomSearchQuery = MutableStateFlow("")
+    val roomSearchQuery: StateFlow<String> = _roomSearchQuery.asStateFlow()
+
+    private val _roomTypeFilter = MutableStateFlow<RoomType?>(null)
+    val roomTypeFilter: StateFlow<RoomType?> = _roomTypeFilter.asStateFlow()
+
+    val filteredProperties: StateFlow<List<PropertyEntity>> = combine(
+        properties,
+        _propertySearchQuery
+    ) { props, query ->
+        BookingSearchFilters.filterProperties(props, query)
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     val activeGuests: StateFlow<List<GuestEntity>> = guestRepository.observeActiveGuests()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     private val _selectedPropertyId = MutableStateFlow<Long?>(null)
     val selectedPropertyId: StateFlow<Long?> = _selectedPropertyId.asStateFlow()
@@ -60,7 +76,15 @@ class BookingViewModel(
             if (id == null) kotlinx.coroutines.flow.flowOf(emptyList())
             else repository.observeRoomsForProperty(id)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
+
+    val filteredRooms: StateFlow<List<RoomEntity>> = combine(
+        roomsForSelectedProperty,
+        _roomSearchQuery,
+        _roomTypeFilter
+    ) { rooms, query, typeFilter ->
+        BookingSearchFilters.filterRooms(rooms, query, typeFilter)
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     private val _uiState = MutableStateFlow(BookingUiState())
     val uiState: StateFlow<BookingUiState> = _uiState.asStateFlow()
@@ -70,7 +94,28 @@ class BookingViewModel(
     val blockUiState: StateFlow<BlockUiState> = _blockUiState.asStateFlow()
     private val _preselectedRoomId = MutableStateFlow<Long?>(null)
 
-    fun selectProperty(propertyId: Long) { _selectedPropertyId.value = propertyId }
+    fun selectProperty(propertyId: Long) {
+        _selectedPropertyId.value = propertyId
+        _roomSearchQuery.value = ""
+        _roomTypeFilter.value = null
+    }
+
+    fun setPropertySearchQuery(query: String) {
+        _propertySearchQuery.value = query
+    }
+
+    fun setRoomSearchQuery(query: String) {
+        _roomSearchQuery.value = query
+    }
+
+    fun toggleRoomTypeFilter(type: RoomType) {
+        _roomTypeFilter.value = if (_roomTypeFilter.value == type) null else type
+    }
+
+    fun clearRoomFilters() {
+        _roomSearchQuery.value = ""
+        _roomTypeFilter.value = null
+    }
     fun preselect(propertyId: Long, roomId: Long) {
         _selectedPropertyId.value = propertyId
         _preselectedRoomId.value = roomId
@@ -81,16 +126,22 @@ class BookingViewModel(
         return id
     }
 
+    private val roomFlows = mutableMapOf<Long, StateFlow<RoomEntity?>>()
+    private val roomBookingFlows = mutableMapOf<Long, StateFlow<List<BookingEntity>>>()
+    private val roomBlockFlows = mutableMapOf<Long, StateFlow<List<BlockDateEntity>>>()
+
     fun room(roomId: Long): StateFlow<RoomEntity?> =
-        repository.observeRoom(roomId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        cachedStateFlow(roomFlows, roomId, null) { repository.observeRoom(roomId) }
 
     fun observeRoomBookings(roomId: Long): StateFlow<List<BookingEntity>> =
-        repository.observeActiveBookingsForRoom(roomId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
+        cachedStateFlow(roomBookingFlows, roomId, emptyList()) {
+            repository.observeActiveBookingsForRoom(roomId)
+        }
 
     fun observeRoomBlocks(roomId: Long): StateFlow<List<BlockDateEntity>> =
-        blockDateRepository.observeForRoom(roomId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        cachedStateFlow(roomBlockFlows, roomId, emptyList()) {
+            blockDateRepository.observeForRoom(roomId)
+        }
 
     fun createBlock(roomId: Long, startEpochDay: Long, endEpochDay: Long, reason: String) {
         viewModelScope.launch {

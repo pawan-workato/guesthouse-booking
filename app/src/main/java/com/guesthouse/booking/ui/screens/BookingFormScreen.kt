@@ -1,5 +1,6 @@
 package com.guesthouse.booking.ui.screens
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,13 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.guesthouse.booking.data.local.RoomTypeSummary
+import com.guesthouse.booking.data.local.entities.RoomType
 import com.guesthouse.booking.ui.components.AvailabilityCalendar
 import com.guesthouse.booking.ui.components.bookedDaysFromRanges
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun BookingFormScreen(
     viewModel: BookingViewModel,
@@ -26,8 +29,13 @@ fun BookingFormScreen(
     onBack: (() -> Unit)? = null
 ) {
     val properties by viewModel.properties.collectAsState()
+    val filteredProperties by viewModel.filteredProperties.collectAsState()
+    val propertySearchQuery by viewModel.propertySearchQuery.collectAsState()
     val selectedPropertyId by viewModel.selectedPropertyId.collectAsState()
-    val rooms by viewModel.roomsForSelectedProperty.collectAsState()
+    val allRooms by viewModel.roomsForSelectedProperty.collectAsState()
+    val filteredRooms by viewModel.filteredRooms.collectAsState()
+    val roomSearchQuery by viewModel.roomSearchQuery.collectAsState()
+    val roomTypeFilter by viewModel.roomTypeFilter.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val activeGuests by viewModel.activeGuests.collectAsState()
@@ -77,16 +85,19 @@ fun BookingFormScreen(
         if (!isEdit) viewModel.consumePreselectedRoom()?.let { selectedRoomId = it }
     }
 
-    LaunchedEffect(selectedPropertyId, rooms, isEdit, editBooking) {
+    LaunchedEffect(selectedPropertyId, filteredRooms, isEdit, editBooking) {
         if (isEdit && editBooking != null) return@LaunchedEffect
-        if (selectedRoomId == 0L || rooms.none { it.id == selectedRoomId }) {
-            selectedRoomId = rooms.firstOrNull()?.id ?: 0L
+        if (selectedRoomId == 0L || filteredRooms.none { it.id == selectedRoomId }) {
+            selectedRoomId = filteredRooms.firstOrNull()?.id ?: 0L
             if (!isEdit) {
                 checkIn = null
                 checkOut = null
             }
         }
     }
+
+    val roomTypeBreakdown = remember(allRooms) { RoomTypeSummary.formatBreakdown(allRooms) }
+    val roomTypeCounts = remember(allRooms) { RoomTypeSummary.countByType(allRooms) }
 
     val bookings by viewModel.observeRoomBookings(selectedRoomId).collectAsState()
     val blocks by viewModel.observeRoomBlocks(selectedRoomId).collectAsState()
@@ -120,6 +131,15 @@ fun BookingFormScreen(
         }
 
         if (properties.isNotEmpty()) {
+            OutlinedTextField(
+                value = propertySearchQuery,
+                onValueChange = viewModel::setPropertySearchQuery,
+                label = { Text("Search properties") },
+                placeholder = { Text("Name, region, or city") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(Modifier.height(8.dp))
             var propertyExpanded by remember { mutableStateOf(false) }
             val selectedProperty = properties.find { it.id == selectedPropertyId }
             ExposedDropdownMenuBox(expanded = propertyExpanded, onExpandedChange = { propertyExpanded = it }) {
@@ -132,29 +152,69 @@ fun BookingFormScreen(
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                 )
                 ExposedDropdownMenu(expanded = propertyExpanded, onDismissRequest = { propertyExpanded = false }) {
-                    properties.forEach { property ->
+                    if (filteredProperties.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("${property.name} (${property.region})") },
-                            onClick = {
-                                viewModel.selectProperty(property.id)
-                                selectedRoomId = 0L
-                                checkIn = null
-                                checkOut = null
-                                propertyExpanded = false
-                            }
+                            text = { Text("No properties match your search") },
+                            onClick = {},
+                            enabled = false
                         )
+                    } else {
+                        filteredProperties.forEach { property ->
+                            DropdownMenuItem(
+                                text = { Text("${property.name} (${property.region})") },
+                                onClick = {
+                                    viewModel.selectProperty(property.id)
+                                    selectedRoomId = 0L
+                                    checkIn = null
+                                    checkOut = null
+                                    propertyExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
 
-        if (selectedPropertyId != null && rooms.isNotEmpty()) {
+        if (selectedPropertyId != null && allRooms.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "${allRooms.size} rooms" + if (roomTypeBreakdown.isNotBlank()) " · $roomTypeBreakdown" else "",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            if (roomTypeCounts.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    roomTypeCounts.forEach { (type, count) ->
+                        FilterChip(
+                            selected = roomTypeFilter == type,
+                            onClick = { viewModel.toggleRoomTypeFilter(type) },
+                            label = { Text("${type.displayLabel()} ($count)") }
+                        )
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = roomSearchQuery,
+                onValueChange = viewModel::setRoomSearchQuery,
+                label = { Text("Search rooms") },
+                placeholder = { Text("Name, type, or description") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
             Spacer(Modifier.height(8.dp))
             var roomExpanded by remember { mutableStateOf(false) }
-            val selectedRoom = rooms.find { it.id == selectedRoomId }
+            val selectedRoom = allRooms.find { it.id == selectedRoomId }
             ExposedDropdownMenuBox(expanded = roomExpanded, onExpandedChange = { roomExpanded = it }) {
                 OutlinedTextField(
-                    value = selectedRoom?.name ?: "Select room",
+                    value = selectedRoom?.let { room ->
+                        val type = RoomType.fromStored(room.roomType)
+                        "${room.name} (${type.displayLabel()})"
+                    } ?: "Select room",
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Room") },
@@ -162,19 +222,42 @@ fun BookingFormScreen(
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                 )
                 ExposedDropdownMenu(expanded = roomExpanded, onDismissRequest = { roomExpanded = false }) {
-                    rooms.forEach { room ->
+                    if (filteredRooms.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("${room.name} — $${room.pricePerNight.toInt()}/night") },
-                            onClick = {
-                                selectedRoomId = room.id
-                                checkIn = null
-                                checkOut = null
-                                roomExpanded = false
-                            }
+                            text = { Text("No rooms match your search") },
+                            onClick = {},
+                            enabled = false
                         )
+                    } else {
+                        filteredRooms.forEach { room ->
+                            val type = RoomType.fromStored(room.roomType)
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text("${room.name} — ${type.displayLabel()}")
+                                        Text(
+                                            "$${room.pricePerNight.toInt()}/night · up to ${room.capacity} guests",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    selectedRoomId = room.id
+                                    checkIn = null
+                                    checkOut = null
+                                    roomExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
+        } else if (selectedPropertyId != null) {
+            Text(
+                "No rooms at this property yet.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
 
         if (selectedRoomId != 0L) {

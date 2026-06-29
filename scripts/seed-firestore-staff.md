@@ -21,7 +21,7 @@ Replace `<FIREBASE_UID>` with the UID from Firebase Console → Authentication.
 }
 ```
 
-> If you upload from the app while signed in as admin, this document is created automatically.
+> Document ID must equal the Auth user's UID.
 
 
 

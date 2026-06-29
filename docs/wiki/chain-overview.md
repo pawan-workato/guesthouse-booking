@@ -4,7 +4,7 @@
 
 This guesthouse chain operates **12 boutique properties** across the United States. Staff use the Android booking app to manage reservations on behalf of guests — there is no guest-facing login or payment flow in the app.
 
-The chain targets leisure travelers seeking small, regionally themed stays. Each property has a distinct character (mountain lodge, coastal harbor, desert adobe, etc.) with 2–3 room types per location.
+The chain targets leisure travelers seeking small, regionally themed stays. Each property has a distinct character with **2–3 rooms** in seed data (30 rooms chain-wide). The app tracks **room type** (Single, Double, Suite, Family) per room for inventory summaries and booking filters.
 
 ## All properties
 

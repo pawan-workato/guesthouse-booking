@@ -10,11 +10,11 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 56 Oak St, Asheville, NC
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Ivy Room | 2 | $79 | Garden-level, wheelchair accessible |
-| Oak Suite | 3 | $112 | Top floor with mountain views |
-| Carriage House | 4 | $135 | Detached unit with kitchen |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Ivy Room | 2 | Double | $79 | Garden-level, wheelchair accessible |
+| Oak Suite | 3 | Suite | $112 | Top floor with mountain views |
+| Carriage House | 4 | Family | $135 | Detached unit with kitchen |
 
 **Local notes for staff**
 

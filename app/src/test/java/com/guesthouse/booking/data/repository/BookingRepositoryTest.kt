@@ -349,6 +349,7 @@ class BookingRepositoryTest {
         }
     }
 
+    @Test
     fun checkInBooking_rejectsWhenNotConfirmed() = runTest {
         val booking = BookingEntity(id = 5L, propertyId = 1L, roomId = 10L, guestName = "Jane Doe", guestEmail = "", checkInEpochDay = 100L, checkOutEpochDay = 105L, status = BookingStatus.CHECKED_IN.name)
         every { authRepository.currentSession() } returns StaffSession(staffId = 2L, email = "m@x.com", displayName = "M", role = StaffRole.PROPERTY_MANAGER, assignedPropertyIds = setOf(1L))
@@ -374,5 +375,74 @@ class BookingRepositoryTest {
         coEvery { bookingDao.getById(5L) } returns booking
         assertTrue(repository.checkOutBooking(5L, 100L).isSuccess)
         coVerify { bookingDao.updateStatus(5L, BookingStatus.CHECKED_OUT.name) }
+    }
+
+    @Test
+    fun checkOutBooking_succeedsForEarlyCheckout() = runTest {
+        // Guest scheduled to leave day 105, but staff checks them out on day 100 (early).
+        val booking = BookingEntity(id = 6L, propertyId = 1L, roomId = 10L, guestName = "Early Leaver", guestEmail = "", checkInEpochDay = 98L, checkOutEpochDay = 105L, status = BookingStatus.CHECKED_IN.name)
+        every { authRepository.currentSession() } returns StaffSession(staffId = 2L, email = "m@x.com", displayName = "M", role = StaffRole.PROPERTY_MANAGER, assignedPropertyIds = setOf(1L))
+        coEvery { bookingDao.getById(6L) } returns booking
+        assertTrue(repository.checkOutBooking(6L, 100L).isSuccess)
+        coVerify { bookingDao.updateStatus(6L, BookingStatus.CHECKED_OUT.name) }
+    }
+
+    @Test
+    fun checkOutBooking_rejectsWhenNotCheckedIn() = runTest {
+        val booking = BookingEntity(id = 7L, propertyId = 1L, roomId = 10L, guestName = "Confirmed Only", guestEmail = "", checkInEpochDay = 100L, checkOutEpochDay = 105L, status = BookingStatus.CONFIRMED.name)
+        every { authRepository.currentSession() } returns StaffSession(staffId = 2L, email = "m@x.com", displayName = "M", role = StaffRole.PROPERTY_MANAGER, assignedPropertyIds = setOf(1L))
+        coEvery { bookingDao.getById(7L) } returns booking
+        val result = repository.checkOutBooking(7L, 100L)
+        assertTrue(result.isFailure)
+        assertEquals("Only checked-in guests can be checked out", result.exceptionOrNull()?.message)
+        coVerify(exactly = 0) { bookingDao.updateStatus(any(), BookingStatus.CHECKED_OUT.name) }
+    }
+
+    @Test
+    fun createRoom_rejectsWhenManagerLacksPropertyAccess() = runTest {
+        every { authRepository.currentSession() } returns StaffSession(
+            staffId = 2L,
+            email = "m@x.com",
+            displayName = "M",
+            role = StaffRole.PROPERTY_MANAGER,
+            assignedPropertyIds = setOf(2L)
+        )
+
+        val result = repository.createRoom(
+            propertyId = 1L,
+            name = "New room",
+            description = "Test",
+            pricePerNight = 100.0,
+            capacity = 2,
+            roomType = "DOUBLE"
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals("You don't have access to this property", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun createRoom_insertsForAssignedProperty() = runTest {
+        every { authRepository.currentSession() } returns StaffSession(
+            staffId = 2L,
+            email = "m@x.com",
+            displayName = "M",
+            role = StaffRole.PROPERTY_MANAGER,
+            assignedPropertyIds = setOf(1L)
+        )
+        coEvery { roomDao.insert(any()) } returns 42L
+
+        val result = repository.createRoom(
+            propertyId = 1L,
+            name = "New room",
+            description = "Test",
+            pricePerNight = 100.0,
+            capacity = 2,
+            roomType = "DOUBLE"
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals(42L, result.getOrNull())
+        coVerify { roomDao.insert(any()) }
     }
 }

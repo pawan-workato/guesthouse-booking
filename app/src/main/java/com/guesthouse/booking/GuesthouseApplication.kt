@@ -5,9 +5,6 @@ import com.guesthouse.booking.data.firebase.FirebaseInitializer
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.firebase.FirestoreSyncService
 import com.guesthouse.booking.data.local.AppDatabase
-import com.guesthouse.booking.data.remote.ApiClient
-import com.guesthouse.booking.data.remote.KtorApiSyncService
-import com.guesthouse.booking.data.remote.TokenStorage
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.BookingRepository
@@ -34,10 +31,6 @@ class GuesthouseApplication : Application() {
         private set
     lateinit var networkMonitor: NetworkMonitor
         private set
-    lateinit var tokenStorage: TokenStorage
-        private set
-    lateinit var apiClient: ApiClient
-        private set
 
     val isFirebaseConfigured: Boolean
         get() = FirebaseInitializer.isConfigured(this)
@@ -53,43 +46,29 @@ class GuesthouseApplication : Application() {
         val syncService = FirestoreSyncService(database, firestore)
         networkMonitor = NetworkMonitor(this)
         networkMonitor.start()
-        tokenStorage = TokenStorage(this)
-        apiClient = ApiClient(tokenStorage)
-
-        lateinit var syncRef: SyncRepository
-        val ktorSync = lazy {
-            KtorApiSyncService(database, apiClient.api, authRepository)
-        }
 
         authRepository = AuthRepository(
             database = database,
             context = this,
             firestore = firestore,
-            syncService = syncService,
-            api = apiClient.api,
-            tokenStorage = tokenStorage,
-            networkMonitor = networkMonitor,
-            ktorSync = ktorSync
+            syncService = syncService
         )
 
-        syncRef = SyncRepository(
+        syncRepository = SyncRepository(
             database = database,
             networkMonitor = networkMonitor,
             context = this,
             authRepository = authRepository,
             firestore = firestore,
-            syncService = syncService,
-            tokenStorage = tokenStorage,
-            ktorSync = ktorSync
+            syncService = syncService
         )
-        syncRepository = syncRef
 
         repository = BookingRepository(
             database,
             authRepository,
             networkMonitor,
             firestore,
-            lazy { syncRef }
+            lazy { syncRepository }
         )
         blockDateRepository = BlockDateRepository(database, authRepository)
         propertyRepository = PropertyRepository(database, networkMonitor, firestore)
@@ -97,8 +76,7 @@ class GuesthouseApplication : Application() {
             database,
             authRepository,
             networkMonitor,
-            firestore,
-            lazy { syncRef }
+            firestore
         )
         staffRepository = StaffRepository(database)
         syncRepository.schedulePeriodicSync()

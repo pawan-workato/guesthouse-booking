@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.repository.GuestRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -36,6 +35,9 @@ class GuestsViewModel(
     private val _editAccessDenied = MutableStateFlow(false)
     val editAccessDenied: StateFlow<Boolean> = _editAccessDenied.asStateFlow()
 
+    private val _canEditGuest = MutableStateFlow(true)
+    val canEditGuest: StateFlow<Boolean> = _canEditGuest.asStateFlow()
+
     val guests: StateFlow<List<GuestEntity>> = combine(
         guestRepository.observeScopedActiveGuests(),
         guestRepository.observeScopedAllGuests(),
@@ -52,10 +54,10 @@ class GuestsViewModel(
                     it.phone.contains(q, ignoreCase = true)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     val activeGuests: StateFlow<List<GuestEntity>> = guestRepository.observeScopedActiveGuests()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
@@ -67,14 +69,17 @@ class GuestsViewModel(
 
     fun loadGuestForEdit(guestId: Long) {
         viewModelScope.launch {
-            _editAccessDenied.value = !guestRepository.canAccessGuest(guestId)
-            _editGuest.value = if (_editAccessDenied.value) null else guestRepository.getGuest(guestId)
+            val guest = guestRepository.getGuest(guestId)
+            _editAccessDenied.value = guest == null
+            _canEditGuest.value = guest != null && guestRepository.canEditGuest(guestId)
+            _editGuest.value = guest
         }
     }
 
     fun clearEditGuest() {
         _editGuest.value = null
         _editAccessDenied.value = false
+        _canEditGuest.value = true
     }
 
     fun createGuest(name: String, email: String, phone: String, notes: String) {

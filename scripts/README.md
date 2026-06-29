@@ -68,13 +68,9 @@ Firebase Console → **Build → Authentication → Users → Add user**
 | `assignedPropertyIds` | array | *(empty)* |
 | `firebaseUid` | string | same as document ID |
 
-### Step 3 — Upload properties/rooms/guests from app
+### Step 3 — Properties, rooms, guests
 
-```bash
-./gradlew assembleDebug
-```
-
-Sign in as admin → **Sync** tab → **Upload demo seed to Firestore**.
+Re-run `npm run seed` after wiping empty collections, or import manually in Firestore Console (see `scripts/seed-data.mjs`).
 
 ### Step 4 — More users (optional)
 
@@ -86,3 +82,5 @@ Add other Auth users and `staff/{uid}` docs using [seed-firestore-staff.md](seed
 
 Deploy rules: `npx -y firebase-tools@latest deploy --only firestore:rules`  
 Login: `admin@chain.com` / `admin123`
+
+Run the app: `../scripts/run-on-emulator.sh` from repo root (or `./gradlew :app:installDebug`).

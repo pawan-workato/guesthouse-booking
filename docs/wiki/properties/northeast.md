@@ -10,10 +10,10 @@ Standard times: check-in **15:00**, check-out **11:00**.
 
 **Address:** 301 Maple Ave, Burlington, VT
 
-| Room | Capacity | Price/night | Description |
-|------|----------|-------------|-------------|
-| Maple Standard | 2 | $78 | Classic room with maple grove view |
-| Autumn Suite | 3 | $115 | Spacious suite, fireplace |
+| Room | Capacity | Type | Price/night | Description |
+|------|----------|------|-------------|-------------|
+| Maple Standard | 2 | Double | $78 | Classic room with maple grove view |
+| Autumn Suite | 3 | Suite | $115 | Spacious suite, fireplace |
 
 **Local notes for staff**
 

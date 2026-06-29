@@ -27,7 +27,6 @@ class GuestRepositoryTest {
     private val authRepository = mockk<AuthRepository>()
     private val networkMonitor = mockk<NetworkMonitor>()
     private val firestore = mockk<FirestoreDataSource>(relaxed = true)
-    private val syncRepository = mockk<SyncRepository>(relaxed = true)
 
     private lateinit var repository: GuestRepository
 
@@ -45,14 +44,12 @@ class GuestRepositoryTest {
         every { database.bookingDao() } returns bookingDao
         every { networkMonitor.isCurrentlyOnline() } returns false
         every { firestore.isSignedIn } returns false
-        every { syncRepository.enqueueSyncWorker() } returns Unit
         every { authRepository.currentSession() } returns managerSession
         repository = GuestRepository(
             database,
             authRepository,
             networkMonitor,
-            firestore,
-            lazy { syncRepository }
+            firestore
         )
     }
 
@@ -76,16 +73,38 @@ class GuestRepositoryTest {
     }
 
     @Test
-    fun canAccessGuest_deniesManagerForGuestOutsideAssignedProperties() = runTest {
-        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
+    fun canViewGuest_allowsManagerForAnyExistingGuest() = runTest {
+        coEvery { guestDao.getById(99L) } returns GuestEntity(id = 99L, name = "Bob")
 
-        assertFalse(repository.canAccessGuest(99L))
+        assertTrue(repository.canViewGuest(99L))
     }
 
     @Test
-    fun canAccessGuest_allowsManagerForGuestLinkedToAssignedProperty() = runTest {
+    fun canViewGuest_deniesWhenGuestMissing() = runTest {
+        coEvery { guestDao.getById(99L) } returns null
+
+        assertFalse(repository.canViewGuest(99L))
+    }
+
+    @Test
+    fun canEditGuest_deniesManagerForGuestOutsideAssignedProperties() = runTest {
         coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
 
+        assertFalse(repository.canEditGuest(99L))
+    }
+
+    @Test
+    fun canEditGuest_allowsManagerForGuestLinkedToAssignedProperty() = runTest {
+        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
+
+        assertTrue(repository.canEditGuest(10L))
+    }
+
+    @Test
+    fun canAccessGuest_delegatesToCanEditGuest() = runTest {
+        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
+
+        assertFalse(repository.canAccessGuest(99L))
         assertTrue(repository.canAccessGuest(10L))
     }
 

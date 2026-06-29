@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -23,18 +24,12 @@ fun GuestsScreen(
     onAddGuest: () -> Unit,
     onEditGuest: (Long) -> Unit
 ) {
-    val guests by viewModel.guests.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val showInactive by viewModel.showInactive.collectAsState()
+    val guests by viewModel.guests.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val showInactive by viewModel.showInactive.collectAsStateWithLifecycle()
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAddGuest) {
-                Icon(Icons.Default.Add, contentDescription = "Add guest")
-            }
-        }
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
             Text(
                 "Guests",
                 style = MaterialTheme.typography.headlineMedium,
@@ -76,6 +71,12 @@ fun GuestsScreen(
                     }
                 }
             }
+        }
+        FloatingActionButton(
+            onClick = onAddGuest,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add guest")
         }
     }
 }
