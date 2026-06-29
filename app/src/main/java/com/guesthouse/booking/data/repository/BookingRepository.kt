@@ -10,6 +10,7 @@ import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 data class BookingCreateOutcome(val bookingId: Long, val reference: String, val savedOffline: Boolean)
 
@@ -43,9 +44,6 @@ class BookingRepository(
         if (checkOutEpochDay <= checkInEpochDay) return Result.failure(IllegalArgumentException("Check-out must be after check-in"))
         val room = database.roomDao().getById(roomId) ?: return Result.failure(IllegalArgumentException("Room not found"))
         if (database.bookingDao().findOverlapping(roomId, checkInEpochDay, checkOutEpochDay).isNotEmpty()) {
-            return Result.failure(IllegalStateException("Room is not available for those dates"))
-        }
-        if (database.blockDateDao().findOverlapping(roomId, checkInEpochDay, checkOutEpochDay).isNotEmpty()) {
             return Result.failure(IllegalStateException("Room is not available for those dates"))
         }
 
@@ -90,5 +88,47 @@ class BookingRepository(
         if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
             runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CANCELLED.name) }
         }
+    }
+
+    suspend fun checkInBooking(bookingId: Long, todayEpochDay: Long = LocalDate.now().toEpochDay()): Result<Unit> {
+        val session = authRepository.currentSession()
+            ?: return Result.failure(IllegalStateException("Not signed in"))
+        val booking = database.bookingDao().getById(bookingId)
+            ?: return Result.failure(IllegalArgumentException("Booking not found"))
+        if (!session.canAccessProperty(booking.propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        if (booking.status != BookingStatus.CONFIRMED.name) {
+            return Result.failure(IllegalStateException("Only confirmed bookings can be checked in"))
+        }
+        if (booking.checkInEpochDay > todayEpochDay) {
+            return Result.failure(IllegalStateException("Check-in is not available until arrival date"))
+        }
+        database.bookingDao().updateStatus(bookingId, BookingStatus.CHECKED_IN.name)
+        if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
+            runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CHECKED_IN.name) }
+        }
+        return Result.success(Unit)
+    }
+
+    suspend fun checkOutBooking(bookingId: Long, todayEpochDay: Long = LocalDate.now().toEpochDay()): Result<Unit> {
+        val session = authRepository.currentSession()
+            ?: return Result.failure(IllegalStateException("Not signed in"))
+        val booking = database.bookingDao().getById(bookingId)
+            ?: return Result.failure(IllegalArgumentException("Booking not found"))
+        if (!session.canAccessProperty(booking.propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        if (booking.status != BookingStatus.CHECKED_IN.name) {
+            return Result.failure(IllegalStateException("Only checked-in guests can be checked out"))
+        }
+        if (booking.checkOutEpochDay > todayEpochDay) {
+            return Result.failure(IllegalStateException("Check-out is not available until departure date"))
+        }
+        database.bookingDao().updateStatus(bookingId, BookingStatus.CHECKED_OUT.name)
+        if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
+            runCatching { firestore.updateBookingStatus(bookingId, BookingStatus.CHECKED_OUT.name) }
+        }
+        return Result.success(Unit)
     }
 }

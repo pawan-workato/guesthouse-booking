@@ -49,4 +49,12 @@ class AdminViewModel(
             repository.cancelBooking(bookingId)
         }
     }
+
+    fun checkIn(bookingId: Long) {
+        viewModelScope.launch { repository.checkInBooking(bookingId) }
+    }
+
+    fun checkOut(bookingId: Long) {
+        viewModelScope.launch { repository.checkOutBooking(bookingId) }
+    }
 }

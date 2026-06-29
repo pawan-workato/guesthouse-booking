@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.BookingStatus
@@ -45,7 +46,7 @@ fun AdminScreen(
                             if (b.guestPhone.isNotBlank()) Text(b.guestPhone)
                             if (b.guestEmail.isNotBlank()) Text(b.guestEmail)
                             Text("${LocalDate.ofEpochDay(b.checkInEpochDay).format(formatter)} → ${LocalDate.ofEpochDay(b.checkOutEpochDay).format(formatter)}")
-                            Text("Booking: ${b.status}", color = if (b.status == BookingStatus.CONFIRMED.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                            Text("Booking: ${b.status}", color = bookingStatusColor(b.status))
                             Text(
                                 "Sync: ${b.syncStatus.replace('_', ' ')}",
                                 color = when (b.syncStatus) {
@@ -63,9 +64,14 @@ fun AdminScreen(
                                 TextButton(onClick = { onDismissConflict(b.id) }) {
                                     Text("Cancel this booking")
                                 }
-                            } else if (b.status == BookingStatus.CONFIRMED.name) {
-                                TextButton(onClick = { viewModel.cancelBooking(b.id) }) {
-                                    Text("Cancel booking")
+                            } else {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (b.status == BookingStatus.CONFIRMED.name) {
+                                        TextButton(onClick = { viewModel.checkIn(b.id) }) { Text("Check in") }
+                                        TextButton(onClick = { viewModel.cancelBooking(b.id) }) { Text("Cancel booking") }
+                                    } else if (b.status == BookingStatus.CHECKED_IN.name) {
+                                        TextButton(onClick = { viewModel.checkOut(b.id) }) { Text("Check out") }
+                                    }
                                 }
                             }
                         }
@@ -74,4 +80,12 @@ fun AdminScreen(
             }
         }
     }
+}
+
+@Composable
+private fun bookingStatusColor(status: String): Color = when (status) {
+    BookingStatus.CONFIRMED.name -> MaterialTheme.colorScheme.primary
+    BookingStatus.CHECKED_IN.name -> MaterialTheme.colorScheme.tertiary
+    BookingStatus.CHECKED_OUT.name -> MaterialTheme.colorScheme.onSurfaceVariant
+    else -> MaterialTheme.colorScheme.error
 }

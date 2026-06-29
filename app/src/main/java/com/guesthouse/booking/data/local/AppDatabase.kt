@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
@@ -17,7 +16,6 @@ import com.guesthouse.booking.data.local.entities.StaffPropertyAssignmentEntity
         PropertyEntity::class,
         RoomEntity::class,
         BookingEntity::class,
-        BlockDateEntity::class,
         GuestEntity::class,
         StaffEntity::class,
         StaffPropertyAssignmentEntity::class
@@ -29,7 +27,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun propertyDao(): PropertyDao
     abstract fun roomDao(): RoomDao
     abstract fun bookingDao(): BookingDao
-    abstract fun blockDateDao(): BlockDateDao
     abstract fun guestDao(): GuestDao
     abstract fun staffDao(): StaffDao
 
@@ -44,6 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "guesthouse.db"
                 )
+                    .addMigrations(*AppDatabaseMigrations.ALL)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                     .also { instance = it }
