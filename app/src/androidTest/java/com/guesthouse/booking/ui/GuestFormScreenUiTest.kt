@@ -48,14 +48,15 @@ class GuestFormScreenUiTest {
             GuestFormScreen(
                 guestId = guestId,
                 viewModel = viewModel,
-                readOnly = true,
+                readOnly = false,
                 onSaved = {},
                 onBack = {}
             )
         }
 
-        composeTestRule.onNodeWithText("Guest details").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Edit guest").assertIsDisplayed()
         composeTestRule.onNodeWithText("Stay history").assertIsDisplayed()
+        assert(composeTestRule.onAllNodesWithText("Remove guest").fetchSemanticsNodes().isEmpty())
         composeTestRule.onNodeWithText("Your assigned properties only").assertIsDisplayed()
         composeTestRule.onNodeWithText("Hill View Guesthouse").assertIsDisplayed()
         assert(composeTestRule.onAllNodesWithText("Coastal Lodge").fetchSemanticsNodes().isEmpty())

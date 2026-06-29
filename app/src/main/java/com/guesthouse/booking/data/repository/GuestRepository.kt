@@ -48,15 +48,14 @@ class GuestRepository(
         return database.guestDao().getById(guestId) != null
     }
 
-    suspend fun canEditGuest(guestId: Long): Boolean {
+    suspend fun canEditGuest(guestId: Long): Boolean = canViewGuest(guestId)
+
+    suspend fun canDeleteGuest(guestId: Long): Boolean {
         val session = authRepository.currentSession() ?: return false
-        if (session.isChainAdmin) return true
-        val propertyIds = session.assignedPropertyIds.toList()
-        if (propertyIds.isEmpty()) return false
-        return database.bookingDao().getGuestIdsForProperties(propertyIds).contains(guestId)
+        return session.isChainAdmin && canViewGuest(guestId)
     }
 
-    suspend fun canAccessGuest(guestId: Long): Boolean = canEditGuest(guestId)
+    suspend fun canAccessGuest(guestId: Long): Boolean = canViewGuest(guestId)
 
     /** Stay history scoped by role: chain admin sees all properties; managers see assigned properties only. */
     fun observeGuestStayHistory(guestId: Long): Flow<List<GuestStayBooking>> =
@@ -143,7 +142,7 @@ class GuestRepository(
     }
 
     suspend fun setGuestActive(guestId: Long, active: Boolean) {
-        if (!canEditGuest(guestId)) return
+        if (!canDeleteGuest(guestId)) return
         val guest = database.guestDao().getById(guestId) ?: return
         val updated = guest.copy(
             isActive = active,

@@ -41,7 +41,7 @@ From **Guests**:
 - **Remove** — edit screen → **Remove guest** (soft-delete; past bookings keep snapshot fields)
 - **Show removed** — toggle inactive profiles
 
-**All signed-in staff** see every active guest profile (name, email, phone, notes). Guest detail includes **stay history**: chain admins see bookings at all properties; property managers see only stays at their assigned properties. **Property managers** can edit or remove guests who appear on bookings at their assigned properties; other profiles open read-only. **Chain admins** can edit any guest.
+**All signed-in staff** see every active guest profile and **may edit any guest** (name, email, phone, notes). Guest detail includes **stay history**: chain admins see bookings at all properties; property managers see only stays at their assigned properties. **Only chain admins** can remove (soft-delete) or reactivate guests.
 
 ## Staff management (chain admin)
 

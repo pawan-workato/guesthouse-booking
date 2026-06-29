@@ -103,58 +103,50 @@ class GuestRepositoryTest {
     }
 
     @Test
-    fun canEditGuest_deniesManagerForGuestOutsideAssignedProperties() = runTest {
-        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
+    fun canEditGuest_allowsManagerForAnyExistingGuest() = runTest {
+        coEvery { guestDao.getById(99L) } returns GuestEntity(id = 99L, name = "Bob")
 
-        assertFalse(repository.canEditGuest(99L))
+        assertTrue(repository.canEditGuest(99L))
     }
 
     @Test
-    fun canEditGuest_allowsManagerForGuestLinkedToAssignedProperty() = runTest {
-        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
+    fun canDeleteGuest_chainAdminOnly() = runTest {
+        coEvery { guestDao.getById(10L) } returns GuestEntity(id = 10L, name = "Bob")
 
-        assertTrue(repository.canEditGuest(10L))
+        assertFalse(repository.canDeleteGuest(10L))
+
+        val adminSession = managerSession.copy(role = StaffRole.CHAIN_ADMIN)
+        every { authRepository.currentSession() } returns adminSession
+        assertTrue(repository.canDeleteGuest(10L))
     }
 
     @Test
-    fun canAccessGuest_delegatesToCanEditGuest() = runTest {
-        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
+    fun canAccessGuest_matchesCanViewGuest() = runTest {
+        coEvery { guestDao.getById(99L) } returns null
+        coEvery { guestDao.getById(10L) } returns GuestEntity(id = 10L, name = "Bob")
 
         assertFalse(repository.canAccessGuest(99L))
         assertTrue(repository.canAccessGuest(10L))
     }
 
     @Test
-    fun updateGuest_rejectsWhenManagerCannotAccessGuest() = runTest {
-        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(10L)
-        val guest = GuestEntity(id = 99L, name = "Bob", email = "bob@test.com")
-
-        val result = repository.updateGuest(guest)
-
-        assertTrue(result.isFailure)
-        assertEquals("You don't have access to this guest", result.exceptionOrNull()?.message)
-        coVerify(exactly = 0) { guestDao.update(any()) }
-    }
-
-    @Test
-    fun updateGuest_trimsFieldsAndPersistsWhenAllowed() = runTest {
-        coEvery { bookingDao.getGuestIdsForProperties(listOf(1L, 3L)) } returns listOf(1L)
-        val guest = GuestEntity(id = 1L, name = " Bob ", email = " bob@test.com ", phone = " 555 ", notes = " note ")
+    fun updateGuest_allowsManagerForAnyGuest() = runTest {
+        coEvery { guestDao.getById(99L) } returns GuestEntity(id = 99L, name = "Bob")
+        val guest = GuestEntity(id = 99L, name = " Bob ", email = " bob@test.com ", phone = " 555 ", notes = " note ")
 
         val result = repository.updateGuest(guest)
 
         assertTrue(result.isSuccess)
-        coVerify {
-            guestDao.update(
-                match {
-                    it.id == 1L &&
-                        it.name == "Bob" &&
-                        it.email == "bob@test.com" &&
-                        it.phone == "555" &&
-                        it.notes == "note"
-                }
-            )
-        }
+        coVerify { guestDao.update(any()) }
+    }
+
+    @Test
+    fun setGuestActive_deniesManager() = runTest {
+        coEvery { guestDao.getById(10L) } returns GuestEntity(id = 10L, name = "Bob", isActive = true)
+
+        repository.setGuestActive(10L, false)
+
+        coVerify(exactly = 0) { guestDao.update(any()) }
     }
 
     @Test

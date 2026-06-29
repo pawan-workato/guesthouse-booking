@@ -78,11 +78,11 @@ class GuestsViewModelTest {
     }
 
     @Test
-    fun loadGuestForEdit_setsReadOnlyWhenManagerCannotEditGuest() = runTest {
+    fun loadGuestForEdit_allowsManagerToEditAnyGuest() = runTest {
         val guest = guests.first()
         every { authRepository.session } returns sessionFlow
         coEvery { guestRepository.getGuest(guest.id) } returns guest
-        coEvery { guestRepository.canEditGuest(guest.id) } returns false
+        coEvery { guestRepository.canEditGuest(guest.id) } returns true
         every { guestRepository.observeScopedActiveGuests() } returns flowOf(guests)
         every { guestRepository.observeScopedAllGuests() } returns flowOf(guests)
         every { guestRepository.observeGuestStayHistory(guest.id) } returns flowOf(emptyList())
@@ -91,7 +91,7 @@ class GuestsViewModelTest {
         viewModel.loadGuestForEdit(guest.id)
         advanceUntilIdle()
 
-        assertFalse(viewModel.canEditGuest.value)
+        assertTrue(viewModel.canEditGuest.value)
         assertEquals(guest, viewModel.editGuest.value)
     }
 }

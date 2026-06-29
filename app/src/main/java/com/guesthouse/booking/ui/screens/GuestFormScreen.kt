@@ -162,7 +162,7 @@ fun GuestFormScreen(
                     Text(if (formState.isSaving) "Saving..." else if (isEdit) "Save changes" else "Add guest")
                 }
 
-                if (isEdit && editGuest?.isActive == true) {
+                if (isEdit && editGuest?.isActive == true && isChainAdmin) {
                 OutlinedButton(
                     onClick = { showDeactivateDialog = true },
                     modifier = Modifier.fillMaxWidth(),
@@ -170,7 +170,7 @@ fun GuestFormScreen(
                 ) {
                     Text("Remove guest")
                 }
-                } else if (isEdit && editGuest?.isActive == false) {
+                } else if (isEdit && editGuest?.isActive == false && isChainAdmin) {
                 OutlinedButton(
                     onClick = {
                         viewModel.setGuestActive(guestId!!, true)

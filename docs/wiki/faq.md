@@ -70,7 +70,7 @@ See [staff guide — manager map](staff-guide.md#manager--property-map).
 
 ### Why don't I see every guest?
 
-All signed-in staff can view every guest profile (name, email, phone, notes). **Stay history** on guest detail shows past and upcoming bookings — chain admins see all properties; property managers see only stays at **their assigned properties**. Property managers can only edit guests linked to bookings at their properties; chain admins can edit any guest.
+All signed-in staff can view and **edit any guest profile** (name, email, phone, notes). **Stay history** on guest detail shows past and upcoming bookings — chain admins see all properties; property managers see only stays at **their assigned properties**. **Only chain admins** can remove or reactivate guests.
 
 ## Demo / development
 
