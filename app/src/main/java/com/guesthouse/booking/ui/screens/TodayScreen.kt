@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -16,7 +17,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(viewModel: TodayViewModel) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
     LaunchedEffect(state.actionMessage, state.actionError) {
         if (state.actionMessage != null || state.actionError != null) { kotlinx.coroutines.delay(3000); viewModel.dismissActionFeedback() }

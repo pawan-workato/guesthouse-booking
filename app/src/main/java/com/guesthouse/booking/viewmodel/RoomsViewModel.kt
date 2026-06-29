@@ -7,7 +7,6 @@ import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -32,13 +31,18 @@ class RoomsViewModel(
     private val _editAccessDenied = MutableStateFlow(false)
     val editAccessDenied: StateFlow<Boolean> = _editAccessDenied.asStateFlow()
 
+    private val propertyFlows = mutableMapOf<Long, StateFlow<PropertyEntity?>>()
+    private val roomsForPropertyFlows = mutableMapOf<Long, StateFlow<List<RoomEntity>>>()
+
     fun property(propertyId: Long): StateFlow<PropertyEntity?> =
-        repository.observeProperty(propertyId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        cachedStateFlow(propertyFlows, propertyId, null) {
+            repository.observeProperty(propertyId)
+        }
 
     fun roomsForProperty(propertyId: Long): StateFlow<List<RoomEntity>> =
-        repository.observeRoomsForProperty(propertyId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        cachedStateFlow(roomsForPropertyFlows, propertyId, emptyList()) {
+            repository.observeRoomsForProperty(propertyId)
+        }
 
     fun canManageProperty(propertyId: Long): Boolean =
         authRepository.currentSession()?.canAccessProperty(propertyId) == true

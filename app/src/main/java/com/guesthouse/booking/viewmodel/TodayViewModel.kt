@@ -9,7 +9,6 @@ import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -89,7 +88,7 @@ class TodayViewModel(
 
     val uiState: StateFlow<TodayBoardState> = combine(boardState, _actionMessage, _actionError) { board, msg, err ->
         board.copy(actionMessage = msg, actionError = err)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayBoardState())
+    }.stateIn(viewModelScope, ViewModelSharing, TodayBoardState())
 
     fun selectProperty(propertyId: Long?) {
         val session = authRepository.currentSession() ?: return

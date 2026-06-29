@@ -12,7 +12,7 @@ Single source of truth for security remediation, product delivery, and open work
 
 | Status | Count | Examples |
 |--------|------:|----------|
-| ✅ Done | 47 | KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
+| ✅ Done | 48 | KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
 | 🔄 In progress | 1 | KR-02 encrypted session prefs |
 | ⏳ Pending | 8 | KR-04 pilot creds, AUTHZ-12, Sprint 10 pentest, FEAT-S8+ |
 | ❌ Deferred | 2 | KR-07 chain-wide guest read (product), AUTHZ-08 |
@@ -131,6 +131,7 @@ Single source of truth for security remediation, product delivery, and open work
 | BUG-CHK | Bug | Checkout button on Bookings tab (early checkout) | ✅ Done | High | Removed `checkOutEpochDay > today` guard in `BookingRepository.checkOutBooking`; tests added | Working tree (subagent `c6d1f1b3`) |
 | BUG-CHK-UI | Bug | Admin check-out shows no error on failure | ✅ Done | Low | `AdminViewModel` surfaces check-in/out/cancel errors via `actionError`; test added | Working tree |
 | BUG-CHK-CMT | Process | Checkout subagent completion | ✅ Done | — | Fix applied + `./gradlew :app:testDebugUnitTest` passed; **not committed** | 2026-06-29 |
+| BUG-FLICKER | Bug | Tab/screen UI flicker on navigation | ✅ Done | Medium | `WhileSubscribed(Long.MAX_VALUE)` + cached per-id flows + cached per-id flows; skip redundant tab nav; `derivedStateOf` chrome; remove nested Scaffolds; `collectAsStateWithLifecycle` | Working tree |
 
 ---
 
@@ -165,4 +166,5 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 | Date | Change |
 |------|--------|
 | 2026-06-29 | Security pass — KR-11/12/14/15, pentest doc, tracker sync (subagent `4cb960be`) |
+| 2026-06-29 | BUG-FLICKER — tab/screen flicker fixes (ViewModel flow sharing, nav chrome) |
 | 2026-06-29 | BUG-CHK-UI, SEC-FIRE, KR-10/DATA-07, FEAT-NAV/KTOR/GUEST/DOCS/WIKI, login lockout UX |

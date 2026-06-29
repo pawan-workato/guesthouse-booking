@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.repository.GuestRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -55,10 +54,10 @@ class GuestsViewModel(
                     it.phone.contains(q, ignoreCase = true)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     val activeGuests: StateFlow<List<GuestEntity>> = guestRepository.observeScopedActiveGuests()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,20 +27,12 @@ fun PropertiesScreen(
     onAddProperty: () -> Unit,
     onEditProperty: (Long) -> Unit
 ) {
-    val properties by viewModel.properties.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val showInactive by viewModel.showInactive.collectAsState()
+    val properties by viewModel.properties.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val showInactive by viewModel.showInactive.collectAsStateWithLifecycle()
 
-    Scaffold(
-        floatingActionButton = {
-            if (isChainAdmin) {
-                FloatingActionButton(onClick = onAddProperty) {
-                    Icon(Icons.Default.Add, contentDescription = "Add property")
-                }
-            }
-        }
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
             Text(
                 "Your properties",
                 style = MaterialTheme.typography.headlineMedium,
@@ -82,6 +75,14 @@ fun PropertiesScreen(
                         )
                     }
                 }
+            }
+        }
+        if (isChainAdmin) {
+            FloatingActionButton(
+                onClick = onAddProperty,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add property")
             }
         }
     }

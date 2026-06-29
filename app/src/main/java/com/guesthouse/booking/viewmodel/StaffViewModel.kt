@@ -9,7 +9,6 @@ import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.data.repository.StaffRepository
 import com.guesthouse.booking.data.repository.StaffWithAssignments
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -41,7 +40,7 @@ class StaffViewModel(
 
     val activeProperties: StateFlow<List<PropertyEntity>> =
         propertyRepository.observeActiveProperties()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+            .stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     val staffList: StateFlow<List<StaffWithAssignments>> = combine(
         staffRepository.observeStaff(false),
@@ -58,7 +57,7 @@ class StaffViewModel(
                     it.staff.email.contains(q, ignoreCase = true)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     fun setSearchQuery(query: String) { _searchQuery.value = query }
 

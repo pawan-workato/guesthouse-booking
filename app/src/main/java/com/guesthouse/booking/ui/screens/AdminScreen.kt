@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,10 +23,10 @@ fun AdminScreen(
     onDismissConflict: (Long) -> Unit = {},
     onEditBooking: (Long) -> Unit = {}
 ) {
-    val bookings by viewModel.bookingsWithDetails.collectAsState()
-    val showCancelled by viewModel.showCancelled.collectAsState()
-    val actionMessage by viewModel.actionMessage.collectAsState()
-    val actionError by viewModel.actionError.collectAsState()
+    val bookings by viewModel.bookingsWithDetails.collectAsStateWithLifecycle()
+    val showCancelled by viewModel.showCancelled.collectAsStateWithLifecycle()
+    val actionMessage by viewModel.actionMessage.collectAsStateWithLifecycle()
+    val actionError by viewModel.actionError.collectAsStateWithLifecycle()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
     LaunchedEffect(actionMessage, actionError) {

@@ -7,7 +7,6 @@ import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -51,7 +50,7 @@ class AdminViewModel(
                     roomName = roomMap[booking.roomId]?.name ?: "Unknown room"
                 )
             }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     fun setShowCancelled(show: Boolean) {
         _showCancelled.value = show
