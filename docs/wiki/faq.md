@@ -59,8 +59,8 @@ See the [staff guide](staff-guide.md#manager--property-map) for manager assignme
 
 ### Why don't I see bookings from another phone?
 
-Data is local to each device until Sprint 3 sync is implemented. See [offline operations](offline-operations.md).
+Bookings sync when the device is online via the Ktor API or Firestore. Offline bookings stay on the device until sync completes — see [offline operations](offline-operations.md).
 
 ### The database looks empty after an update
 
-During development, schema upgrades may reset the local database. Reinstall or clear app data to trigger re-seeding from `DatabaseSeeder.kt`.
+Schema upgrades may reset the local Room cache. Sign in again while online to pull bootstrap data from the backend or Firebase. For Ktor, ensure `docker compose up` and an empty Postgres DB so `DatabaseSeeder` runs; for Firebase, run `cd scripts && npm run seed`.

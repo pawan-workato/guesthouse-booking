@@ -6,7 +6,7 @@
 
 Staff can create bookings without a live network connection. Bookings are saved locally with a temporary reference and marked **PENDING SYNC**. When connectivity returns, the app syncs automatically (WorkManager) or on demand from the **Sync** tab.
 
-Each device still uses a local Room database. Sprint 3 adds sync *status* and conflict handling on-device — there is no remote server yet. Sync marks bookings as **SYNCED** and assigns permanent references; conflicts are flagged when overlapping **SYNCED** bookings exist at sync time.
+Each device uses a local Room cache. When online, data syncs to the Ktor API or Firestore (depending on build configuration). Sync marks bookings as **SYNCED** and assigns permanent references; conflicts are flagged when overlapping **SYNCED** bookings exist at sync time.
 
 ## Sync statuses
 

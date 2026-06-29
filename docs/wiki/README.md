@@ -9,7 +9,7 @@ Staff reference for the 12-property guesthouse chain. Use this wiki alongside th
 | [Chain overview](chain-overview.md) | Purpose of the chain and summary of all 12 properties |
 | [Staff guide](staff-guide.md) | App navigation, login roles, and demo accounts |
 | [Booking procedures](booking-procedures.md) | How to create and cancel bookings, overlap rules |
-| [Offline operations](offline-operations.md) | Planned offline/sync behavior (Sprint 3) |
+| [Offline operations](offline-operations.md) | Offline booking, sync queue, and conflict handling |
 | [FAQ](faq.md) | Common staff questions |
 
 ## Properties by region

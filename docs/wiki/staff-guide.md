@@ -67,11 +67,11 @@ Property managers only see active properties assigned to their account.
 | **Chain admin** | All 12 properties; full bookings admin |
 | **Property manager** | Only assigned properties; bookings for those locations |
 
-Role definitions and property assignments match the seeded demo accounts in `DatabaseSeeder.kt`. Chain admins can access every property; managers are scoped to their assignments.
+Role definitions and property assignments match the demo accounts seeded via the Firebase script (`scripts/seed-firebase-demo.mjs`) or the Ktor backend (`backend/.../DatabaseSeeder.kt`). Chain admins can access every property; managers are scoped to their assignments.
 
 ## Demo accounts (development)
 
-Use these credentials in development builds with seeded data:
+Use these credentials after running the Firebase seed script or starting the Ktor API with an empty database:
 
 | Email | Password | Display name | Role | Assigned properties (IDs) |
 |-------|----------|--------------|------|---------------------------|

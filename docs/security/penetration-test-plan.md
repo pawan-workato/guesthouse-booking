@@ -126,7 +126,7 @@
 
 - **Devices:** Emulator (API 26, 34) + physical device (rooted optional for P2)
 - **Builds:** `assembleDebug` and `assembleRelease` (note: release currently has `isMinifyEnabled = false`)
-- **Accounts:** Seeded demo accounts from `DatabaseSeeder` / `docs/wiki/staff-guide.md`
+- **Accounts:** Seeded demo accounts from `backend/.../DatabaseSeeder.kt`, `scripts/seed-firebase-demo.mjs`, and `docs/wiki/staff-guide.md`
 - **Data:** Fresh install + populated DB after seed
 
 ---
@@ -253,7 +253,7 @@ These items were identified in code review; pentest should confirm exploitabilit
 | **KR-01** | SHA-256 password hashing with static salt | **Critical** | `PasswordHasher.kt` | CRYP-01, CRYP-03 |
 | **KR-02** | Session = `staff_id` only in SharedPreferences (no token, no binding) | **High** | `AuthRepository.kt` | AUTH-05 |
 | **KR-03** | `allowBackup=true` enables PII/hash extraction | **High** | `AndroidManifest.xml` | DATA-02 |
-| **KR-04** | Hardcoded demo passwords in seeder and wiki | **High** | `DatabaseSeeder.kt`, `staff-guide.md` | AUTH-09, CRYP-03 |
+| **KR-04** | Hardcoded demo passwords in seed scripts and wiki | **High** | `backend/.../DatabaseSeeder.kt`, `scripts/seed-data.mjs`, `staff-guide.md` | AUTH-09, CRYP-03 |
 | **KR-05** | `AdminViewModel.cancelBooking` — no property authorization | **High** | `AdminViewModel.kt:44-47` | AUTHZ-05, AUTHZ-06 |
 | **KR-06** | `SyncViewModel.dismissConflict` — no property check | **Medium** | `SyncViewModel.kt:75-78` | AUTHZ-07 |
 | **KR-07** | `GuestsViewModel` — no property-scoped guest access | **Medium** | `GuestsViewModel.kt` | AUTHZ-08 |

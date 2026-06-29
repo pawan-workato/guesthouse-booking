@@ -58,7 +58,7 @@ Sign in while online to obtain a JWT and pull bootstrap data (properties, rooms,
 
 When `google-services.json` is present, Firebase Auth + Firestore remain available if `USE_KTOR_API` is disabled. See [docs/firebase-setup.md](docs/firebase-setup.md).
 
-Without `google-services.json`, the app still runs with local Room seed data; Ktor sync requires the API above.
+Without `google-services.json`, use the Ktor API above (`docker compose up`) for auth and bootstrap data. Room is an offline cache only — there is no bundled offline seed in the app.
 
 ## Requirements
 

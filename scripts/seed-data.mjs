@@ -1,5 +1,5 @@
 /**
- * Demo seed data — mirrors app/src/main/java/com/guesthouse/booking/data/seed/SeedData.kt
+ * Demo seed data — mirrors backend DatabaseSeeder.kt entity definitions
  */
 
 export const ADMIN_PASSWORD = 'admin123';

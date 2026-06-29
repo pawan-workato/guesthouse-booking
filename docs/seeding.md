@@ -67,8 +67,8 @@ The add-manager form shows a reminder when Firebase is configured.
 
 Demo entity definitions:
 
-- Kotlin: `app/src/main/java/com/guesthouse/booking/data/seed/SeedData.kt`
-- Script: `scripts/seed-data.mjs`
+- Firebase script: `scripts/seed-data.mjs` (used by `npm run seed`)
+- Ktor backend: `backend/src/main/kotlin/com/guesthouse/booking/backend/seed/DatabaseSeeder.kt` (PostgreSQL on first API start)
 
 ## Wiping Firestore
 
