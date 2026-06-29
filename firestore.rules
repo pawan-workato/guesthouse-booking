@@ -29,7 +29,14 @@ service cloud.firestore {
 
     match /staff/{uid} {
       allow read: if isSignedIn() && (request.auth.uid == uid || isChainAdmin());
-      allow write: if isChainAdmin();
+      allow create, delete: if isChainAdmin();
+      // Self-service: display name only; role, email, assignments remain admin-only.
+      allow update: if isChainAdmin()
+        || (isStaff() && request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.staffId == resource.data.staffId
+          && request.resource.data.assignedPropertyIds == resource.data.assignedPropertyIds);
     }
 
     match /staff_assignments/{assignmentId} {

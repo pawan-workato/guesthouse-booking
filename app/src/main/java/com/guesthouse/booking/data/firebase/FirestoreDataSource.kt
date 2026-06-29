@@ -204,6 +204,13 @@ class FirestoreDataSource(
             .await()
     }
 
+    suspend fun updateStaffDisplayName(uid: String, displayName: String) {
+        firestore.collection(FirestoreCollections.STAFF)
+            .document(uid)
+            .update(FirestoreFields.DISPLAY_NAME, displayName.trim())
+            .await()
+    }
+
     private companion object {
         const val WHERE_IN_LIMIT = 10
     }

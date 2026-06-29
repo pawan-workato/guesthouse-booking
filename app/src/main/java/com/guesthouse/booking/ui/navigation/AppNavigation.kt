@@ -1,5 +1,6 @@
 package com.guesthouse.booking.ui.navigation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import com.guesthouse.booking.ui.screens.BookingDetailScreen
 import com.guesthouse.booking.ui.screens.BookingFormScreen
 import com.guesthouse.booking.ui.screens.GuestFormScreen
 import com.guesthouse.booking.ui.screens.GuestsScreen
+import com.guesthouse.booking.ui.screens.ProfileScreen
 import com.guesthouse.booking.ui.screens.PropertiesScreen
 import com.guesthouse.booking.ui.screens.ReportsScreen
 import com.guesthouse.booking.ui.screens.PropertyFormScreen
@@ -57,6 +59,7 @@ import com.guesthouse.booking.viewmodel.AuditLogViewModel
 import com.guesthouse.booking.viewmodel.BookingDetailViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import com.guesthouse.booking.viewmodel.GuestsViewModel
+import com.guesthouse.booking.viewmodel.ProfileViewModel
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
 import com.guesthouse.booking.viewmodel.ReportsViewModel
 import com.guesthouse.booking.viewmodel.RoomsViewModel
@@ -93,6 +96,7 @@ sealed class Screen(val route: String, val label: String) {
     }
     data object Guests : Screen("guests", "Guests")
     data object Sync : Screen("sync", "Sync status")
+    data object Profile : Screen("profile", "My profile")
     data object Reports : Screen("reports", "Occupancy report")
     data object AuditLog : Screen("audit_log", "Audit log")
     data object GuestAdd : Screen("guest/add", "Add guest")
@@ -183,7 +187,9 @@ fun GuesthouseNavHost(
                 TopAppBar(
                     colors = glassTopAppBarColors(),
                     title = {
-                        Column {
+                        Column(
+                            Modifier.clickable { navController.navigate(Screen.Profile.route) }
+                        ) {
                             Text("Guesthouse Booking")
                             Text(
                                 if (isChainAdmin) "$staffName · Chain admin" else staffName,
@@ -368,6 +374,15 @@ fun GuesthouseNavHost(
                 AuditLogScreen(
                     viewModel = auditVm,
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Profile.route) {
+                val profileVm: ProfileViewModel = viewModel(factory = viewModelFactory)
+                ProfileScreen(
+                    viewModel = profileVm,
+                    onBack = { navController.popBackStack() },
+                    onOpenSync = { navController.navigate(Screen.Sync.route) },
+                    onLogout = onLogout
                 )
             }
             composable(Screen.Sync.route) {

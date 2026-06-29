@@ -115,6 +115,29 @@ class AuthRepository(
 
     fun currentSession(): StaffSession? = _session.value
 
+    fun currentFirebaseUid(): String? = auth.currentUser?.uid
+
+    fun patchSessionDisplayName(displayName: String) {
+        val current = _session.value ?: return
+        _session.value = current.copy(displayName = displayName.trim())
+    }
+
+    suspend fun sendPasswordResetEmail(): Result<Unit> {
+        if (!firebaseEnabled) {
+            return Result.failure(IllegalStateException("Firebase is not configured"))
+        }
+        val email = _session.value?.email?.trim().orEmpty()
+        if (email.isBlank()) {
+            return Result.failure(IllegalStateException("Not signed in"))
+        }
+        return runCatching {
+            auth.sendPasswordResetEmail(email).await()
+        }.fold(
+            onSuccess = { Result.success(Unit) },
+            onFailure = { Result.failure(mapFirebaseError(it)) }
+        )
+    }
+
     private suspend fun loginWithFirebase(email: String, password: String): Result<StaffSession> {
         return runCatching {
             auth.signInWithEmailAndPassword(email.trim(), password).await()

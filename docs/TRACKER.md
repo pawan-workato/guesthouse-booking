@@ -1,6 +1,6 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-29 (Sprint 10 Tier 1) (Firestore rules deployed via Console — guest `isActive` chain-admin-only)
+**Last updated:** 2026-06-29 (Staff profile)
 
 Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`merge-main` at `07a4a36`).
 
@@ -136,6 +136,7 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-S10-REV | Product | Reports revenue + 7-day forecast | ✅ Done | Medium | `RevenueCalculator`, `ReportsRepository`, Reports screen | Working tree |
 | FEAT-S10-CSV | Product | CSV export bookings & guests | ✅ Done | Low | `CsvExporter`, CreateDocument + share from Reports | Working tree |
 | FEAT-S10-SYNC | Product | Sync issue notifications | ✅ Done | Medium | `SyncAlertWorker`, `SyncAlertScheduler`, `SyncAlertNotifier` | Working tree |
+| FEAT-PROFILE | Product | Staff self-service profile (edit name, password reset) | ✅ Done | Medium | Tap name in top bar → `ProfileScreen`; Firestore self-update rule | Working tree |
 | DOC-P2 | Security | P2 manual pentest checklist | ✅ Done | High | [pentest-run-p2-checklist.md](./security/pentest-run-p2-checklist.md) | Working tree |
 
 ---

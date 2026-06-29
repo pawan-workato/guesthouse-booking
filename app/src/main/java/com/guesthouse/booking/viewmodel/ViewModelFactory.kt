@@ -8,7 +8,9 @@ import com.guesthouse.booking.data.repository.ReportsRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.GuestRepository
+import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.repository.OccupancyRepository
+import com.guesthouse.booking.data.repository.ProfileRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.data.repository.StaffRepository
 import com.guesthouse.booking.data.repository.SyncRepository
@@ -54,6 +56,17 @@ class ViewModelFactory(
                 ) as T
             modelClass.isAssignableFrom(AuditLogViewModel::class.java) ->
                 AuditLogViewModel(auditRepository) as T
+            modelClass.isAssignableFrom(ProfileViewModel::class.java) ->
+                ProfileViewModel(
+                    ProfileRepository(
+                        database,
+                        authRepository,
+                        propertyRepository,
+                        FirestoreDataSource(),
+                        networkMonitor
+                    ),
+                    authRepository
+                ) as T
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
         }
     }
