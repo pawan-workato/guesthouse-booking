@@ -131,10 +131,10 @@ fun GuesthouseNavHost(
     val syncUiState by syncVm.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val bottomNavItems = listOf(
-        Screen.Properties,
         Screen.Book,
         Screen.Today,
-        Screen.Admin
+        Screen.Admin,
+        Screen.Properties
     )
     val topNavItems = buildList {
         add(Screen.Guests)
@@ -241,7 +241,7 @@ fun GuesthouseNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Properties.route,
+            startDestination = Screen.Today.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Properties.route) {
