@@ -48,6 +48,9 @@ import com.guesthouse.booking.viewmodel.SyncViewModel
 sealed class Screen(val route: String, val label: String) {
     data object Properties : Screen("properties", "Properties")
     data object Book : Screen("book", "Book")
+    data object BookingEdit : Screen("booking/{bookingId}/edit", "Edit booking") {
+        fun createRoute(bookingId: Long) = "booking/$bookingId/edit"
+    }
     data object Admin : Screen("admin", "Bookings")
     data object PropertyRooms : Screen("property/{propertyId}/rooms", "Rooms") {
         fun createRoute(propertyId: Long) = "property/$propertyId/rooms"
@@ -261,8 +264,25 @@ fun GuesthouseNavHost(
                 val vm: AdminViewModel = viewModel(factory = viewModelFactory)
                 AdminScreen(
                     viewModel = vm,
-                    onDismissConflict = { syncVm.dismissConflict(it) }
+                    onDismissConflict = { syncVm.dismissConflict(it) },
+                    onEditBooking = { navController.navigate(Screen.BookingEdit.createRoute(it)) }
                 )
+            }
+            composable(Screen.BookingEdit.route) { entry ->
+                val bookingId = entry.arguments?.getString("bookingId")?.toLongOrNull() ?: return@composable
+                val vm: BookingViewModel = viewModel(factory = viewModelFactory)
+                val editBooking by vm.editBooking.collectAsState()
+                val propertyId = editBooking?.propertyId
+                if (propertyId != null && !vm.canAccessProperty(propertyId)) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    BookingFormScreen(
+                        viewModel = vm,
+                        bookingId = bookingId,
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
             composable(Screen.PropertyAdd.route) {
                 if (!isChainAdmin) {

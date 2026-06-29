@@ -79,6 +79,68 @@ class BookingRepository(
 
     suspend fun getBookingById(bookingId: Long): BookingEntity? = database.bookingDao().getById(bookingId)
 
+    suspend fun updateBooking(
+        bookingId: Long,
+        roomId: Long,
+        guestId: Long?,
+        guestName: String,
+        guestEmail: String,
+        guestPhone: String,
+        checkInEpochDay: Long,
+        checkOutEpochDay: Long,
+        isOnline: Boolean
+    ): Result<Unit> {
+        val session = authRepository.currentSession()
+            ?: return Result.failure(IllegalStateException("Not signed in"))
+        val existing = database.bookingDao().getById(bookingId)
+            ?: return Result.failure(IllegalArgumentException("Booking not found"))
+        if (!session.canAccessProperty(existing.propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        if (existing.status != BookingStatus.CONFIRMED.name) {
+            return Result.failure(IllegalStateException("Only confirmed bookings can be edited"))
+        }
+        if (guestName.isBlank()) return Result.failure(IllegalArgumentException("Guest name is required"))
+        if (checkOutEpochDay <= checkInEpochDay) {
+            return Result.failure(IllegalArgumentException("Check-out must be after check-in"))
+        }
+        val room = database.roomDao().getById(roomId) ?: return Result.failure(IllegalArgumentException("Room not found"))
+        if (!session.canAccessProperty(room.propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        if (database.bookingDao().findOverlapping(roomId, checkInEpochDay, checkOutEpochDay, excludeId = bookingId).isNotEmpty()) {
+            return Result.failure(IllegalStateException("Room is not available for those dates"))
+        }
+
+        val updated = existing.copy(
+            propertyId = room.propertyId,
+            roomId = roomId,
+            guestId = guestId,
+            guestName = guestName.trim(),
+            guestEmail = guestEmail.trim(),
+            guestPhone = guestPhone.trim(),
+            checkInEpochDay = checkInEpochDay,
+            checkOutEpochDay = checkOutEpochDay,
+            syncStatus = SyncStatus.PENDING_SYNC.name,
+            updatedAtEpochMs = System.currentTimeMillis()
+        )
+        database.bookingDao().update(updated)
+
+        val useFirestore = !BuildConfig.USE_KTOR_API &&
+            isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn
+        if (useFirestore) {
+            val reference = existing.bookingReference.ifBlank { SyncRepository.formatReference(room.propertyId, bookingId) }
+            val synced = updated.copy(syncStatus = SyncStatus.SYNCED.name, bookingReference = reference)
+            runCatching { firestore.upsertBooking(synced) }
+                .onSuccess { database.bookingDao().update(synced) }
+        } else if (isOnline) {
+            runCatching { syncRepository.value.syncNow() }
+        } else {
+            syncRepository.value.enqueueSyncWorker()
+        }
+        return Result.success(Unit)
+    }
+
     suspend fun cancelBooking(bookingId: Long) {
         val session = authRepository.currentSession() ?: return
         val booking = database.bookingDao().getById(bookingId) ?: return

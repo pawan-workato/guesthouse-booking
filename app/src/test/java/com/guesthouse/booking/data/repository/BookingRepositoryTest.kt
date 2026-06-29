@@ -9,6 +9,7 @@ import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.StaffRole
+import com.guesthouse.booking.data.local.entities.SyncStatus
 import com.guesthouse.booking.data.repository.SyncRepository
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import io.mockk.coEvery
@@ -188,4 +189,164 @@ class BookingRepositoryTest {
 
         coVerify { bookingDao.updateStatus(5L, BookingStatus.CANCELLED.name) }
     }
+
+    @Test
+    fun updateBooking_rejectsWhenBookingNotFound() = runTest {
+        every { authRepository.currentSession() } returns StaffSession(
+            staffId = 2L,
+            email = "manager.mountain@chain.com",
+            displayName = "Mountain Manager",
+            role = StaffRole.PROPERTY_MANAGER,
+            assignedPropertyIds = setOf(1L)
+        )
+        coEvery { bookingDao.getById(5L) } returns null
+
+        val result = repository.updateBooking(
+            bookingId = 5L,
+            roomId = 10L,
+            guestId = null,
+            guestName = "Jane Doe",
+            guestEmail = "",
+            guestPhone = "",
+            checkInEpochDay = 100L,
+            checkOutEpochDay = 105L,
+            isOnline = false
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals("Booking not found", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun updateBooking_rejectsWhenPropertyOutOfScope() = runTest {
+        val booking = BookingEntity(
+            id = 5L,
+            propertyId = 99L,
+            roomId = 10L,
+            guestName = "Jane Doe",
+            guestEmail = "",
+            checkInEpochDay = 100L,
+            checkOutEpochDay = 105L
+        )
+        every { authRepository.currentSession() } returns StaffSession(
+            staffId = 2L,
+            email = "manager.mountain@chain.com",
+            displayName = "Mountain Manager",
+            role = StaffRole.PROPERTY_MANAGER,
+            assignedPropertyIds = setOf(1L)
+        )
+        coEvery { bookingDao.getById(5L) } returns booking
+
+        val result = repository.updateBooking(
+            bookingId = 5L,
+            roomId = 10L,
+            guestId = null,
+            guestName = "Jane Doe",
+            guestEmail = "",
+            guestPhone = "",
+            checkInEpochDay = 100L,
+            checkOutEpochDay = 105L,
+            isOnline = false
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals("You don't have access to this property", result.exceptionOrNull()?.message)
+        coVerify(exactly = 0) { bookingDao.update(any()) }
+    }
+
+    @Test
+    fun updateBooking_rejectsOverlappingDatesExcludingSelf() = runTest {
+        val booking = BookingEntity(
+            id = 5L,
+            propertyId = 1L,
+            roomId = 10L,
+            guestName = "Jane Doe",
+            guestEmail = "",
+            checkInEpochDay = 100L,
+            checkOutEpochDay = 105L
+        )
+        every { authRepository.currentSession() } returns StaffSession(
+            staffId = 2L,
+            email = "manager.mountain@chain.com",
+            displayName = "Mountain Manager",
+            role = StaffRole.PROPERTY_MANAGER,
+            assignedPropertyIds = setOf(1L)
+        )
+        coEvery { bookingDao.getById(5L) } returns booking
+        coEvery { roomDao.getById(10L) } returns room
+        coEvery { bookingDao.findOverlapping(10L, 100L, 105L, excludeId = 5L) } returns listOf(
+            BookingEntity(
+                id = 99L,
+                propertyId = 1L,
+                roomId = 10L,
+                guestName = "Other Guest",
+                guestEmail = "",
+                checkInEpochDay = 98L,
+                checkOutEpochDay = 102L
+            )
+        )
+
+        val result = repository.updateBooking(
+            bookingId = 5L,
+            roomId = 10L,
+            guestId = null,
+            guestName = "Jane Doe",
+            guestEmail = "",
+            guestPhone = "",
+            checkInEpochDay = 100L,
+            checkOutEpochDay = 105L,
+            isOnline = false
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals("Room is not available for those dates", result.exceptionOrNull()?.message)
+        coVerify(exactly = 0) { bookingDao.update(any()) }
+    }
+
+    @Test
+    fun updateBooking_setsPendingSyncAndPersistsChanges() = runTest {
+        val booking = BookingEntity(
+            id = 5L,
+            propertyId = 1L,
+            roomId = 10L,
+            guestName = "Jane Doe",
+            guestEmail = "",
+            checkInEpochDay = 100L,
+            checkOutEpochDay = 105L,
+            syncStatus = SyncStatus.SYNCED.name
+        )
+        every { authRepository.currentSession() } returns StaffSession(
+            staffId = 2L,
+            email = "manager.mountain@chain.com",
+            displayName = "Mountain Manager",
+            role = StaffRole.PROPERTY_MANAGER,
+            assignedPropertyIds = setOf(1L)
+        )
+        coEvery { bookingDao.getById(5L) } returns booking
+        coEvery { roomDao.getById(10L) } returns room
+        coEvery { bookingDao.findOverlapping(10L, 110L, 115L, excludeId = 5L) } returns emptyList()
+
+        val result = repository.updateBooking(
+            bookingId = 5L,
+            roomId = 10L,
+            guestId = null,
+            guestName = "Updated Guest",
+            guestEmail = "updated@example.com",
+            guestPhone = "555-0200",
+            checkInEpochDay = 110L,
+            checkOutEpochDay = 115L,
+            isOnline = false
+        )
+
+        assertTrue(result.isSuccess)
+        coVerify {
+            bookingDao.update(match {
+                it.id == 5L &&
+                    it.guestName == "Updated Guest" &&
+                    it.checkInEpochDay == 110L &&
+                    it.syncStatus == SyncStatus.PENDING_SYNC.name
+            })
+        }
+    }
+
 }
