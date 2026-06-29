@@ -13,7 +13,9 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.transactions.transaction
 
 fun Route.authRoutes() {
@@ -32,11 +34,17 @@ fun Route.authRoutes() {
             if (!row[Staff.isActive]) {
                 return@transaction LoginFailure("This account has been deactivated")
             }
-            if (!PasswordHasher.verify(request.password, row[Staff.passwordHash])) {
+            val storedHash = row[Staff.passwordHash]
+            if (!PasswordHasher.verify(request.password, storedHash)) {
                 return@transaction LoginFailure("Invalid email or password")
             }
 
             val staffId = row[Staff.id].value
+            if (PasswordHasher.needsUpgrade(storedHash)) {
+                Staff.update({ Staff.id eq staffId }) {
+                    it[passwordHash] = PasswordHasher.hash(request.password)
+                }
+            }
             val role = row[Staff.role]
             val assignedPropertyIds = if (role == "CHAIN_ADMIN") {
                 emptyList()
