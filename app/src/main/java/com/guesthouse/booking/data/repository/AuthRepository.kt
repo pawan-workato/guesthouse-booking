@@ -1,6 +1,7 @@
 package com.guesthouse.booking.data.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.guesthouse.booking.BuildConfig
@@ -17,6 +18,7 @@ import com.guesthouse.booking.data.remote.LoginRequest
 import com.guesthouse.booking.data.remote.TokenStorage
 import com.guesthouse.booking.data.sync.NetworkMonitor
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,13 +84,25 @@ class AuthRepository(
         pullRemoteDataWithRetry(session)
     }
 
+    private suspend fun awaitFirebaseAuthReady() {
+        auth.currentUser?.getIdToken(true)?.await()
+    }
+
     private suspend fun pullRemoteDataWithRetry(session: StaffSession): PullRemoteDataResult {
-        val first = runCatching { syncService.pullRemoteData(session) }
-        if (first.isSuccess && (first.getOrNull()?.hasData == true || first.getOrNull()?.errors.isNullOrEmpty())) {
-            return first.getOrThrow()
+        awaitFirebaseAuthReady()
+        val first = runCatching { syncService.pullRemoteData(session) }.getOrElse { error ->
+            Log.w(TAG, "Initial Firestore pull failed for ${session.email}", error)
+            return PullRemoteDataResult(errors = listOf(error.message ?: "Sync failed"))
         }
+        if (first.hasData || first.errors.isEmpty()) {
+            return first
+        }
+        Log.w(TAG, "Retrying Firestore pull for ${session.email}: ${first.errors}")
+        delay(750)
+        awaitFirebaseAuthReady()
         return runCatching { syncService.pullRemoteData(session) }.getOrElse { error ->
-            first.getOrNull() ?: PullRemoteDataResult(errors = listOf(error.message ?: "Sync failed"))
+            Log.w(TAG, "Firestore pull retry failed for ${session.email}", error)
+            first.copy(errors = first.errors + (error.message ?: "Sync failed"))
         }
     }
 
@@ -145,6 +159,7 @@ class AuthRepository(
     private suspend fun loginWithFirebase(email: String, password: String): Result<StaffSession> {
         return runCatching {
             auth.signInWithEmailAndPassword(email.trim(), password).await()
+            awaitFirebaseAuthReady()
             val uid = auth.currentUser?.uid
                 ?: throw IllegalStateException("Firebase sign-in succeeded without a user")
             val session = loadFirebaseSession(uid)
@@ -228,5 +243,6 @@ class AuthRepository(
         private const val PREFS_NAME = "guesthouse_auth_secure"
         private const val KEY_STAFF_ID = "staff_id"
         private const val KEY_FIREBASE_UID = "firebase_uid"
+        private const val TAG = "AuthRepository"
     }
 }

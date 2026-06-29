@@ -1,5 +1,6 @@
 package com.guesthouse.booking.data.firebase
 
+import android.util.Log
 import androidx.room.withTransaction
 import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.local.AppDatabase
@@ -94,14 +95,15 @@ class FirestoreSyncService(
         }
 
         database.withTransaction {
-            for (profile in profiles) {
-                cacheStaffProfile(profile)
-            }
+            // Properties must exist before staff_property_assignments (FK).
             if (properties.isNotEmpty()) {
                 database.propertyDao().insertAll(properties)
             }
             if (rooms.isNotEmpty()) {
                 database.roomDao().insertAll(rooms)
+            }
+            for (profile in profiles) {
+                cacheStaffProfile(profile)
             }
             if (guests.isNotEmpty()) {
                 database.guestDao().upsertAll(guests)
@@ -111,6 +113,15 @@ class FirestoreSyncService(
             }
         }
 
+        if (errors.isNotEmpty()) {
+            Log.w(TAG, "pullRemoteData errors for ${session.email}: ${errors.joinToString()}")
+        }
+        Log.i(
+            TAG,
+            "pullRemoteData ${session.email} role=${session.role}: staff=${profiles.size} properties=${properties.size} " +
+                "rooms=${rooms.size} guests=${guests.size} bookings=${bookings.size}"
+        )
+
         return PullRemoteDataResult(
             staffCount = profiles.size,
             propertiesCount = properties.size,
@@ -119,5 +130,9 @@ class FirestoreSyncService(
             bookingsCount = bookings.size,
             errors = errors
         )
+    }
+
+    private companion object {
+        private const val TAG = "FirestoreSyncService"
     }
 }
