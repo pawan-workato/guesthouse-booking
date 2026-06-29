@@ -63,4 +63,4 @@ Bookings sync when the device is online via the Ktor API or Firestore. Offline b
 
 ### The database looks empty after an update
 
-Schema upgrades may reset the local Room cache. Sign in again while online to pull bootstrap data from the backend or Firebase. For Ktor, ensure `docker compose up` and an empty Postgres DB so `DatabaseSeeder` runs; for Firebase, run `cd scripts && npm run seed`.
+If the local Room cache looks empty after an app update, clear app data (or reinstall), then sign in again while online to pull properties, rooms, and bookings from Firestore. Demo staff and entity data are seeded in Firebase via `scripts/seed-firebase-demo.mjs` — see [seeding.md](../seeding.md).

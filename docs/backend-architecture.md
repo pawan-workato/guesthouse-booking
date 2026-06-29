@@ -52,4 +52,4 @@ When `google-services.json` is present and Ktor is disabled (`USE_KTOR_API = fal
 2. Or run the API from Gradle: `./gradlew :backend:run` (with Postgres reachable)
 3. Android emulator API base URL: **`http://10.0.2.2:8080/`** (host loopback)
 
-See [README.md](../README.md) for demo credentials and Gradle commands.
+See [seeding.md](seeding.md), [staff guide](wiki/staff-guide.md#demo-accounts-development), and [README.md](../README.md) for demo credentials and Gradle commands.
