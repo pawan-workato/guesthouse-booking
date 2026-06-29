@@ -1,8 +1,8 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-29 (Sync status screen, guest RBAC, pentest doc refresh)
+**Last updated:** 2026-06-29 (Firestore rules deployed via Console — guest `isActive` chain-admin-only)
 
-Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`merge-main` at `2cd4f6c`).
+Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`merge-main` at `07a4a36`).
 
 **Status legend:** ✅ Done · 🔄 In progress · ⏳ Pending · ❌ Deferred / accepted risk
 
@@ -48,7 +48,7 @@ Single source of truth for security remediation, product delivery, and open work
 | KR-12 | Auth | No brute-force protection on login | ✅ Done | Medium | `LoginViewModel`: 5 failures → 30 s lockout; `LoginScreen` live countdown + disabled button | Working tree |
 | KR-13 | Data | Plaintext Room SQLite | ✅ Done | High | SQLCipher 4.16 + Keystore-backed passphrase; plaintext→encrypted migration on first launch | Working tree |
 | KR-14 | Platform | `FLAG_SECURE` on sensitive screens | ✅ Done | Low | App-wide on `MainActivity` | Working tree |
-| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; **`isActive` change chain-admin only** on update; deployed via Console | `firestore.rules` — `2fa405d` |
+| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; **`isActive` change chain-admin only** on update; **rules deployed** via Firebase Console 2026-06-29 | `firestore.rules` — `2fa405d` |
 
 **Security subagent note:** Session `4cb960be` (Fix security backlog) applied KR-11/12/14/15 + pentest doc refresh; verified in working tree alongside prior PRs [#1](https://github.com/pawan-workato/guesthouse-booking/pull/1) and [#2](https://github.com/pawan-workato/guesthouse-booking/pull/2).
 
@@ -84,7 +84,7 @@ Single source of truth for security remediation, product delivery, and open work
 | PLAT-04 | Platform | ProGuard / R8 minify | ✅ Done | Low | Release minify + shrink resources enabled | Working tree |
 | PLAT-07 | Platform | `FLAG_SECURE` on sensitive screens | ✅ Done | Low | App-wide `MainActivity` | Working tree |
 | SEC-SQL | Data | SQLCipher encrypted Room | ✅ Done | High | `net.zetetic:sqlcipher-android:4.16.0` in `app/build.gradle.kts` | Working tree |
-| SEC-FIRE | Cloud | Firestore rules — guest write too open | ✅ Done | High | `isStaff()` required for guest read/create/update; delete chain-admin only; **deployed manually** to Firebase Console (CLI login blocked) | `firestore.rules` + manual deploy 2026-06-27 |
+| SEC-FIRE | Cloud | Firestore rules — guest write too open | ✅ Done | High | `isStaff()` required for guest read/create/update; delete chain-admin only; **`isActive` chain-admin only**; **rules deployed** via Firebase Console 2026-06-29 (CLI OAuth blocked) | `firestore.rules` |
 | SEC-BF | Auth | Login brute-force / lockout | ✅ Done | Medium | Same as KR-12 | Working tree |
 | DOC-01 | Docs | Pentest plan stale vs code | ✅ Done | Low | §6 dashboard + Firebase-only scope; KR-01/03 Fixed | `2cd4f6c` (this commit) |
 
@@ -144,7 +144,7 @@ Single source of truth for security remediation, product delivery, and open work
 | BUG-CHK-UI | Bug | Admin check-out shows no error on failure | ✅ Done | Low | `AdminViewModel` surfaces check-in/out/cancel errors via `actionError`; test added | Working tree |
 | BUG-CHK-CMT | Process | Checkout subagent completion | ✅ Done | — | Fix applied + `./gradlew :app:testDebugUnitTest` passed; **not committed** | 2026-06-29 |
 | BUG-FLICKER | Bug | Tab/screen UI flicker on navigation | ✅ Done | Medium | `WhileSubscribed(Long.MAX_VALUE)` + cached per-id flows; skip redundant tab nav; `derivedStateOf` chrome; remove nested Scaffolds; `collectAsStateWithLifecycle` | Working tree |
-| OPS-FIRE | Ops | Deploy `firestore.rules` to Firebase project | ✅ Done | High | Published manually via Firebase Console (CLI OAuth blocked); rules match repo `firestore.rules` | 2026-06-27 |
+| OPS-FIRE | Ops | Deploy `firestore.rules` to Firebase project | ✅ Done | High | Published via Firebase Console 2026-06-29; rules match repo `firestore.rules` (incl. guest `isActive` chain-admin-only) | 2026-06-29 |
 
 ---
 
@@ -182,3 +182,4 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 | 2026-06-27 | FEAT-GLASS — Liquid Glass UI theme (`4a90eef`) |
 | 2026-06-29 | BUG-FLICKER — tab/screen flicker fixes (ViewModel flow sharing, nav chrome) |
 | 2026-06-29 | FEAT-SYNC — Sync status screen; guest RBAC (all managers edit); pentest §6 refresh |
+| 2026-06-29 | OPS-FIRE / KR-15 / SEC-FIRE — Firestore rules deployed via Console (guest `isActive` chain-admin-only) |

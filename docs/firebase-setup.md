@@ -40,6 +40,8 @@ npx -y firebase-tools@latest deploy --only firestore:rules
 
 **Manual deploy (Console):** If CLI login fails, open **Firestore → Rules** in the Firebase Console, paste the contents of `firestore.rules` from this repo, and click **Publish**.
 
+**Current status (2026-06-29):** Rules are **published** on the pilot Firebase project via Console and match repo `firestore.rules`, including the guest `isActive` chain-admin-only constraint.
+
 ## 4. Seed demo data (recommended)
 
 Run the automated seed script — it creates Auth users, Firestore staff docs, and (if empty) properties, rooms, and guests:
@@ -87,7 +89,7 @@ The `guests` collection in `firestore.rules`:
 | **Soft-delete (`isActive`)** | Chain admin only — enforced in Firestore rules (`isActive` must not change unless `isChainAdmin()`) and in the app (`GuestRepository.canDeleteGuest`) |
 | **Delete** | Chain admin only |
 
-Deploy rules after changes: `npx firebase-tools deploy --only firestore:rules`.
+Redeploy after rule changes: `npx firebase-tools deploy --only firestore:rules`, or paste into Console and **Publish** (as on 2026-06-29).
 
 ## Security notes
 
