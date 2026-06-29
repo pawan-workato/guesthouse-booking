@@ -3,8 +3,10 @@ package com.guesthouse.booking.data.repository
 import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.local.AppDatabase
+import com.guesthouse.booking.data.local.BlockDateDao
 import com.guesthouse.booking.data.local.BookingDao
 import com.guesthouse.booking.data.local.RoomDao
+import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.RoomEntity
@@ -26,6 +28,7 @@ class BookingRepositoryTest {
 
     private val database = mockk<AppDatabase>()
     private val bookingDao = mockk<BookingDao>(relaxed = true)
+    private val blockDateDao = mockk<BlockDateDao>(relaxed = true)
     private val roomDao = mockk<RoomDao>()
     private val authRepository = mockk<AuthRepository>()
     private val networkMonitor = mockk<NetworkMonitor>()
@@ -46,6 +49,7 @@ class BookingRepositoryTest {
     @Before
     fun setUp() {
         every { database.bookingDao() } returns bookingDao
+        every { database.blockDateDao() } returns blockDateDao
         every { database.roomDao() } returns roomDao
         every { networkMonitor.isCurrentlyOnline() } returns false
         every { firestore.isSignedIn } returns false
@@ -121,6 +125,7 @@ class BookingRepositoryTest {
     fun createBooking_succeedsWhenRoomIsAvailable() = runTest {
         coEvery { roomDao.getById(10L) } returns room
         coEvery { bookingDao.findOverlapping(10L, 100L, 105L) } returns emptyList()
+        coEvery { blockDateDao.findOverlapping(10L, 100L, 105L) } returns emptyList()
         coEvery { bookingDao.insert(any()) } returns 42L
 
         val result = repository.createBooking(

@@ -72,8 +72,13 @@ Same as main app — e.g. `manager.mountain@chain.com` / `manager123` for proper
 3. Go online and sync — second booking becomes **CONFLICT**.
 4. Cancel from Sync tab.
 
+## Block dates (local-only)
+
+Staff block rooms from **Room detail** → **Block dates**. Orange slots prevent overlapping bookings. Stored in local `block_dates` only — not synced to Ktor or Firestore.
+
 ## Technical notes
 
+- Database schema v9: `block_dates` table.
 - Database schema v4: `syncStatus`, `bookingReference`, `createdAtEpochMs` on bookings.
 - `findOverlapping` excludes **CONFLICT** bookings so failed syncs don't block new bookings incorrectly.
 - WorkManager: one-time sync after offline save; periodic sync every 15 minutes when connected.

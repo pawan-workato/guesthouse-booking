@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.ui.theme.AvailableGreen
+import com.guesthouse.booking.ui.theme.BlockedOrange
 import com.guesthouse.booking.ui.theme.BookedRed
 import com.guesthouse.booking.ui.theme.Sage
 import java.time.DayOfWeek
@@ -39,6 +40,7 @@ import java.util.Locale
 @Composable
 fun AvailabilityCalendar(
     bookedEpochDays: Set<Long>,
+    blockedEpochDays: Set<Long> = emptySet(),
     selectedCheckIn: Long?,
     selectedCheckOut: Long?,
     onDateSelected: (Long) -> Unit,
@@ -92,6 +94,8 @@ fun AvailabilityCalendar(
                             val date = currentMonth.atDay(dayNumber)
                             val epochDay = date.toEpochDay()
                             val isBooked = bookedEpochDays.contains(epochDay)
+                            val isBlocked = blockedEpochDays.contains(epochDay)
+                            val isUnavailable = isBooked || isBlocked
                             val isPast = epochDay < today
                             val inRange = selectedCheckIn != null && selectedCheckOut != null &&
                                 epochDay >= selectedCheckIn && epochDay < selectedCheckOut
@@ -99,11 +103,12 @@ fun AvailabilityCalendar(
 
                             val bgColor = when {
                                 isBooked -> BookedRed.copy(alpha = 0.25f)
+                                isBlocked -> BlockedOrange.copy(alpha = 0.25f)
                                 inRange || isSelected -> Sage
                                 else -> MaterialTheme.colorScheme.surface
                             }
 
-                            val clickable = !isBooked && !isPast
+                            val clickable = !isUnavailable && !isPast
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -118,7 +123,7 @@ fun AvailabilityCalendar(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                DayCell(dayNumber, isBooked, isPast)
+                                DayCell(dayNumber, isBooked, isBlocked, isPast)
                             }
                         } else {
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
@@ -134,17 +139,19 @@ fun AvailabilityCalendar(
         ) {
             LegendDot(color = AvailableGreen, label = "Available")
             LegendDot(color = BookedRed, label = "Booked")
+            LegendDot(color = BlockedOrange, label = "Blocked")
         }
     }
 }
 
 @Composable
-private fun DayCell(dayNumber: Int, isBooked: Boolean, isPast: Boolean) {
+private fun DayCell(dayNumber: Int, isBooked: Boolean, isBlocked: Boolean, isPast: Boolean) {
     Text(
         text = dayNumber.toString(),
         style = MaterialTheme.typography.bodyMedium,
         color = when {
             isBooked -> BookedRed
+            isBlocked -> BlockedOrange
             isPast -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
             else -> MaterialTheme.colorScheme.onSurface
         }
@@ -164,11 +171,11 @@ private fun LegendDot(color: androidx.compose.ui.graphics.Color, label: String) 
     }
 }
 
-fun bookedDaysFromRanges(bookings: List<Pair<Long, Long>>): Set<Long> {
+fun bookedDaysFromRanges(ranges: List<Pair<Long, Long>>): Set<Long> {
     val days = mutableSetOf<Long>()
-    bookings.forEach { (checkIn, checkOut) ->
-        var day = checkIn
-        while (day < checkOut) {
+    ranges.forEach { (start, end) ->
+        var day = start
+        while (day < end) {
             days.add(day)
             day++
         }
