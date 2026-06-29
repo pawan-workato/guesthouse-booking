@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.PropertyEntity
+import com.guesthouse.booking.ui.components.PropertyOverviewSection
 import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
 
@@ -31,6 +32,8 @@ fun PropertiesScreen(
     val properties by viewModel.properties.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val showInactive by viewModel.showInactive.collectAsStateWithLifecycle()
+    val occupancyStats by viewModel.occupancyStats.collectAsStateWithLifecycle()
+    val chainTotals by viewModel.chainTotals.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -63,6 +66,13 @@ fun PropertiesScreen(
                 singleLine = true
             )
             Spacer(Modifier.height(12.dp))
+            if (occupancyStats.isNotEmpty()) {
+                PropertyOverviewSection(
+                    stats = occupancyStats,
+                    chainTotals = chainTotals,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
             if (properties.isEmpty()) {
                 Text("No properties available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {

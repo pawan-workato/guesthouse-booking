@@ -1,6 +1,7 @@
 package com.guesthouse.booking.data.repository
 
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
+import com.guesthouse.booking.data.guest.GuestMatching
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
@@ -92,6 +93,28 @@ class GuestRepository(
         authRepository.session.flatMapLatest { session ->
             if (session == null) flowOf(emptyList()) else allGuests()
         }
+
+
+    suspend fun findSimilarGuests(
+        name: String,
+        email: String,
+        phone: String,
+        excludeGuestId: Long? = null
+    ): List<GuestEntity> {
+        if (authRepository.currentSession() == null) return emptyList()
+        val trimmedName = name.trim()
+        val normalizedEmail = GuestMatching.normalizeEmail(email)
+        val normalizedPhone = GuestMatching.normalizePhone(phone)
+        if (trimmedName.length < 2 && normalizedEmail.isBlank() && normalizedPhone.length < 7) {
+            return emptyList()
+        }
+        return database.guestDao().getAllActive()
+            .filter { guest ->
+                guest.id != excludeGuestId &&
+                    GuestMatching.matches(guest, name, email, phone)
+            }
+            .take(5)
+    }
 
     suspend fun createGuest(name: String, email: String, phone: String, notes: String): Result<Long> {
         if (authRepository.currentSession() == null) {

@@ -1,5 +1,6 @@
 package com.guesthouse.booking.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,7 +23,8 @@ import java.time.format.DateTimeFormatter
 fun AdminScreen(
     viewModel: AdminViewModel,
     onDismissConflict: (Long) -> Unit = {},
-    onEditBooking: (Long) -> Unit = {}
+    onEditBooking: (Long) -> Unit = {},
+    onBookingClick: (Long) -> Unit = {}
 ) {
     val bookings by viewModel.bookingsWithDetails.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -72,7 +74,7 @@ fun AdminScreen(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(bookings, key = { it.booking.id }) { item ->
                     val b = item.booking
-                    GlassCard(Modifier.fillMaxWidth()) {
+                    GlassCard(Modifier.fillMaxWidth().clickable { onBookingClick(b.id) }) {
                         Column(Modifier.padding(16.dp)) {
                             Text(item.propertyName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                             Text(item.roomName, fontWeight = FontWeight.SemiBold)

@@ -10,10 +10,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 
 data class GuestFormUiState(
@@ -22,6 +26,7 @@ data class GuestFormUiState(
     val savedGuestId: Long? = null
 )
 
+@OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GuestsViewModel(
     private val guestRepository: GuestRepository,
     private val authRepository: AuthRepository
@@ -45,6 +50,17 @@ class GuestsViewModel(
     val canEditGuest: StateFlow<Boolean> = _canEditGuest.asStateFlow()
 
     private val _viewingGuestId = MutableStateFlow<Long?>(null)
+    private val _guestLookup = MutableStateFlow(Triple("", "", ""))
+
+    val similarGuests: StateFlow<List<GuestEntity>> = _guestLookup
+        .debounce(400)
+        .distinctUntilChanged()
+        .flatMapLatest { (name, email, phone) ->
+            flow {
+                emit(guestRepository.findSimilarGuests(name, email, phone))
+            }
+        }
+        .stateIn(viewModelScope, ViewModelSharing, emptyList())
 
     val guestStayHistory: StateFlow<List<GuestStayBooking>> = _viewingGuestId
         .flatMapLatest { guestId ->
@@ -124,6 +140,14 @@ class GuestsViewModel(
         viewModelScope.launch {
             guestRepository.setGuestActive(guestId, active)
         }
+    }
+
+    fun updateGuestLookup(name: String, email: String, phone: String) {
+        _guestLookup.value = Triple(name, email, phone)
+    }
+
+    fun clearGuestLookup() {
+        _guestLookup.value = Triple("", "", "")
     }
 
     fun clearFormState() {

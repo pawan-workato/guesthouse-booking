@@ -22,6 +22,8 @@ import kotlinx.coroutines.launch
 
 class GuesthouseApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    lateinit var database: AppDatabase
+        private set
     lateinit var repository: BookingRepository
         private set
     lateinit var blockDateRepository: BlockDateRepository
@@ -48,7 +50,8 @@ class GuesthouseApplication : Application() {
             // No google-services.json (e.g. CI): Room instrumented tests only need the process.
             return
         }
-        val database = AppDatabase.getInstance(this)
+        database = AppDatabase.getInstance(this)
+        val database = this.database
         val firestore = FirestoreDataSource()
         val syncService = FirestoreSyncService(database, firestore)
         networkMonitor = NetworkMonitor(this)

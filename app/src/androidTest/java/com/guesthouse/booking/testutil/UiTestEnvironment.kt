@@ -66,6 +66,7 @@ class UiTestEnvironment(
     val staffRepository = StaffRepository(database)
 
     val viewModelFactory = ViewModelFactory(
+        database = database,
         repository = bookingRepository,
         blockDateRepository = blockDateRepository,
         propertyRepository = propertyRepository,

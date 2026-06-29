@@ -26,7 +26,7 @@ There is no separate **Sync** tab. **Guests** and **Staff** are in the top bar s
 
 ### Typical workflow
 
-1. **Properties** → pick a site (search by name or region).
+1. **Properties** → review **Overview — tonight** cards, then pick a site (search by name or region).
 2. Open the property → review **room type breakdown** (e.g. `4 Double · 2 Single`) and rooms.
 3. Tap a room → calendar (booked + blocked dates) → **Book for guest**, or use the **Book** tab.
 4. On **Book**: search property/room, filter by room type chips, select dates, pick saved guest or enter details.
@@ -71,6 +71,10 @@ Anyone with access to a property:
 - Fields: name, description, nightly price, max guests, **room type** (Single, Double, Suite, Family)
 
 Room types show on the property room list, room cards, **Book** tab (summary + filter chips), and room picker.
+
+## Morning notifications
+
+After sign-in, ~**7:00 AM local** arrival summary (property-scoped). Allow notifications on Android 13+. Stops on sign-out.
 
 ## Booking features
 

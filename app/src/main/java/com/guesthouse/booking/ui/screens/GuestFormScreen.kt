@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.repository.GuestStayBooking
+import com.guesthouse.booking.ui.components.SimilarGuestWarning
 import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.ui.theme.GlassScaffold
 import com.guesthouse.booking.ui.theme.GlassTopAppBar
@@ -28,19 +29,21 @@ fun GuestFormScreen(
     viewModel: GuestsViewModel,
     readOnly: Boolean = false,
     onSaved: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onBookAgain: (() -> Unit)? = null
 ) {
     val formState by viewModel.formUiState.collectAsStateWithLifecycle()
     val editGuest by viewModel.editGuest.collectAsStateWithLifecycle()
     val stayHistory by viewModel.guestStayHistory.collectAsStateWithLifecycle()
     val isChainAdmin by viewModel.isChainAdmin.collectAsStateWithLifecycle()
+    val similarGuests by viewModel.similarGuests.collectAsStateWithLifecycle()
     val isEdit = guestId != null
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
 
     LaunchedEffect(guestId) {
         viewModel.clearFormState()
         if (guestId != null) viewModel.loadGuestForEdit(guestId)
-        else viewModel.clearEditGuest()
+        else { viewModel.clearEditGuest(); viewModel.clearGuestLookup() }
     }
 
     LaunchedEffect(formState.savedGuestId) {
@@ -55,6 +58,10 @@ fun GuestFormScreen(
     var phone by remember(guestId, editGuest) { mutableStateOf(editGuest?.phone ?: "") }
     var notes by remember(guestId, editGuest) { mutableStateOf(editGuest?.notes ?: "") }
     var showDeactivateDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(name, email, phone) {
+        if (!isEdit && !readOnly) viewModel.updateGuestLookup(name, email, phone)
+    }
 
     LaunchedEffect(editGuest) {
         editGuest?.let {
@@ -122,6 +129,18 @@ fun GuestFormScreen(
                 readOnly = readOnly,
                 enabled = !readOnly
             )
+            if (!isEdit && !readOnly) {
+                SimilarGuestWarning(
+                    similarGuests = similarGuests,
+                    onUseExisting = { guest ->
+                        name = guest.name
+                        email = guest.email
+                        phone = guest.phone
+                        viewModel.clearGuestLookup()
+                    }
+                )
+            }
+
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
@@ -132,6 +151,12 @@ fun GuestFormScreen(
                 readOnly = readOnly,
                 enabled = !readOnly
             )
+
+            if (isEdit && onBookAgain != null) {
+                OutlinedButton(onClick = onBookAgain, modifier = Modifier.fillMaxWidth()) {
+                    Text("Book again")
+                }
+            }
 
             if (isEdit) {
                 GuestStayHistorySection(

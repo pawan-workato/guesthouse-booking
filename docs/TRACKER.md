@@ -1,6 +1,6 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-27
+**Last updated:** 2026-06-29
 
 Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`main` at `8b673fe` plus uncommitted working-tree changes where noted).
 
@@ -12,9 +12,9 @@ Single source of truth for security remediation, product delivery, and open work
 
 | Status | Count | Examples |
 |--------|------:|----------|
-| ✅ Done | 49 | KR-02, KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
+| ✅ Done | 54 | KR-02, KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
 | 🔄 In progress | 0 | — |
-| ⏳ Pending | 6 | Sprint 10 P2 manual pentest, FEAT-S8+ |
+| ⏳ Pending | 1 | Sprint 10 P2 manual pentest |
 | ❌ Deferred | 2 | KR-07 chain-wide guest read (product), AUTHZ-08 |
 
 ---
@@ -123,7 +123,11 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-GLASS | Product | Apple Liquid Glass UI theme | ✅ Done | Medium | `Glass.kt` — gradient mesh, frosted cards, glass nav/scaffold on all screens | Working tree |
 | FEAT-BLOCK-SYNC | Product | Firestore sync for block dates | ✅ Done | Medium | `block_dates` collection; push/pull in SyncRepository; MIGRATION_10_11 | Working tree |
 | FEAT-GUEST-HISTORY | Product | Guest stay history on guest detail (property-scoped for managers) | ✅ Done | Medium | `GuestRepository.observeGuestStayHistory`; `GuestFormScreen` stay section | Working tree |
-| FEAT-S8+ | Product | Sprint 8+ roadmap (TBD) | ⏳ Pending | — | Not defined in README yet | — |
+| FEAT-S8-OCC | Product | Occupancy dashboard | ✅ Done | Medium | Properties Overview section | Working tree |
+| FEAT-S8-DETAIL | Product | Booking detail screen | ✅ Done | Medium | Bookings/Today → detail | Working tree |
+| FEAT-S8-DUP | Product | Duplicate guest detection | ✅ Done | Medium | Similar guest warning | Working tree |
+| FEAT-S8-REBOOK | Product | Rebook / extend stay | ✅ Done | Medium | Book again + extend checkout | Working tree |
+| FEAT-S8-NOTIF | Product | Morning notifications | ✅ Done | Medium | WorkManager ~7 AM | Working tree |
 
 ---
 

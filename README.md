@@ -15,15 +15,16 @@ The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) 
 
 ## Features
 
-- **Properties** — searchable list; chain admins add, edit, and deactivate properties
+- **Properties** — searchable list with Overview occupancy cards; chain admins add, edit, and deactivate properties
 - **Rooms** — per-property inventory with **room type** (Single, Double, Suite, Family), price, and capacity; staff with property access can add and edit rooms
 - **Availability** — calendar shows booked and **blocked** dates; block/unblock from room detail (syncs to Firestore)
-- **Guests** — profiles with search; managers view all guests (read-only unless linked to their properties); chain admins full edit
+- **Guests** — profiles with search; all managers can edit any guest; only chain admins remove guests; duplicate detection (read-only unless linked to their properties); chain admins full edit
 - **Book** — search properties and rooms (including by type), pick dates, saved guest or manual entry
 - **Today** — arrivals, departures, and in-house board with check-in / check-out actions
 - **Bookings** — list, edit, cancel, check-in/out; sync status and conflict resolution
 - **Staff** (chain admin) — add managers and assign properties
 - **Sync** — toolbar **sync** icon (badge when pending/conflicts); background WorkManager every ~15 min when online
+- **Notifications** — daily ~7 AM arrival summary (WorkManager)
 - **Offline** — bookings queue as `PENDING_SYNC` with `TMP-xxxx` references until sync
 
 ## Backend

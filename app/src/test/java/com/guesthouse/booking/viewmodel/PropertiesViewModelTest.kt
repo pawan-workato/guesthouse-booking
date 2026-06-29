@@ -5,8 +5,10 @@ import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.StaffRole
 import com.guesthouse.booking.data.repository.AuthRepository
+import com.guesthouse.booking.data.repository.OccupancyRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.testutil.MainDispatcherRule
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,7 @@ class PropertiesViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val propertyRepository = mockk<PropertyRepository>()
+    private val occupancyRepository = mockk<OccupancyRepository>()
     private val authRepository = mockk<AuthRepository>()
     private val sessionFlow = MutableStateFlow<StaffSession?>(null)
 
@@ -37,6 +40,7 @@ class PropertiesViewModelTest {
         every { propertyRepository.observeActiveProperties() } returns flowOf(activeProperties)
         every { propertyRepository.observeAllProperties() } returns flowOf(activeProperties)
         every { authRepository.session } returns sessionFlow
+        coEvery { occupancyRepository.getStatsForProperties(any()) } returns emptyList()
         sessionFlow.value = StaffSession(
             staffId = 2L,
             email = "manager.mountain@chain.com",
@@ -45,7 +49,7 @@ class PropertiesViewModelTest {
             assignedPropertyIds = setOf(1L, 3L)
         )
 
-        val viewModel = PropertiesViewModel(propertyRepository, authRepository)
+        val viewModel = PropertiesViewModel(propertyRepository, occupancyRepository, authRepository)
         advanceUntilIdle()
 
         viewModel.properties.test {
@@ -61,6 +65,7 @@ class PropertiesViewModelTest {
         every { propertyRepository.observeActiveProperties() } returns flowOf(activeProperties)
         every { propertyRepository.observeAllProperties() } returns flowOf(activeProperties)
         every { authRepository.session } returns sessionFlow
+        coEvery { occupancyRepository.getStatsForProperties(any()) } returns emptyList()
         sessionFlow.value = StaffSession(
             staffId = 1L,
             email = "admin@chain.com",
@@ -69,7 +74,7 @@ class PropertiesViewModelTest {
             assignedPropertyIds = emptySet()
         )
 
-        val viewModel = PropertiesViewModel(propertyRepository, authRepository)
+        val viewModel = PropertiesViewModel(propertyRepository, occupancyRepository, authRepository)
         advanceUntilIdle()
 
         viewModel.properties.test {
@@ -85,6 +90,7 @@ class PropertiesViewModelTest {
         every { propertyRepository.observeActiveProperties() } returns flowOf(activeProperties)
         every { propertyRepository.observeAllProperties() } returns flowOf(activeProperties)
         every { authRepository.session } returns sessionFlow
+        coEvery { occupancyRepository.getStatsForProperties(any()) } returns emptyList()
         sessionFlow.value = StaffSession(
             staffId = 1L,
             email = "admin@chain.com",
@@ -93,7 +99,7 @@ class PropertiesViewModelTest {
             assignedPropertyIds = emptySet()
         )
 
-        val viewModel = PropertiesViewModel(propertyRepository, authRepository)
+        val viewModel = PropertiesViewModel(propertyRepository, occupancyRepository, authRepository)
         advanceUntilIdle()
         viewModel.setSearchQuery("coastal")
         advanceUntilIdle()

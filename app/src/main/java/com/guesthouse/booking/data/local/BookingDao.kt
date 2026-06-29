@@ -133,4 +133,50 @@ interface BookingDao {
         serverId: Long,
         updatedAtEpochMs: Long
     )
+
+    @Query(
+        """
+        SELECT DISTINCT roomId FROM bookings
+        WHERE propertyId = :propertyId
+        AND status IN ('CONFIRMED', 'CHECKED_IN')
+        AND syncStatus != :conflictStatus
+        AND checkInEpochDay <= :epochDay AND checkOutEpochDay > :epochDay
+        """
+    )
+    suspend fun getOccupiedRoomIds(
+        propertyId: Long,
+        epochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): List<Long>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM bookings
+        WHERE propertyId = :propertyId
+        AND status = 'CONFIRMED'
+        AND syncStatus != :conflictStatus
+        AND checkInEpochDay = :epochDay
+        """
+    )
+    suspend fun countArrivalsToday(
+        propertyId: Long,
+        epochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): Int
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM bookings
+        WHERE propertyId = :propertyId
+        AND status = 'CHECKED_IN'
+        AND syncStatus != :conflictStatus
+        AND checkOutEpochDay = :epochDay
+        """
+    )
+    suspend fun countDeparturesToday(
+        propertyId: Long,
+        epochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): Int
+
 }

@@ -11,6 +11,7 @@ import com.guesthouse.booking.testutil.UiTestEnvironment
 import com.guesthouse.booking.testutil.UiTestSessions
 import com.guesthouse.booking.testutil.setGuesthouseContent
 import com.guesthouse.booking.ui.screens.PropertiesScreen
+import com.guesthouse.booking.data.repository.OccupancyRepository
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -40,7 +41,7 @@ class PropertiesScreenUiTest {
 
     @Test
     fun manager_seesOnlyAssignedProperty() {
-        val viewModel = PropertiesViewModel(env.propertyRepository, env.authRepository)
+        val viewModel = PropertiesViewModel(env.propertyRepository, OccupancyRepository(env.database), env.authRepository)
 
         composeTestRule.setGuesthouseContent {
             PropertiesScreen(
@@ -58,7 +59,7 @@ class PropertiesScreenUiTest {
 
     @Test
     fun manager_searchFiltersProperties() {
-        val viewModel = PropertiesViewModel(env.propertyRepository, env.authRepository)
+        val viewModel = PropertiesViewModel(env.propertyRepository, OccupancyRepository(env.database), env.authRepository)
 
         composeTestRule.setGuesthouseContent {
             PropertiesScreen(
@@ -77,7 +78,7 @@ class PropertiesScreenUiTest {
     @Test
     fun chainAdmin_seesAllPropertiesAndShowRemovedToggle() {
         env.setSession(UiTestSessions.admin)
-        val viewModel = PropertiesViewModel(env.propertyRepository, env.authRepository)
+        val viewModel = PropertiesViewModel(env.propertyRepository, OccupancyRepository(env.database), env.authRepository)
 
         composeTestRule.setGuesthouseContent {
             PropertiesScreen(

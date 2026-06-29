@@ -37,6 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.guesthouse.booking.ui.screens.AdminScreen
+import com.guesthouse.booking.ui.screens.BookingDetailScreen
 import com.guesthouse.booking.ui.screens.BookingFormScreen
 import com.guesthouse.booking.ui.screens.GuestFormScreen
 import com.guesthouse.booking.ui.screens.GuestsScreen
@@ -49,6 +50,7 @@ import com.guesthouse.booking.ui.screens.StaffFormScreen
 import com.guesthouse.booking.ui.screens.StaffScreen
 import com.guesthouse.booking.ui.screens.TodayScreen
 import com.guesthouse.booking.viewmodel.AdminViewModel
+import com.guesthouse.booking.viewmodel.BookingDetailViewModel
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import com.guesthouse.booking.viewmodel.GuestsViewModel
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
@@ -61,6 +63,9 @@ sealed class Screen(val route: String, val label: String) {
     data object Properties : Screen("properties", "Properties")
     data object Book : Screen("book", "Book")
     data object Today : Screen("today", "Today")
+    data object BookingDetail : Screen("booking/{bookingId}", "Booking detail") {
+        fun createRoute(bookingId: Long) = "booking/$bookingId"
+    }
     data object BookingEdit : Screen("booking/{bookingId}/edit", "Edit booking") {
         fun createRoute(bookingId: Long) = "booking/$bookingId/edit"
     }
@@ -93,6 +98,11 @@ sealed class Screen(val route: String, val label: String) {
     }
 }
 
+
+private fun NavController.navigateToBookTab(bookingVm: BookingViewModel, guestId: Long? = null) {
+    guestId?.let { bookingVm.preselectGuest(it) }
+    navigateToMainTab(Screen.Book.route)
+}
 
 private fun NavController.navigateToMainTab(route: String) {
     if (currentBackStackEntry?.destination?.route == route) return
@@ -342,6 +352,7 @@ fun GuesthouseNavHost(
             composable(Screen.GuestEdit.route) { entry ->
                 val guestId = entry.arguments?.getString("guestId")?.toLongOrNull() ?: return@composable
                 val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
+                val bookingVm: BookingViewModel = viewModel(factory = viewModelFactory)
                 val accessDenied by vm.editAccessDenied.collectAsStateWithLifecycle()
                 val canEdit by vm.canEditGuest.collectAsStateWithLifecycle()
                 LaunchedEffect(guestId) { vm.loadGuestForEdit(guestId) }
@@ -353,24 +364,51 @@ fun GuesthouseNavHost(
                         viewModel = vm,
                         readOnly = !canEdit,
                         onSaved = { navController.popBackStack() },
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onBookAgain = { navController.navigateToBookTab(bookingVm, guestId) }
                     )
                 }
             }
             composable(Screen.Book.route) {
                 val vm: BookingViewModel = viewModel(factory = viewModelFactory)
+                LaunchedEffect(Unit) {
+                    vm.consumePreselectedGuest()?.let { guestId ->
+                        // preselect handled in BookingFormScreen via activeGuests
+                    }
+                }
                 BookingFormScreen(viewModel = vm)
             }
             composable(Screen.Today.route) {
                 val vm: TodayViewModel = viewModel(factory = viewModelFactory)
-                TodayScreen(viewModel = vm)
+                TodayScreen(
+                    viewModel = vm,
+                    onBookingClick = { navController.navigate(Screen.BookingDetail.createRoute(it)) }
+                )
             }
             composable(Screen.Admin.route) {
                 val vm: AdminViewModel = viewModel(factory = viewModelFactory)
                 AdminScreen(
                     viewModel = vm,
                     onDismissConflict = { syncVm.dismissConflict(it) },
-                    onEditBooking = { navController.navigate(Screen.BookingEdit.createRoute(it)) }
+                    onEditBooking = { navController.navigate(Screen.BookingEdit.createRoute(it)) },
+                    onBookingClick = { navController.navigate(Screen.BookingDetail.createRoute(it)) }
+                )
+            }
+
+            composable(Screen.BookingDetail.route) { entry ->
+                val bookingId = entry.arguments?.getString("bookingId")?.toLongOrNull() ?: return@composable
+                val vm: BookingDetailViewModel = viewModel(factory = viewModelFactory)
+                val bookingVm: BookingViewModel = viewModel(factory = viewModelFactory)
+                BookingDetailScreen(
+                    bookingId = bookingId,
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() },
+                    onEditBooking = { navController.navigate(Screen.BookingEdit.createRoute(it)) },
+                    onOpenGuest = { navController.navigate(Screen.GuestEdit.createRoute(it)) },
+                    onBookAgain = { guestId ->
+                        navController.navigateToBookTab(bookingVm, guestId)
+                    },
+                    onDismissConflict = { syncVm.dismissConflict(it) }
                 )
             }
             composable(Screen.BookingEdit.route) { entry ->

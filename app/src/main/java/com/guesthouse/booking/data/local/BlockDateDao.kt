@@ -51,4 +51,20 @@ interface BlockDateDao {
 
     @Query("DELETE FROM block_dates WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query(
+        """
+        SELECT DISTINCT roomId FROM block_dates
+        WHERE roomId IN (SELECT id FROM rooms WHERE propertyId = :propertyId)
+        AND markedForDeletion = 0
+        AND syncStatus != :conflictStatus
+        AND startEpochDay <= :epochDay AND endEpochDay > :epochDay
+        """
+    )
+    suspend fun getBlockedRoomIdsForProperty(
+        propertyId: Long,
+        epochDay: Long,
+        conflictStatus: String = SyncStatus.CONFLICT.name
+    ): List<Long>
+
 }
