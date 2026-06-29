@@ -39,7 +39,8 @@ data class RoomDto(
     val name: String,
     val description: String,
     val pricePerNight: Double,
-    val capacity: Int
+    val capacity: Int,
+    val roomType: String = "DOUBLE"
 )
 
 @Serializable

@@ -7,6 +7,8 @@ import androidx.room.Query
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import kotlinx.coroutines.flow.Flow
 
+data class RoomTypeCountRow(val roomType: String, val count: Int)
+
 @Dao
 interface RoomDao {
     @Query("SELECT * FROM rooms ORDER BY name ASC")
@@ -26,6 +28,16 @@ interface RoomDao {
 
     @Query("SELECT COUNT(*) FROM rooms")
     suspend fun count(): Int
+
+    @Query(
+        """
+        SELECT roomType, COUNT(*) AS count FROM rooms
+        WHERE propertyId = :propertyId
+        GROUP BY roomType
+        ORDER BY roomType ASC
+        """
+    )
+    suspend fun countByTypeForProperty(propertyId: Long): List<RoomTypeCountRow>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(rooms: List<RoomEntity>)

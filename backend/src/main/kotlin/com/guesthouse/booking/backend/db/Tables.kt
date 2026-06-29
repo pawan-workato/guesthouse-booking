@@ -18,6 +18,7 @@ object Rooms : LongIdTable("rooms") {
     val description = text("description").default("")
     val pricePerNight = double("price_per_night")
     val capacity = integer("capacity")
+    val roomType = varchar("room_type", 16).default("DOUBLE")
 }
 
 object Guests : LongIdTable("guests") {

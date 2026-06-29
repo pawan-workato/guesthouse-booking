@@ -255,7 +255,8 @@ private fun ResultRow.toRoomDto() = RoomDto(
     name = this[Rooms.name],
     description = this[Rooms.description],
     pricePerNight = this[Rooms.pricePerNight],
-    capacity = this[Rooms.capacity]
+    capacity = this[Rooms.capacity],
+    roomType = this[Rooms.roomType]
 )
 
 private fun ResultRow.toGuestDto() = GuestDto(

@@ -28,6 +28,7 @@ object FirestoreFields {
     const val DESCRIPTION = "description"
     const val PRICE_PER_NIGHT = "pricePerNight"
     const val CAPACITY = "capacity"
+    const val ROOM_TYPE = "roomType"
 
     const val ROOM_ID = "roomId"
     const val GUEST_ID = "guestId"

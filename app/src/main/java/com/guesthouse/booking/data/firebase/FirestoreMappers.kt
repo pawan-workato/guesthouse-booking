@@ -4,6 +4,7 @@ import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
+import com.guesthouse.booking.data.local.entities.RoomType
 import com.guesthouse.booking.data.local.entities.StaffPropertyAssignmentEntity
 import com.google.firebase.firestore.DocumentSnapshot
 
@@ -62,7 +63,8 @@ fun RoomEntity.toFirestoreMap(): Map<String, Any?> = mapOf(
     FirestoreFields.NAME to name,
     FirestoreFields.DESCRIPTION to description,
     FirestoreFields.PRICE_PER_NIGHT to pricePerNight,
-    FirestoreFields.CAPACITY to capacity
+    FirestoreFields.CAPACITY to capacity,
+    FirestoreFields.ROOM_TYPE to roomType
 )
 
 fun DocumentSnapshot.toRoomEntity(): RoomEntity? {
@@ -74,7 +76,9 @@ fun DocumentSnapshot.toRoomEntity(): RoomEntity? {
         name = getString(FirestoreFields.NAME) ?: return null,
         description = getString(FirestoreFields.DESCRIPTION) ?: "",
         pricePerNight = (get(FirestoreFields.PRICE_PER_NIGHT) as? Number)?.toDouble() ?: 0.0,
-        capacity = getLong(FirestoreFields.CAPACITY)?.toInt() ?: 1
+        capacity = getLong(FirestoreFields.CAPACITY)?.toInt() ?: 1,
+        roomType = getString(FirestoreFields.ROOM_TYPE)
+            ?: RoomType.inferFromName(getString(FirestoreFields.NAME) ?: "", getLong(FirestoreFields.CAPACITY)?.toInt() ?: 2).name
     )
 }
 

@@ -149,6 +149,7 @@ async function seedEntityData(db) {
       description: room.description,
       pricePerNight: room.pricePerNight,
       capacity: room.capacity,
+      roomType: room.roomType,
     });
   }
 
