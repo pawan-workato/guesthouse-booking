@@ -4,6 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -53,7 +56,7 @@ class MainNavigationUiTest {
         composeTestRule.onNodeWithText("Guesthouse Booking").assertIsDisplayed()
         composeTestRule.onNodeWithText("Properties").assertIsDisplayed()
         composeTestRule.onNodeWithText("Book").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Today").assertIsDisplayed()
+        composeTestRule.onNode(hasText("Today") and hasClickAction()).assertIsDisplayed()
         composeTestRule.onNodeWithText("Arrivals").assertIsDisplayed()
         composeTestRule.onNodeWithText("Bookings").assertIsDisplayed()
 
