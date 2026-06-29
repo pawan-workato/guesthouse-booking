@@ -40,6 +40,9 @@ interface BlockDateDao {
     @Query("SELECT * FROM block_dates WHERE syncStatus = :syncStatus ORDER BY createdAtEpochMs ASC")
     suspend fun getBySyncStatus(syncStatus: String): List<BlockDateEntity>
 
+    @Query("SELECT * FROM block_dates WHERE syncStatus = :syncStatus AND markedForDeletion = 0 ORDER BY createdAtEpochMs ASC")
+    fun observeBySyncStatus(syncStatus: String): Flow<List<BlockDateEntity>>
+
     @Query("SELECT COUNT(*) FROM block_dates WHERE syncStatus = :syncStatus AND markedForDeletion = 0")
     fun observeCountBySyncStatus(syncStatus: String): Flow<Int>
 

@@ -28,9 +28,11 @@ class GuestFormScreenUiTest {
     private var guestId: Long = 0L
 
     @Before
-    fun setUp() = runBlocking {
-        env = UiTestEnvironment()
-        guestId = env.seedStandardData().guestId
+    fun setUp() {
+        runBlocking {
+            env = UiTestEnvironment()
+            guestId = env.seedStandardData().guestId
+        }
     }
 
     @After

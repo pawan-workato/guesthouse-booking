@@ -48,6 +48,7 @@ import com.guesthouse.booking.ui.screens.RoomDetailScreen
 import com.guesthouse.booking.ui.screens.RoomFormScreen
 import com.guesthouse.booking.ui.screens.StaffFormScreen
 import com.guesthouse.booking.ui.screens.StaffScreen
+import com.guesthouse.booking.ui.screens.SyncStatusScreen
 import com.guesthouse.booking.ui.screens.TodayScreen
 import com.guesthouse.booking.viewmodel.AdminViewModel
 import com.guesthouse.booking.viewmodel.BookingDetailViewModel
@@ -87,6 +88,7 @@ sealed class Screen(val route: String, val label: String) {
         fun createRoute(propertyId: Long) = "property/$propertyId/edit"
     }
     data object Guests : Screen("guests", "Guests")
+    data object Sync : Screen("sync", "Sync status")
     data object GuestAdd : Screen("guest/add", "Add guest")
     data object GuestEdit : Screen("guest/{guestId}/edit", "Edit guest") {
         fun createRoute(guestId: Long) = "guest/$guestId/edit"
@@ -127,7 +129,6 @@ fun GuesthouseNavHost(
     val navController = rememberNavController()
     val syncVm: SyncViewModel = viewModel(factory = viewModelFactory)
     val issueCount by syncVm.issueCount.collectAsStateWithLifecycle()
-    val isOnline by syncVm.isOnline.collectAsStateWithLifecycle()
     val syncUiState by syncVm.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val bottomNavItems = listOf(
@@ -194,15 +195,14 @@ fun GuesthouseNavHost(
                             }
                         }
                         IconButton(
-                            onClick = { syncVm.clearMessage(); syncVm.syncNow() },
-                            enabled = isOnline && !syncUiState.isSyncing
+                            onClick = { navController.navigate(Screen.Sync.route) }
                         ) {
                             if (issueCount > 0) {
                                 BadgedBox(badge = { Badge { Text(issueCount.toString()) } }) {
-                                    Icon(Icons.Default.Sync, contentDescription = "Sync now")
+                                    Icon(Icons.Default.Sync, contentDescription = "Sync status")
                                 }
                             } else {
-                                Icon(Icons.Default.Sync, contentDescription = "Sync now")
+                                Icon(Icons.Default.Sync, contentDescription = "Sync status")
                             }
                         }
                         IconButton(onClick = onLogout) {
@@ -332,6 +332,15 @@ fun GuesthouseNavHost(
                 }
             }
 
+            composable(Screen.Sync.route) {
+                SyncStatusScreen(
+                    viewModel = syncVm,
+                    isFirebaseConfigured = isFirebaseConfigured,
+                    onBack = { navController.popBackStack() },
+                    onOpenBooking = { navController.navigate(Screen.BookingDetail.createRoute(it)) },
+                    onDismissConflict = { syncVm.dismissConflict(it) }
+                )
+            }
             composable(Screen.Guests.route) {
                 val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
                 GuestsScreen(

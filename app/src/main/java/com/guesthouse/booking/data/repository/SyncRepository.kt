@@ -66,6 +66,8 @@ class SyncRepository(
 
     fun observeConflicts() = database.bookingDao().observeBySyncStatus(SyncStatus.CONFLICT.name)
     fun observePending() = database.bookingDao().observeBySyncStatus(SyncStatus.PENDING_SYNC.name)
+    fun observePendingBlocks() = database.blockDateDao().observeBySyncStatus(SyncStatus.PENDING_SYNC.name)
+    fun observeBlockConflicts() = database.blockDateDao().observeBySyncStatus(SyncStatus.CONFLICT.name)
 
     suspend fun syncNow(): SyncResult {
         if (!networkMonitor.isCurrentlyOnline()) return SyncResult(noNetwork = true)

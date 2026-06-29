@@ -18,7 +18,7 @@ Twelve. See [chain overview](chain-overview.md).
 
 ### Where is the Sync tab?
 
-There is no Sync tab. Use the **sync icon** in the top app bar (next to sign out). The badge shows pending uploads and conflicts.
+There is no Sync tab. Tap the **sync icon** in the top app bar (next to sign out) to open **Sync status** — online/offline, last sync time, pending uploads, conflicts, and **Sync now**. The badge shows pending items for your properties.
 
 ## Bookings
 

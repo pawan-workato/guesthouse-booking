@@ -19,7 +19,7 @@ The Android app is **staff-only**. Property managers book rooms for guests; gues
 
 - **Guests** (person icon) — guest profiles and property-scoped stay history (all properties for chain admin)
 - **Staff** (group icon, chain admin only) — add/edit property managers and assignments
-- **Sync** (circular arrows) — manual sync when online; badge = pending + conflict count
+- **Sync** (circular arrows) — opens **Sync status** (pending uploads, conflicts, **Sync now**); badge = pending + conflict count
 - **Sign out**
 
 There is no separate **Sync** tab. **Guests** and **Staff** are in the top bar so the bottom navigation stays uncluttered for chain admins. Pending bookings and conflicts appear on **Bookings** (sync status + **Cancel this booking** for conflicts).

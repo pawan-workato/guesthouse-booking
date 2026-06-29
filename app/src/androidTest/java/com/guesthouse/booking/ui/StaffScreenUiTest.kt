@@ -26,9 +26,11 @@ class StaffScreenUiTest {
     private lateinit var env: UiTestEnvironment
 
     @Before
-    fun setUp() = runBlocking {
-        env = UiTestEnvironment(initialSession = UiTestSessions.admin)
-        env.seedStandardData()
+    fun setUp() {
+        runBlocking {
+            env = UiTestEnvironment(initialSession = UiTestSessions.admin)
+            env.seedStandardData()
+        }
     }
 
     @After

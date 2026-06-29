@@ -27,9 +27,11 @@ class AdminScreenUiTest {
     private lateinit var env: UiTestEnvironment
 
     @Before
-    fun setUp() = runBlocking {
-        env = UiTestEnvironment()
-        env.seedStandardData()
+    fun setUp() {
+        runBlocking {
+            env = UiTestEnvironment()
+            env.seedStandardData()
+        }
     }
 
     @After

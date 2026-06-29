@@ -23,7 +23,7 @@ The [GitHub Wiki tab](https://github.com/pawan-workato/guesthouse-booking/wiki) 
 - **Today** — arrivals, departures, and in-house board with check-in / check-out actions
 - **Bookings** — list, edit, cancel, check-in/out; sync status and conflict resolution
 - **Staff** (chain admin) — add managers and assign properties
-- **Sync** — toolbar **sync** icon (badge when pending/conflicts); background WorkManager every ~15 min when online
+- **Sync** — toolbar **sync** icon opens **Sync status** (pending uploads, conflicts, last sync, **Sync now**); badge when items need attention; background WorkManager every ~15 min when online
 - **Notifications** — daily ~7 AM arrival summary (WorkManager)
 - **Offline** — bookings queue as `PENDING_SYNC` with `TMP-xxxx` references until sync
 
