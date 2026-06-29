@@ -63,6 +63,19 @@ export const properties = [
   { id: 12, name: 'Meadowbrook Cottage', address: '3 Meadow Ln, Madison, WI', region: 'Midwest' },
 ];
 
+
+function inferRoomType(name, capacity) {
+  const lower = name.toLowerCase();
+  if (lower.includes('single')) return 'SINGLE';
+  if (lower.includes('double')) return 'DOUBLE';
+  if (lower.includes('suite')) return 'SUITE';
+  if (lower.includes('family') || lower.includes('cottage')) return 'FAMILY';
+  if (lower.includes('den') && capacity >= 4) return 'FAMILY';
+  if (capacity <= 1) return 'SINGLE';
+  if (capacity >= 4) return 'FAMILY';
+  return 'DOUBLE';
+}
+
 const roomRows = [
   [1, 'Garden Suite', 'Ground-floor patio and garden views.', 89.0, 2],
   [1, 'Loft Room', 'Upper-floor skylight and workspace.', 75.0, 2],
@@ -103,6 +116,7 @@ export const rooms = roomRows.map(([propertyId, name, description, pricePerNight
   description,
   pricePerNight,
   capacity,
+  roomType: inferRoomType(name, capacity),
 }));
 
 const DEMO_EPOCH_MS = 1700000000000;
