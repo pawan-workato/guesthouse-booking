@@ -9,6 +9,7 @@ import com.guesthouse.booking.data.remote.ApiClient
 import com.guesthouse.booking.data.remote.KtorApiSyncService
 import com.guesthouse.booking.data.remote.TokenStorage
 import com.guesthouse.booking.data.repository.AuthRepository
+import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.GuestRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
@@ -18,6 +19,8 @@ import com.guesthouse.booking.data.sync.NetworkMonitor
 
 class GuesthouseApplication : Application() {
     lateinit var repository: BookingRepository
+        private set
+    lateinit var blockDateRepository: BlockDateRepository
         private set
     lateinit var propertyRepository: PropertyRepository
         private set
@@ -85,6 +88,7 @@ class GuesthouseApplication : Application() {
             firestore,
             lazy { syncRef }
         )
+        blockDateRepository = BlockDateRepository(database, authRepository)
         propertyRepository = PropertyRepository(database, networkMonitor, firestore)
         guestRepository = GuestRepository(
             database,

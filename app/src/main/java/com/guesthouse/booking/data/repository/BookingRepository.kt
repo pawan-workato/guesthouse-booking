@@ -45,6 +45,9 @@ class BookingRepository(
         if (database.bookingDao().findOverlapping(roomId, checkInEpochDay, checkOutEpochDay).isNotEmpty()) {
             return Result.failure(IllegalStateException("Room is not available for those dates"))
         }
+        if (database.blockDateDao().findOverlapping(roomId, checkInEpochDay, checkOutEpochDay).isNotEmpty()) {
+            return Result.failure(IllegalStateException("Room is not available for those dates"))
+        }
 
         val useFirestore = !BuildConfig.USE_KTOR_API &&
             isOnline && networkMonitor.isCurrentlyOnline() && firestore.isSignedIn

@@ -51,7 +51,9 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
     }
 
     val bookings by viewModel.observeRoomBookings(selectedRoomId).collectAsState()
+    val blocks by viewModel.observeRoomBlocks(selectedRoomId).collectAsState()
     val bookedDays = bookedDaysFromRanges(bookings.map { it.checkInEpochDay to it.checkOutEpochDay })
+    val blockedDays = bookedDaysFromRanges(blocks.map { it.startEpochDay to it.endEpochDay })
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
@@ -135,6 +137,7 @@ fun BookingFormScreen(viewModel: BookingViewModel) {
         if (selectedRoomId != 0L) {
             AvailabilityCalendar(
                 bookedEpochDays = bookedDays,
+                blockedEpochDays = blockedDays,
                 selectedCheckIn = checkIn,
                 selectedCheckOut = checkOut,
                 onDateSelected = { day ->
