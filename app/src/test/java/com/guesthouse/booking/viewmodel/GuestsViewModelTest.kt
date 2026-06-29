@@ -29,8 +29,8 @@ class GuestsViewModelTest {
 
     @Test
     fun guests_filtersBySearchQueryAcrossNameEmailAndPhone() = runTest {
-        every { guestRepository.observeActiveGuests() } returns flowOf(guests)
-        every { guestRepository.observeAllGuests() } returns flowOf(guests)
+        every { guestRepository.observeScopedActiveGuests() } returns flowOf(guests)
+        every { guestRepository.observeScopedAllGuests() } returns flowOf(guests)
 
         val viewModel = GuestsViewModel(guestRepository)
         advanceUntilIdle()
@@ -48,8 +48,8 @@ class GuestsViewModelTest {
 
     @Test
     fun guests_searchIsCaseInsensitive() = runTest {
-        every { guestRepository.observeActiveGuests() } returns flowOf(guests)
-        every { guestRepository.observeAllGuests() } returns flowOf(guests)
+        every { guestRepository.observeScopedActiveGuests() } returns flowOf(guests)
+        every { guestRepository.observeScopedAllGuests() } returns flowOf(guests)
 
         val viewModel = GuestsViewModel(guestRepository)
         advanceUntilIdle()

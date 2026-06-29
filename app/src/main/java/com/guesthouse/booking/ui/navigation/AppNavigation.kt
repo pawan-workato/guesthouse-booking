@@ -246,12 +246,18 @@ fun GuesthouseNavHost(
             composable(Screen.GuestEdit.route) { entry ->
                 val guestId = entry.arguments?.getString("guestId")?.toLongOrNull() ?: return@composable
                 val vm: GuestsViewModel = viewModel(factory = viewModelFactory)
-                GuestFormScreen(
-                    guestId = guestId,
-                    viewModel = vm,
-                    onSaved = { navController.popBackStack() },
-                    onBack = { navController.popBackStack() }
-                )
+                val accessDenied by vm.editAccessDenied.collectAsState()
+                LaunchedEffect(guestId) { vm.loadGuestForEdit(guestId) }
+                if (accessDenied) {
+                    PropertyAccessDenied(onBack = { navController.popBackStack() })
+                } else {
+                    GuestFormScreen(
+                        guestId = guestId,
+                        viewModel = vm,
+                        onSaved = { navController.popBackStack() },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
             composable(Screen.Book.route) {
                 val vm: BookingViewModel = viewModel(factory = viewModelFactory)

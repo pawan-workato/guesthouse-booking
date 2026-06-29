@@ -11,6 +11,23 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BookingDao {
+
+    @Query(
+        """
+        SELECT DISTINCT guestId FROM bookings
+        WHERE guestId IS NOT NULL AND propertyId IN (:propertyIds)
+        """
+    )
+    fun observeGuestIdsForProperties(propertyIds: List<Long>): Flow<List<Long>>
+
+    @Query(
+        """
+        SELECT DISTINCT guestId FROM bookings
+        WHERE guestId IS NOT NULL AND propertyId IN (:propertyIds)
+        """
+    )
+    suspend fun getGuestIdsForProperties(propertyIds: List<Long>): List<Long>
+
     @Query("SELECT * FROM bookings ORDER BY checkInEpochDay DESC")
     fun observeAll(): Flow<List<BookingEntity>>
 

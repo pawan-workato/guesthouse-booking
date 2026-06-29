@@ -91,6 +91,7 @@ class GuesthouseApplication : Application() {
         propertyRepository = PropertyRepository(database, networkMonitor, firestore)
         guestRepository = GuestRepository(
             database,
+            authRepository,
             networkMonitor,
             firestore,
             lazy { syncRef }

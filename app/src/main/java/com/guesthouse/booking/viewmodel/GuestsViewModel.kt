@@ -33,9 +33,12 @@ class GuestsViewModel(
     private val _editGuest = MutableStateFlow<GuestEntity?>(null)
     val editGuest: StateFlow<GuestEntity?> = _editGuest.asStateFlow()
 
+    private val _editAccessDenied = MutableStateFlow(false)
+    val editAccessDenied: StateFlow<Boolean> = _editAccessDenied.asStateFlow()
+
     val guests: StateFlow<List<GuestEntity>> = combine(
-        guestRepository.observeActiveGuests(),
-        guestRepository.observeAllGuests(),
+        guestRepository.observeScopedActiveGuests(),
+        guestRepository.observeScopedAllGuests(),
         _searchQuery,
         _showInactive
     ) { active, all, query, showInactive ->
@@ -51,7 +54,7 @@ class GuestsViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val activeGuests: StateFlow<List<GuestEntity>> = guestRepository.observeActiveGuests()
+    val activeGuests: StateFlow<List<GuestEntity>> = guestRepository.observeScopedActiveGuests()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun setSearchQuery(query: String) {
@@ -64,12 +67,14 @@ class GuestsViewModel(
 
     fun loadGuestForEdit(guestId: Long) {
         viewModelScope.launch {
-            _editGuest.value = guestRepository.getGuest(guestId)
+            _editAccessDenied.value = !guestRepository.canAccessGuest(guestId)
+            _editGuest.value = if (_editAccessDenied.value) null else guestRepository.getGuest(guestId)
         }
     }
 
     fun clearEditGuest() {
         _editGuest.value = null
+        _editAccessDenied.value = false
     }
 
     fun createGuest(name: String, email: String, phone: String, notes: String) {
