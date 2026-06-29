@@ -76,3 +76,11 @@ Creates `audit_events` table for local staff action logging:
 - Indexes on `propertyId` and `createdAtEpochMs`
 
 Tier 2 (housekeeping, guest preferences, booking source, handover log) uses a separate migration path on branch `feature/sprint10-tier2`.
+
+
+## Version 12 → 13 — Sprint 10 Tier 2
+
+- `rooms.housekeepingStatus` (default `CLEAN`)
+- `bookings.source` (default `WALK_IN`), `bookings.maintenanceNotes`
+- `guests.preferences`
+- `handover_notes` table (local-only shift notes)

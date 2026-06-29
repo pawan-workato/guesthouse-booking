@@ -65,5 +65,26 @@ object AppDatabaseMigrations {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_audit_events_createdAtEpochMs` ON `audit_events` (`createdAtEpochMs`)")
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+
+    val MIGRATION_12_13 = Migration(12, 13) { db ->
+        db.execSQL("ALTER TABLE rooms ADD COLUMN housekeepingStatus TEXT NOT NULL DEFAULT 'CLEAN'")
+        db.execSQL("ALTER TABLE bookings ADD COLUMN source TEXT NOT NULL DEFAULT 'WALK_IN'")
+        db.execSQL("ALTER TABLE bookings ADD COLUMN maintenanceNotes TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE guests ADD COLUMN preferences TEXT NOT NULL DEFAULT ''")
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `handover_notes` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `propertyId` INTEGER NOT NULL,
+                `staffId` INTEGER NOT NULL,
+                `staffName` TEXT NOT NULL,
+                `note` TEXT NOT NULL,
+                `createdAtEpochMs` INTEGER NOT NULL,
+                FOREIGN KEY(`propertyId`) REFERENCES `properties`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_handover_notes_propertyId` ON `handover_notes` (`propertyId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_handover_notes_createdAtEpochMs` ON `handover_notes` (`createdAtEpochMs`)")
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
 }

@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "rooms",
+    tableName = "handover_notes",
     foreignKeys = [
         ForeignKey(
             entity = PropertyEntity::class,
@@ -15,15 +15,13 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("propertyId"), Index("roomType")]
+    indices = [Index("propertyId"), Index("createdAtEpochMs")]
 )
-data class RoomEntity(
+data class HandoverNoteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val propertyId: Long,
-    val name: String,
-    val description: String,
-    val pricePerNight: Double,
-    val capacity: Int,
-    val roomType: String = RoomType.DOUBLE.name,
-    val housekeepingStatus: String = HousekeepingStatus.CLEAN.name
+    val staffId: Long,
+    val staffName: String,
+    val note: String,
+    val createdAtEpochMs: Long = System.currentTimeMillis()
 )

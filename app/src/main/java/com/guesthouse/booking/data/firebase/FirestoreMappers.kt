@@ -3,6 +3,8 @@ package com.guesthouse.booking.data.firebase
 import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.data.local.entities.HousekeepingStatus
+import com.guesthouse.booking.data.local.entities.BookingSource
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.RoomType
@@ -66,7 +68,8 @@ fun RoomEntity.toFirestoreMap(): Map<String, Any?> = mapOf(
     FirestoreFields.DESCRIPTION to description,
     FirestoreFields.PRICE_PER_NIGHT to pricePerNight,
     FirestoreFields.CAPACITY to capacity,
-    FirestoreFields.ROOM_TYPE to roomType
+    FirestoreFields.ROOM_TYPE to roomType,
+    "housekeepingStatus" to housekeepingStatus
 )
 
 fun DocumentSnapshot.toRoomEntity(): RoomEntity? {
@@ -89,6 +92,7 @@ fun GuestEntity.toFirestoreMap(): Map<String, Any?> = mapOf(
     FirestoreFields.EMAIL to email,
     FirestoreFields.PHONE to phone,
     FirestoreFields.NOTES to notes,
+    "preferences" to preferences,
     FirestoreFields.IS_ACTIVE to isActive,
     FirestoreFields.CREATED_AT_EPOCH_MS to createdAtEpochMs
 )
@@ -101,6 +105,7 @@ fun DocumentSnapshot.toGuestEntity(): GuestEntity? {
         email = getString(FirestoreFields.EMAIL) ?: "",
         phone = getString(FirestoreFields.PHONE) ?: "",
         notes = getString(FirestoreFields.NOTES) ?: "",
+        preferences = getString("preferences") ?: "",
         isActive = getBoolean(FirestoreFields.IS_ACTIVE) ?: true,
         createdAtEpochMs = getLong(FirestoreFields.CREATED_AT_EPOCH_MS) ?: System.currentTimeMillis()
     )
@@ -116,6 +121,8 @@ fun BookingEntity.toFirestoreMap(): Map<String, Any?> = mapOf(
     FirestoreFields.CHECK_IN_EPOCH_DAY to checkInEpochDay,
     FirestoreFields.CHECK_OUT_EPOCH_DAY to checkOutEpochDay,
     FirestoreFields.STATUS to status,
+    "source" to source,
+    "maintenanceNotes" to maintenanceNotes,
     FirestoreFields.SYNC_STATUS to syncStatus,
     FirestoreFields.BOOKING_REFERENCE to bookingReference,
     FirestoreFields.CREATED_AT_EPOCH_MS to createdAtEpochMs

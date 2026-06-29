@@ -119,7 +119,7 @@ class GuestRepository(
             .take(5)
     }
 
-    suspend fun createGuest(name: String, email: String, phone: String, notes: String): Result<Long> {
+    suspend fun createGuest(name: String, email: String, phone: String, notes: String, preferences: String = ""): Result<Long> {
         if (authRepository.currentSession() == null) {
             return Result.failure(IllegalStateException("Not signed in"))
         }
@@ -130,6 +130,7 @@ class GuestRepository(
             email = email.trim(),
             phone = phone.trim(),
             notes = notes.trim(),
+            preferences = preferences.trim(),
             isActive = true,
             syncStatus = SyncStatus.PENDING_SYNC.name
         )
@@ -155,6 +156,7 @@ class GuestRepository(
             email = guest.email.trim(),
             phone = guest.phone.trim(),
             notes = guest.notes.trim(),
+            preferences = guest.preferences.trim(),
             syncStatus = SyncStatus.PENDING_SYNC.name,
             updatedAtEpochMs = System.currentTimeMillis()
         )

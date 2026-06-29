@@ -38,5 +38,7 @@ data class BookingEntity(
     val bookingReference: String = "",
     val serverId: Long? = null,
     val createdAtEpochMs: Long = System.currentTimeMillis(),
-    val updatedAtEpochMs: Long = System.currentTimeMillis()
+    val updatedAtEpochMs: Long = System.currentTimeMillis(),
+    val source: String = BookingSource.WALK_IN.name,
+    val maintenanceNotes: String = ""
 )

@@ -5,6 +5,8 @@ import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.AuditAction
 import com.guesthouse.booking.data.local.entities.AuditEntityType
 import com.guesthouse.booking.data.local.entities.BookingEntity
+import com.guesthouse.booking.data.local.entities.BookingSource
+import com.guesthouse.booking.data.local.entities.HousekeepingStatus
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
@@ -41,7 +43,9 @@ class BookingRepository(
         guestPhone: String,
         checkInEpochDay: Long,
         checkOutEpochDay: Long,
-        isOnline: Boolean
+        isOnline: Boolean,
+        source: String = BookingSource.WALK_IN.name,
+        maintenanceNotes: String = ""
     ): Result<BookingCreateOutcome> {
         if (guestName.isBlank()) return Result.failure(IllegalArgumentException("Guest name is required"))
         if (checkOutEpochDay <= checkInEpochDay) return Result.failure(IllegalArgumentException("Check-out must be after check-in"))
@@ -62,7 +66,9 @@ class BookingRepository(
                 guestPhone = guestPhone.trim(),
                 checkInEpochDay = checkInEpochDay,
                 checkOutEpochDay = checkOutEpochDay,
-                syncStatus = syncStatus
+                syncStatus = syncStatus,
+                source = source,
+                maintenanceNotes = maintenanceNotes.trim()
             )
         )
 
@@ -93,7 +99,9 @@ class BookingRepository(
         guestPhone: String,
         checkInEpochDay: Long,
         checkOutEpochDay: Long,
-        isOnline: Boolean
+        isOnline: Boolean,
+        source: String? = null,
+        maintenanceNotes: String? = null
     ): Result<Unit> {
         val session = authRepository.currentSession()
             ?: return Result.failure(IllegalStateException("Not signed in"))
@@ -126,6 +134,8 @@ class BookingRepository(
             guestPhone = guestPhone.trim(),
             checkInEpochDay = checkInEpochDay,
             checkOutEpochDay = checkOutEpochDay,
+            source = source ?: existing.source,
+            maintenanceNotes = (maintenanceNotes ?: existing.maintenanceNotes).trim(),
             syncStatus = SyncStatus.PENDING_SYNC.name,
             updatedAtEpochMs = System.currentTimeMillis()
         )
@@ -262,6 +272,40 @@ class BookingRepository(
         }
         auditRepository?.append(AuditAction.UPDATE, AuditEntityType.BOOKING, "Extended booking #${bookingId} checkout", existing.propertyId, bookingId)
         return Result.success(Unit)
+    }
+
+    suspend fun updateRoomHousekeeping(roomId: Long, status: String): Result<Unit> {
+        val session = authRepository.currentSession()
+            ?: return Result.failure(IllegalStateException("Not signed in"))
+        val room = database.roomDao().getById(roomId)
+            ?: return Result.failure(IllegalArgumentException("Room not found"))
+        if (!session.canAccessProperty(room.propertyId)) {
+            return Result.failure(IllegalStateException("You don't have access to this property"))
+        }
+        runCatching { HousekeepingStatus.valueOf(status) }.getOrElse {
+            return Result.failure(IllegalArgumentException("Invalid housekeeping status"))
+        }
+        database.roomDao().update(room.copy(housekeepingStatus = status))
+        if (networkMonitor.isCurrentlyOnline() && firestore.isSignedIn) {
+            runCatching { firestore.upsertRoom(room.copy(housekeepingStatus = status)) }
+        }
+        return Result.success(Unit)
+    }
+
+    suspend fun bulkCheckIn(bookingIds: List<Long>, todayEpochDay: Long): Int {
+        var count = 0
+        bookingIds.forEach { id ->
+            checkInBooking(id, todayEpochDay).onSuccess { count++ }
+        }
+        return count
+    }
+
+    suspend fun bulkCheckOut(bookingIds: List<Long>, todayEpochDay: Long): Int {
+        var count = 0
+        bookingIds.forEach { id ->
+            checkOutBooking(id, todayEpochDay).onSuccess { count++ }
+        }
+        return count
     }
 
     suspend fun createRoom(

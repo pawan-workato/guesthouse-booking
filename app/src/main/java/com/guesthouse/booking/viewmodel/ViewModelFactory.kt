@@ -8,6 +8,7 @@ import com.guesthouse.booking.data.repository.ReportsRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.GuestRepository
+import com.guesthouse.booking.data.repository.HandoverNoteRepository
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.repository.OccupancyRepository
 import com.guesthouse.booking.data.repository.ProfileRepository
@@ -28,6 +29,7 @@ class ViewModelFactory(
     private val staffRepository: StaffRepository,
     private val networkMonitor: NetworkMonitor,
     private val auditRepository: AuditRepository,
+    private val handoverNoteRepository: HandoverNoteRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -67,6 +69,8 @@ class ViewModelFactory(
                     ),
                     authRepository
                 ) as T
+            modelClass.isAssignableFrom(HandoverLogViewModel::class.java) ->
+                HandoverLogViewModel(handoverNoteRepository, propertyRepository, authRepository) as T
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
         }
     }

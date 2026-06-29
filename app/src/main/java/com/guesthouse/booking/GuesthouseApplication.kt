@@ -10,6 +10,7 @@ import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.GuestRepository
+import com.guesthouse.booking.data.repository.HandoverNoteRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.data.repository.StaffRepository
 import com.guesthouse.booking.data.repository.SyncRepository
@@ -40,6 +41,8 @@ class GuesthouseApplication : Application() {
     lateinit var syncRepository: SyncRepository
         private set
     lateinit var auditRepository: AuditRepository
+        private set
+    lateinit var handoverNoteRepository: HandoverNoteRepository
         private set
     lateinit var networkMonitor: NetworkMonitor
         private set
@@ -74,6 +77,7 @@ class GuesthouseApplication : Application() {
         }
 
         auditRepository = AuditRepository(database, authRepository)
+        handoverNoteRepository = HandoverNoteRepository(database, authRepository)
 
         syncRepository = SyncRepository(
             database = database,

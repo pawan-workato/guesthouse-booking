@@ -200,6 +200,13 @@ class BookingViewModel(
 
     fun clearBlockMessages() { _blockUiState.value = BlockUiState() }
 
+    fun updateRoomHousekeeping(roomId: Long, status: String) {
+        viewModelScope.launch {
+            repository.updateRoomHousekeeping(roomId, status)
+                .onFailure { _blockUiState.value = BlockUiState(errorMessage = it.message) }
+        }
+    }
+
     fun canAccessProperty(propertyId: Long): Boolean =
         authRepository.currentSession()?.canAccessProperty(propertyId) == true
 
@@ -210,7 +217,9 @@ class BookingViewModel(
         guestEmail: String,
         guestPhone: String,
         checkInEpochDay: Long,
-        checkOutEpochDay: Long
+        checkOutEpochDay: Long,
+        source: String = com.guesthouse.booking.data.local.entities.BookingSource.WALK_IN.name,
+        maintenanceNotes: String = ""
     ) {
         viewModelScope.launch {
             _uiState.value = BookingUiState(isSubmitting = true)
@@ -225,7 +234,7 @@ class BookingViewModel(
             }
             val online = networkMonitor.isCurrentlyOnline()
             val result = repository.createBooking(
-                roomId, guestId, guestName, guestEmail, guestPhone, checkInEpochDay, checkOutEpochDay, online
+                roomId, guestId, guestName, guestEmail, guestPhone, checkInEpochDay, checkOutEpochDay, online, source, maintenanceNotes
             )
             _uiState.value = result.fold(
                 onSuccess = { outcome ->
@@ -268,7 +277,9 @@ class BookingViewModel(
         guestEmail: String,
         guestPhone: String,
         checkInEpochDay: Long,
-        checkOutEpochDay: Long
+        checkOutEpochDay: Long,
+        source: String? = null,
+        maintenanceNotes: String? = null
     ) {
         viewModelScope.launch {
             _uiState.value = BookingUiState(isSubmitting = true)
@@ -284,7 +295,7 @@ class BookingViewModel(
             val online = networkMonitor.isCurrentlyOnline()
             val result = repository.updateBooking(
                 bookingId, roomId, guestId, guestName, guestEmail, guestPhone,
-                checkInEpochDay, checkOutEpochDay, online
+                checkInEpochDay, checkOutEpochDay, online, source, maintenanceNotes
             )
             _uiState.value = result.fold(
                 onSuccess = {

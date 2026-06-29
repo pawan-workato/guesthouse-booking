@@ -15,5 +15,6 @@ data class GuestEntity(
     val serverId: Long? = null,
     val syncStatus: String = SyncStatus.SYNCED.name,
     val createdAtEpochMs: Long = System.currentTimeMillis(),
-    val updatedAtEpochMs: Long = System.currentTimeMillis()
+    val updatedAtEpochMs: Long = System.currentTimeMillis(),
+    val preferences: String = ""
 )

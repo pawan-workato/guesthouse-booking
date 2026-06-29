@@ -46,7 +46,8 @@ class MainActivity : ComponentActivity() {
             app.syncRepository,
             app.staffRepository,
             app.networkMonitor,
-            app.auditRepository
+            app.auditRepository,
+            app.handoverNoteRepository
         )
         val openSyncOnLaunch = intent.getBooleanExtra(NotificationHelper.EXTRA_OPEN_SYNC, false)
 

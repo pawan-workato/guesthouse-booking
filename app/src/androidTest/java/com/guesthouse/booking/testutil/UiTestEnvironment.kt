@@ -16,6 +16,7 @@ import com.guesthouse.booking.data.repository.AuthRepository
 import com.guesthouse.booking.data.repository.BlockDateRepository
 import com.guesthouse.booking.data.repository.BookingRepository
 import com.guesthouse.booking.data.repository.GuestRepository
+import com.guesthouse.booking.data.repository.HandoverNoteRepository
 import com.guesthouse.booking.data.repository.PropertyRepository
 import com.guesthouse.booking.data.repository.StaffRepository
 import com.guesthouse.booking.data.repository.SyncRepository
@@ -66,6 +67,7 @@ class UiTestEnvironment(
     )
     val staffRepository = StaffRepository(database)
     val auditRepository = AuditRepository(database, authRepository)
+    val handoverNoteRepository = HandoverNoteRepository(database, authRepository)
 
     val viewModelFactory = ViewModelFactory(
         database = database,
@@ -77,7 +79,8 @@ class UiTestEnvironment(
         syncRepository = syncRepository,
         staffRepository = staffRepository,
         networkMonitor = networkMonitor,
-        auditRepository = auditRepository
+        auditRepository = auditRepository,
+        handoverNoteRepository = handoverNoteRepository
     )
 
     init {

@@ -20,6 +20,7 @@ import com.guesthouse.booking.ui.components.bookedDaysFromRanges
 import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.ui.theme.GlassScaffold
 import com.guesthouse.booking.ui.theme.GlassTopAppBar
+import com.guesthouse.booking.data.local.entities.BookingSource
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -54,6 +55,8 @@ fun BookingFormScreen(
     var guestPhone by remember(bookingId) { mutableStateOf("") }
     var checkIn by remember(bookingId) { mutableStateOf<Long?>(null) }
     var checkOut by remember(bookingId) { mutableStateOf<Long?>(null) }
+    var bookingSource by remember(bookingId) { mutableStateOf(BookingSource.WALK_IN.name) }
+    var maintenanceNotes by remember(bookingId) { mutableStateOf("") }
 
     LaunchedEffect(bookingId) {
         viewModel.clearMessages()
@@ -70,6 +73,8 @@ fun BookingFormScreen(
             guestPhone = booking.guestPhone
             checkIn = booking.checkInEpochDay
             checkOut = booking.checkOutEpochDay
+            bookingSource = booking.source
+            maintenanceNotes = booking.maintenanceNotes
         }
     }
 
@@ -377,6 +382,18 @@ fun BookingFormScreen(
         OutlinedTextField(guestEmail, { guestEmail = it; selectedGuestId = null }, label = { Text("Email") },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
 
+        var sourceExpanded by remember { mutableStateOf(false) }
+        val sourceLabel = BookingSource.entries.firstOrNull { it.name == bookingSource }?.label ?: bookingSource
+        ExposedDropdownMenuBox(expanded = sourceExpanded, onExpandedChange = { sourceExpanded = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            OutlinedTextField(value = sourceLabel, onValueChange = {}, readOnly = true, label = { Text("Booking source") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(sourceExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+            ExposedDropdownMenu(expanded = sourceExpanded, onDismissRequest = { sourceExpanded = false }) {
+                BookingSource.entries.forEach { source ->
+                    DropdownMenuItem(text = { Text(source.label) }, onClick = { bookingSource = source.name; sourceExpanded = false })
+                }
+            }
+        }
+        OutlinedTextField(maintenanceNotes, { maintenanceNotes = it }, label = { Text("Maintenance notes (optional)") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), minLines = 2)
+
         uiState.successMessage?.let {
             if (!isEdit) {
                 Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp))
@@ -393,11 +410,11 @@ fun BookingFormScreen(
                     if (isEdit && bookingId != null) {
                         viewModel.updateBooking(
                             bookingId, selectedRoomId, selectedGuestId, guestName, guestEmail, guestPhone,
-                            checkIn!!, checkOut!!
+                            checkIn!!, checkOut!!, bookingSource, maintenanceNotes
                         )
                     } else {
                         viewModel.submitBooking(
-                            selectedRoomId, selectedGuestId, guestName, guestEmail, guestPhone, checkIn!!, checkOut!!
+                            selectedRoomId, selectedGuestId, guestName, guestEmail, guestPhone, checkIn!!, checkOut!!, bookingSource, maintenanceNotes
                         )
                     }
                 }

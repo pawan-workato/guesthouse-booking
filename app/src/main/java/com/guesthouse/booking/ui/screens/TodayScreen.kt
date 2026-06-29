@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodayScreen(viewModel: TodayViewModel, onBookingClick: (Long) -> Unit = {}) {
+fun TodayScreen(viewModel: TodayViewModel, onBookingClick: (Long) -> Unit = {}, onOpenHandoverLog: (() -> Unit)? = null) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
     LaunchedEffect(state.actionMessage, state.actionError) {
@@ -28,6 +28,11 @@ fun TodayScreen(viewModel: TodayViewModel, onBookingClick: (Long) -> Unit = {}) 
         Text("Today", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(LocalDate.parse(state.todayLabel).format(formatter), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 12.dp))
         if (state.accessibleProperties.size > 1) PropertyFilterDropdown(state.accessibleProperties, state.selectedPropertyId, viewModel::selectProperty)
+        Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (state.arrivals.isNotEmpty()) TextButton(onClick = { viewModel.bulkCheckInArrivals() }) { Text("Check in all (${state.arrivals.size})") }
+            if (state.departures.isNotEmpty()) TextButton(onClick = { viewModel.bulkCheckOutDepartures() }) { Text("Check out all (${state.departures.size})") }
+            if (onOpenHandoverLog != null) TextButton(onClick = onOpenHandoverLog) { Text("Handover log") }
+        }
         state.actionMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp)) }
         state.actionError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp)) }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {

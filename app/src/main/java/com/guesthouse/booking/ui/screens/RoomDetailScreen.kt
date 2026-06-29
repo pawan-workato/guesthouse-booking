@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.ui.components.AvailabilityCalendar
+import com.guesthouse.booking.ui.components.HousekeepingStatusSelector
 import com.guesthouse.booking.ui.components.bookedDaysFromRanges
 import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.ui.theme.glassTopAppBarColors
@@ -70,6 +71,8 @@ fun RoomDetailScreen(
             val fmt = DateTimeFormatter.ofPattern("MMM d, yyyy")
             Text(r.description, Modifier.padding(bottom = 8.dp))
             Text("$${String.format(Locale.US, "%.0f", r.pricePerNight)}/night · up to ${r.capacity} guests", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 16.dp))
+            Text("Housekeeping", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
+            HousekeepingStatusSelector(current = r.housekeepingStatus, onSelect = { viewModel.updateRoomHousekeeping(roomId, it.name) }, modifier = Modifier.padding(vertical = 8.dp))
             Text("Availability", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             AvailabilityCalendar(bookedEpochDays=bookedDays, blockedEpochDays=blockedDays, selectedCheckIn=null, selectedCheckOut=null, onDateSelected={}, modifier=Modifier.fillMaxWidth().padding(vertical=8.dp))
             blocks.forEach { BlockRow(it, fmt) { viewModel.removeBlock(it.id) } }

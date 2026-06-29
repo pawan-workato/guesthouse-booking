@@ -118,10 +118,10 @@ class GuestsViewModel(
         _canEditGuest.value = true
     }
 
-    fun createGuest(name: String, email: String, phone: String, notes: String) {
+    fun createGuest(name: String, email: String, phone: String, notes: String, preferences: String = "") {
         viewModelScope.launch {
             _formUiState.value = GuestFormUiState(isSaving = true)
-            guestRepository.createGuest(name, email, phone, notes)
+            guestRepository.createGuest(name, email, phone, notes, preferences)
                 .onSuccess { id -> _formUiState.value = GuestFormUiState(savedGuestId = id) }
                 .onFailure { error -> _formUiState.value = GuestFormUiState(errorMessage = error.message) }
         }

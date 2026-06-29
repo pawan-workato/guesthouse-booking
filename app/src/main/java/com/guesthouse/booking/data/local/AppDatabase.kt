@@ -9,6 +9,7 @@ import com.guesthouse.booking.data.local.entities.AuditEventEntity
 import com.guesthouse.booking.data.local.entities.BlockDateEntity
 import com.guesthouse.booking.data.local.entities.BookingEntity
 import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.data.local.entities.HandoverNoteEntity
 import com.guesthouse.booking.data.local.entities.PropertyEntity
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.StaffEntity
@@ -24,9 +25,10 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         GuestEntity::class,
         StaffEntity::class,
         StaffPropertyAssignmentEntity::class,
-        AuditEventEntity::class
+        AuditEventEntity::class,
+        HandoverNoteEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun guestDao(): GuestDao
     abstract fun staffDao(): StaffDao
     abstract fun auditEventDao(): AuditEventDao
+    abstract fun handoverNoteDao(): HandoverNoteDao
 
     companion object {
         private const val DB_NAME = "guesthouse.db"

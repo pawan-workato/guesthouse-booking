@@ -57,6 +57,7 @@ fun GuestFormScreen(
     var email by remember(guestId, editGuest) { mutableStateOf(editGuest?.email ?: "") }
     var phone by remember(guestId, editGuest) { mutableStateOf(editGuest?.phone ?: "") }
     var notes by remember(guestId, editGuest) { mutableStateOf(editGuest?.notes ?: "") }
+    var preferences by remember(guestId, editGuest) { mutableStateOf(editGuest?.preferences ?: "") }
     var showDeactivateDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(name, email, phone) {
@@ -69,6 +70,7 @@ fun GuestFormScreen(
             email = it.email
             phone = it.phone
             notes = it.notes
+            preferences = it.preferences
         }
     }
 
@@ -175,10 +177,10 @@ fun GuestFormScreen(
                     onClick = {
                         if (isEdit && editGuest != null) {
                             viewModel.updateGuest(
-                                editGuest!!.copy(name = name, email = email, phone = phone, notes = notes)
+                                editGuest!!.copy(name = name, email = email, phone = phone, notes = notes, preferences = preferences)
                             )
                         } else {
-                            viewModel.createGuest(name, email, phone, notes)
+                            viewModel.createGuest(name, email, phone, notes, preferences)
                         }
                     },
                     enabled = !formState.isSaving,

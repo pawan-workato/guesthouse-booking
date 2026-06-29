@@ -1,6 +1,6 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-29 (Staff profile)
+**Last updated:** 2026-06-29 (Sprint 10 Tier 2)
 
 Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`merge-main` at `07a4a36`).
 
@@ -136,6 +136,11 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-S10-REV | Product | Reports revenue + 7-day forecast | ✅ Done | Medium | `RevenueCalculator`, `ReportsRepository`, Reports screen | Working tree |
 | FEAT-S10-CSV | Product | CSV export bookings & guests | ✅ Done | Low | `CsvExporter`, CreateDocument + share from Reports | Working tree |
 | FEAT-S10-SYNC | Product | Sync issue notifications | ✅ Done | Medium | `SyncAlertWorker`, `SyncAlertScheduler`, `SyncAlertNotifier` | Working tree |
+| FEAT-S10-T2-HK | Product | Room housekeeping status | ✅ Done | Medium | `HousekeepingStatus`, room detail selector | Working tree |
+| FEAT-S10-T2-SRC | Product | Booking source + maintenance notes | ✅ Done | Low | Booking form fields | Working tree |
+| FEAT-S10-T2-PREF | Product | Guest preferences field | ✅ Done | Low | Guest form | Working tree |
+| FEAT-S10-T2-BULK | Product | Bulk check-in/out on Today | ✅ Done | Medium | Today board actions | Working tree |
+| FEAT-S10-T2-HO | Product | Shift handover log | ✅ Done | Medium | `HandoverLogScreen`, local notes | Working tree |
 | FEAT-PROFILE | Product | Staff self-service profile (edit name, password reset) | ✅ Done | Medium | Tap name in top bar → `ProfileScreen`; Firestore self-update rule | Working tree |
 | DOC-P2 | Security | P2 manual pentest checklist | ✅ Done | High | [pentest-run-p2-checklist.md](./security/pentest-run-p2-checklist.md) | Working tree |
 

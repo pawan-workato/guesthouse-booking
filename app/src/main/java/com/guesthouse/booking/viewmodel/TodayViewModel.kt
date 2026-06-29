@@ -112,6 +112,26 @@ class TodayViewModel(
         }
     }
 
+    fun bulkCheckInArrivals() {
+        viewModelScope.launch {
+            val ids = uiState.value.arrivals.map { it.booking.id }
+            if (ids.isEmpty()) return@launch
+            val count = repository.bulkCheckIn(ids, todayEpochDay)
+            _actionMessage.value = "Checked in $count guest(s)"
+            _actionError.value = null
+        }
+    }
+
+    fun bulkCheckOutDepartures() {
+        viewModelScope.launch {
+            val ids = uiState.value.departures.map { it.booking.id }
+            if (ids.isEmpty()) return@launch
+            val count = repository.bulkCheckOut(ids, todayEpochDay)
+            _actionMessage.value = "Checked out $count guest(s)"
+            _actionError.value = null
+        }
+    }
+
     fun dismissActionFeedback() {
         _actionMessage.value = null
         _actionError.value = null
