@@ -84,10 +84,10 @@ class GuestFormScreenUiTest {
 
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
             composeTestRule.onAllNodesWithText("All properties").fetchSemanticsNodes().isNotEmpty() &&
-                composeTestRule.onAllNodesWithText("Coastal Lodge").fetchSemanticsNodes().isNotEmpty()
+                composeTestRule.onAllNodesWithText("Ref: GH-2-200").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithText("All properties").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Hill View Guesthouse").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Coastal Lodge").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ref: GH-1-100").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ref: GH-2-200").performScrollTo().assertIsDisplayed()
     }
 }

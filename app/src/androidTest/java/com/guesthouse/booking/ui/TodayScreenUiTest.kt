@@ -3,6 +3,7 @@ package com.guesthouse.booking.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.guesthouse.booking.testutil.UiTestEnvironment
@@ -45,6 +46,9 @@ class TodayScreenUiTest {
             TodayScreen(viewModel = viewModel)
         }
 
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+            composeTestRule.onAllNodesWithText("Jane Guest").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText("Today").assertIsDisplayed()
         composeTestRule.onNodeWithText("Arrivals").assertIsDisplayed()
         composeTestRule.onNodeWithText("Departures").assertIsDisplayed()
