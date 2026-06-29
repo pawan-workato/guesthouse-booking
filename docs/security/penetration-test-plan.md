@@ -139,10 +139,10 @@
 | AUTH-01 | Valid login | Login `admin@chain.com` / `admin123` | Session established, main nav shown | `AuthRepository.login()` |
 | AUTH-02 | Invalid password | Wrong password 5× | Generic error, no user enumeration | `AuthRepository.login()` |
 | AUTH-03 | Brute force resistance | Automated login attempts (100+) | Rate limit or lockout (currently **none** — document as finding) | `LoginViewModel` |
-| AUTH-04 | Session persistence | Login, kill app, reopen | Session restored from prefs | `restoreSession()` |
-| AUTH-05 | **Prefs tampering — privilege escalation** | Root/adb: set `guesthouse_auth` `staff_id` to `1` (chain admin) | App loads admin session without password | `KEY_STAFF_ID` in prefs |
-| AUTH-06 | **Prefs tampering — invalid staff** | Set `staff_id` to deleted/invalid ID | Session cleared, login screen | `loadSession()` null path |
-| AUTH-07 | Logout completeness | Logout, inspect prefs | `staff_id` removed; back stack cleared | `clearPersistedSession()` |
+| AUTH-04 | Session persistence | Login, kill app, reopen | Session restored from **Firebase Auth** + staff profile lookup by UID | `restoreSession()` |
+| AUTH-05 | **Prefs tampering — privilege escalation** | Root/adb: set legacy `staff_id` in old prefs | **No effect** — prefs not read; session derived from Firebase UID | `LegacySessionStorage.purge()` |
+| AUTH-06 | **Prefs tampering — invalid staff** | Set legacy `staff_id` to invalid ID | **No effect** — same as AUTH-05 | N/A (prefs unused) |
+| AUTH-07 | Logout completeness | Logout, inspect prefs | Legacy session prefs deleted; Firebase sign-out | `LegacySessionStorage.purge()` |
 | AUTH-08 | Session fixation | Login as manager, logout, login as admin | No stale property filters or cached ViewModels | `MainActivity` |
 | AUTH-09 | Password hash extraction | SQLite: read `staff.password_hash` | Hashes present; assess crackability | `PasswordHasher`, `StaffEntity` |
 | AUTH-10 | Offline login | Disable network, login with valid creds | Login succeeds (local DB) | No network dependency |
@@ -402,7 +402,7 @@ Copy into issue tracker or spreadsheet for each finding:
 | ID | Severity | Status | Sprint | Notes |
 |----|----------|--------|--------|-------|
 | KR-01 | Critical | **Open** | 8 | SHA-256 + static salt — Firebase Auth is the prod auth provider; local hash is demo-only |
-| KR-02 | High | **Fixed** ✅ | 8 | `AuthRepository` uses `EncryptedSharedPreferences` (AES256-GCM, Android Keystore) |
+| KR-02 | High | **Fixed** ✅ | 8 | Session from Firebase Auth UID only; no `staff_id` in prefs; legacy prefs purged |
 | KR-03 | High | **Open** | 9 | `allowBackup=true` — add `android:dataExtractionRules` config before pilot |
 | KR-04 | High | **Open** (accepted/dev) | — | Demo creds documented as dev-only in `staff-guide.md`; not in production Firebase |
 | KR-05 | High | **Fixed** ✅ | 8 | `AdminViewModel.cancelBooking` checks `session.canAccessProperty(booking.propertyId)` |

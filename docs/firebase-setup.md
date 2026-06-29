@@ -38,6 +38,8 @@ npx -y firebase-tools@latest use --add   # select your project
 npx -y firebase-tools@latest deploy --only firestore:rules
 ```
 
+**Manual deploy (Console):** If CLI login fails, open **Firestore → Rules** in the Firebase Console, paste the contents of `firestore.rules` from this repo, and click **Publish**.
+
 ## 4. Seed demo data (recommended)
 
 Run the automated seed script — it creates Auth users, Firestore staff docs, and (if empty) properties, rooms, and guests:

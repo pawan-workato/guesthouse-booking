@@ -2,8 +2,7 @@ package com.guesthouse.booking.data.repository
 
 import android.content.Context
 import android.util.Log
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import com.guesthouse.booking.data.auth.LegacySessionStorage
 import com.guesthouse.booking.data.auth.StaffSession
 import com.guesthouse.booking.data.firebase.FirebaseInitializer
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
@@ -20,29 +19,27 @@ import kotlinx.coroutines.tasks.await
 
 class AuthRepository(
     private val database: AppDatabase,
-    context: Context,
+    private val appContext: Context,
     private val firestore: FirestoreDataSource = FirestoreDataSource(),
-    private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore)
-) {
+    private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val firebaseEnabled = FirebaseInitializer.isConfigured(context)
-    private val prefs = EncryptedSharedPreferences.create(
-        context,
-        PREFS_NAME,
-        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+) {
+    private val firebaseEnabled = FirebaseInitializer.isConfigured(appContext)
     private val _session = MutableStateFlow<StaffSession?>(null)
     val session: StateFlow<StaffSession?> = _session.asStateFlow()
 
+    init {
+        LegacySessionStorage.purge(appContext)
+    }
+
     suspend fun restoreSession() {
+        LegacySessionStorage.purge(appContext)
         if (!firebaseEnabled) {
-            clearPersistedSession()
+            clearSession()
             return
         }
         val user = auth.currentUser ?: run {
-            clearPersistedSession()
+            clearSession()
             return
         }
         val session = loadFirebaseSession(user.uid) ?: run {
@@ -84,8 +81,7 @@ class AuthRepository(
 
     fun logout() {
         if (firebaseEnabled) auth.signOut()
-        clearPersistedSession()
-        _session.value = null
+        clearSession()
     }
 
     fun currentSession(): StaffSession? = _session.value
@@ -98,7 +94,7 @@ class AuthRepository(
                 ?: throw IllegalStateException("Firebase sign-in succeeded without a user")
             val session = loadFirebaseSession(uid)
                 ?: throw IllegalArgumentException("No staff profile linked to this account")
-            persistSession(session.staffId, uid)
+            LegacySessionStorage.purge(appContext)
             _session.value = session
             pullRemoteDataWithRetry(session)
             session
@@ -109,6 +105,7 @@ class AuthRepository(
         val profile = firestore.getStaffByUid(uid)
             ?: database.staffDao().findByFirebaseUid(uid)?.let { staff ->
                 if (!staff.isActive) return null
+                if (staff.firebaseUid != uid) return null
                 val assigned = if (staff.role == StaffRole.CHAIN_ADMIN.name) emptyList()
                 else database.staffDao().assignedPropertyIds(staff.id)
                 com.guesthouse.booking.data.firebase.StaffProfile(
@@ -120,9 +117,11 @@ class AuthRepository(
                     assignedPropertyIds = assigned
                 )
             } ?: return null
+        if (profile.firebaseUid != uid) return null
         syncService.cacheStaffProfile(profile)
         val local = database.staffDao().findById(profile.staffId)
         if (local != null && !local.isActive) return null
+        if (local != null && local.firebaseUid != uid) return null
         return buildSession(
             profile.staffId,
             profile.email,
@@ -145,13 +144,9 @@ class AuthRepository(
         return StaffSession(staffId, email, displayName, role, assigned)
     }
 
-    private fun persistSession(staffId: Long, firebaseUid: String? = null) {
-        prefs.edit().putLong(KEY_STAFF_ID, staffId).apply()
-        if (!firebaseUid.isNullOrBlank()) prefs.edit().putString(KEY_FIREBASE_UID, firebaseUid).apply()
-    }
-
-    private fun clearPersistedSession() {
-        prefs.edit().clear().apply()
+    private fun clearSession() {
+        LegacySessionStorage.purge(appContext)
+        _session.value = null
     }
 
     private fun mapFirebaseError(error: Throwable): Throwable {
@@ -168,9 +163,6 @@ class AuthRepository(
     }
 
     companion object {
-        private const val PREFS_NAME = "guesthouse_auth_secure"
-        private const val KEY_STAFF_ID = "staff_id"
-        private const val KEY_FIREBASE_UID = "firebase_uid"
         private const val TAG = "AuthRepository"
     }
 }

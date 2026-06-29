@@ -49,7 +49,7 @@ class GuesthouseApplication : Application() {
 
         authRepository = AuthRepository(
             database = database,
-            context = this,
+            appContext = this,
             firestore = firestore,
             syncService = syncService
         )

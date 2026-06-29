@@ -12,8 +12,8 @@ Single source of truth for security remediation, product delivery, and open work
 
 | Status | Count | Examples |
 |--------|------:|----------|
-| ✅ Done | 48 | KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
-| 🔄 In progress | 1 | KR-02 encrypted session prefs |
+| ✅ Done | 49 | KR-02, KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
+| 🔄 In progress | 0 | — |
 | ⏳ Pending | 8 | KR-04 pilot creds, AUTHZ-12, Sprint 10 pentest, FEAT-S8+ |
 | ❌ Deferred | 2 | KR-07 chain-wide guest read (product), AUTHZ-08 |
 
@@ -35,7 +35,7 @@ Single source of truth for security remediation, product delivery, and open work
 | ID | Category | Item | Status | Priority | Notes | Fixed in |
 |----|----------|------|--------|----------|-------|----------|
 | KR-01 | Crypto | SHA-256 + static salt passwords | ✅ Done | Critical | BCrypt cost 12; legacy SHA-256 verify path for migration | `3fd47c3` / PR #1 |
-| KR-02 | Auth | Session = `staff_id` in SharedPreferences | 🔄 In progress | High | `EncryptedSharedPreferences` + Firebase Auth session restore; prefs still store `staff_id` — root tampering mitigated but not eliminated | Partial on `main`; prefs name `guesthouse_auth_secure` |
+| KR-02 | Auth | Session = `staff_id` in SharedPreferences | ✅ Done | High | Removed prefs-based session; identity from Firebase Auth UID → staff profile only; legacy `guesthouse_auth*` prefs purged on start/login/logout | `LegacySessionStorage` + `AuthRepository` |
 | KR-03 | Platform | `allowBackup=true` | ✅ Done | High | `android:allowBackup="false"` in manifest | `3fd47c3` / PR #1 |
 | KR-04 | Crypto / ops | Hardcoded demo passwords in seed scripts & wiki | ⏳ Pending | High | Acceptable for dev; must rotate/remove before pilot | — |
 | KR-05 | AuthZ | `AdminViewModel.cancelBooking` — no property check | ✅ Done | High | Property check in ViewModel + repository | On `main` (post PR #2) |
@@ -48,7 +48,7 @@ Single source of truth for security remediation, product delivery, and open work
 | KR-12 | Auth | No brute-force protection on login | ✅ Done | Medium | `LoginViewModel`: 5 failures → 30 s lockout; `LoginScreen` live countdown + disabled button | Working tree |
 | KR-13 | Data | Plaintext Room SQLite | ✅ Done | High | SQLCipher 4.16 + Keystore-backed passphrase; plaintext→encrypted migration on first launch | Working tree |
 | KR-14 | Platform | `FLAG_SECURE` on sensitive screens | ✅ Done | Low | App-wide on `MainActivity` | Working tree |
-| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; edit scope in app | Working tree |
+| KR-15 | Cloud | Firestore guest delete too open | ✅ Done | Medium | Guest rules: read/create/update require `isStaff()`; delete chain-admin only; edit scope in app; **rules published manually** via Firebase Console | `firestore.rules` + manual deploy 2026-06-27 |
 
 **Security subagent note:** Session `4cb960be` (Fix security backlog) applied KR-11/12/14/15 + pentest doc refresh; verified in working tree alongside prior PRs [#1](https://github.com/pawan-workato/guesthouse-booking/pull/1) and [#2](https://github.com/pawan-workato/guesthouse-booking/pull/2).
 
@@ -84,7 +84,7 @@ Single source of truth for security remediation, product delivery, and open work
 | PLAT-04 | Platform | ProGuard / R8 minify | ✅ Done | Low | Release minify + shrink resources enabled | Working tree |
 | PLAT-07 | Platform | `FLAG_SECURE` on sensitive screens | ✅ Done | Low | App-wide `MainActivity` | Working tree |
 | SEC-SQL | Data | SQLCipher encrypted Room | ✅ Done | High | `net.zetetic:sqlcipher-android:4.16.0` in `app/build.gradle.kts` | Working tree |
-| SEC-FIRE | Cloud | Firestore rules — guest write too open | ✅ Done | High | `isStaff()` required for guest read/create/update; delete chain-admin only; documented in firebase-setup.md | Working tree |
+| SEC-FIRE | Cloud | Firestore rules — guest write too open | ✅ Done | High | `isStaff()` required for guest read/create/update; delete chain-admin only; **deployed manually** to Firebase Console (CLI login blocked) | `firestore.rules` + manual deploy 2026-06-27 |
 | SEC-BF | Auth | Login brute-force / lockout | ✅ Done | Medium | Same as KR-12 | Working tree |
 | DOC-01 | Docs | Pentest plan stale vs code | ✅ Done | Low | §6 dashboard updated KR-01–KR-15 | Working tree |
 
@@ -132,7 +132,8 @@ Single source of truth for security remediation, product delivery, and open work
 | BUG-CHK | Bug | Checkout button on Bookings tab (early checkout) | ✅ Done | High | Removed `checkOutEpochDay > today` guard in `BookingRepository.checkOutBooking`; tests added | Working tree (subagent `c6d1f1b3`) |
 | BUG-CHK-UI | Bug | Admin check-out shows no error on failure | ✅ Done | Low | `AdminViewModel` surfaces check-in/out/cancel errors via `actionError`; test added | Working tree |
 | BUG-CHK-CMT | Process | Checkout subagent completion | ✅ Done | — | Fix applied + `./gradlew :app:testDebugUnitTest` passed; **not committed** | 2026-06-29 |
-| BUG-FLICKER | Bug | Tab/screen UI flicker on navigation | ✅ Done | Medium | `WhileSubscribed(Long.MAX_VALUE)` + cached per-id flows + cached per-id flows; skip redundant tab nav; `derivedStateOf` chrome; remove nested Scaffolds; `collectAsStateWithLifecycle` | Working tree |
+| BUG-FLICKER | Bug | Tab/screen UI flicker on navigation | ✅ Done | Medium | `WhileSubscribed(Long.MAX_VALUE)` + cached per-id flows; skip redundant tab nav; `derivedStateOf` chrome; remove nested Scaffolds; `collectAsStateWithLifecycle` | Working tree |
+| OPS-FIRE | Ops | Deploy `firestore.rules` to Firebase project | ✅ Done | High | Published manually via Firebase Console (CLI OAuth blocked); rules match repo `firestore.rules` | 2026-06-27 |
 
 ---
 
@@ -166,6 +167,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 | Date | Change |
 |------|--------|
-| 2026-06-29 | Security pass — KR-11/12/14/15, pentest doc, tracker sync (subagent `4cb960be`) |
+| 2026-06-27 | KR-02 — session identity from Firebase UID only; legacy session prefs removed |
+| 2026-06-27 | FEAT-GLASS — Liquid Glass UI theme (`4a90eef`) |
 | 2026-06-29 | BUG-FLICKER — tab/screen flicker fixes (ViewModel flow sharing, nav chrome) |
 | 2026-06-29 | BUG-CHK-UI, SEC-FIRE, KR-10/DATA-07, FEAT-NAV/KTOR/GUEST/DOCS/WIKI, login lockout UX |
