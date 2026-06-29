@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.BookingStatus
 import com.guesthouse.booking.data.local.entities.SyncStatus
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.AdminViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -63,7 +64,7 @@ fun AdminScreen(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(bookings, key = { it.booking.id }) { item ->
                     val b = item.booking
-                    Card(Modifier.fillMaxWidth()) {
+                    GlassCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
                             Text(item.propertyName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                             Text(item.roomName, fontWeight = FontWeight.SemiBold)

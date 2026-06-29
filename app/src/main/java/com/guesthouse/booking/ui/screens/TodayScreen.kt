@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.PropertyEntity
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.BookingWithDetails
 import com.guesthouse.booking.viewmodel.TodayViewModel
 import java.time.LocalDate
@@ -55,7 +56,7 @@ fun TodayScreen(viewModel: TodayViewModel) {
         if (bookings.isEmpty()) Text(emptyMessage, color = MaterialTheme.colorScheme.onSurfaceVariant)
         else bookings.forEach { item ->
             val booking = item.booking
-            Card(Modifier.fillMaxWidth()) {
+            GlassCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Text(item.propertyName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     Text(item.roomName, fontWeight = FontWeight.SemiBold)

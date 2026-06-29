@@ -20,8 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
+import com.guesthouse.booking.ui.theme.glassNavigationBarContainerColor
+import com.guesthouse.booking.ui.theme.glassTopAppBarColors
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -145,10 +150,12 @@ fun GuesthouseNavHost(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (showMainChrome) {
                 TopAppBar(
+                    colors = glassTopAppBarColors(),
                     title = {
                         Column {
                             Text("Guesthouse Booking")
@@ -197,7 +204,7 @@ fun GuesthouseNavHost(
         },
         bottomBar = {
             if (showMainChrome) {
-                NavigationBar {
+                NavigationBar(containerColor = glassNavigationBarContainerColor()) {
                     bottomNavItems.forEach { screen ->
                         NavigationBarItem(
                             icon = {
@@ -457,9 +464,9 @@ fun GuesthouseNavHost(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PropertyAccessDenied(onBack: () -> Unit) {
-    Scaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBar(
+            GlassTopAppBar(
                 title = { Text("Access denied") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

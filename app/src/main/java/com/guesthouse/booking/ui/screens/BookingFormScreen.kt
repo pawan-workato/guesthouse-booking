@@ -16,6 +16,9 @@ import com.guesthouse.booking.data.local.RoomTypeSummary
 import com.guesthouse.booking.data.local.entities.RoomType
 import com.guesthouse.booking.ui.components.AvailabilityCalendar
 import com.guesthouse.booking.ui.components.bookedDaysFromRanges
+import com.guesthouse.booking.ui.theme.GlassCard
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
 import com.guesthouse.booking.viewmodel.BookingViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -118,8 +121,8 @@ fun BookingFormScreen(
 
     val formContent: @Composable ColumnScope.() -> Unit = {
         if (!isOnline) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            GlassCard(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
             ) {
                 Text(
@@ -377,9 +380,9 @@ fun BookingFormScreen(
     }
 
     if (isEdit) {
-        Scaffold(
+        GlassScaffold(
             topBar = {
-                TopAppBar(
+                GlassTopAppBar(
                     title = { Text("Edit booking") },
                     navigationIcon = {
                         IconButton(onClick = { onBack?.invoke() }) {

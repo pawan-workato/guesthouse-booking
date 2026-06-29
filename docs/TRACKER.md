@@ -1,6 +1,6 @@
 # Guesthouse Booking — Project Tracker
 
-**Last updated:** 2026-06-29
+**Last updated:** 2026-06-27
 
 Single source of truth for security remediation, product delivery, and open work. Status is verified against the codebase (`main` at `8b673fe` plus uncommitted working-tree changes where noted).
 
@@ -120,6 +120,7 @@ Single source of truth for security remediation, product delivery, and open work
 | FEAT-GUEST | Product | Managers view all guests (read-only unless linked) | ✅ Done | Medium | `GuestRepository.canViewGuest` / `canEditGuest` split | Working tree |
 | FEAT-DOCS | Product | README & wiki docs refresh | ✅ Done | Low | README Firebase-first; wiki offline/migrations updated | Working tree |
 | FEAT-WIKI | Product | Property wiki **Type** column | ✅ Done | Low | All 7 region property pages include Type column | Working tree |
+| FEAT-GLASS | Product | Apple Liquid Glass UI theme | ✅ Done | Medium | `Glass.kt` — gradient mesh, frosted cards, glass nav/scaffold on all screens | Working tree |
 | FEAT-S8+ | Product | Sprint 8+ roadmap (TBD) | ⏳ Pending | — | Not defined in README yet | — |
 
 ---

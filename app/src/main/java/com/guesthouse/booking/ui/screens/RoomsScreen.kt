@@ -12,11 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.RoomTypeSummary
 import com.guesthouse.booking.data.local.entities.RoomEntity
 import com.guesthouse.booking.data.local.entities.RoomType
+import com.guesthouse.booking.ui.theme.GlassCard
+import com.guesthouse.booking.ui.theme.glassTopAppBarColors
 import com.guesthouse.booking.viewmodel.RoomsViewModel
 import java.util.Locale
 
@@ -36,8 +39,10 @@ fun PropertyRoomsScreen(
     val typeBreakdown = remember(rooms) { RoomTypeSummary.formatBreakdown(rooms) }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
+                colors = glassTopAppBarColors(),
                 title = { Text(property?.name ?: "Rooms") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -86,7 +91,7 @@ private fun RoomCard(
     onEdit: () -> Unit
 ) {
     val roomType = RoomType.fromStored(room.roomType)
-    Card(Modifier.fillMaxWidth().clickable(onClick = onClick), elevation = CardDefaults.cardElevation(2.dp)) {
+    GlassCard(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically

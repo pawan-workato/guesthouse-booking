@@ -12,6 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.StaffRole
+import com.guesthouse.booking.ui.theme.GlassCard
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
 import com.guesthouse.booking.viewmodel.StaffViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,9 +70,9 @@ fun StaffFormScreen(
     val isManager = editStaff?.staff?.role == StaffRole.PROPERTY_MANAGER.name || !isEdit
     val isChainAdmin = editStaff?.staff?.role == StaffRole.CHAIN_ADMIN.name
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBar(
+            GlassTopAppBar(
                 title = { Text(if (isEdit) "Edit staff" else "Add manager") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -85,8 +88,8 @@ fun StaffFormScreen(
         ) {
 
             if (!isEdit && isFirebaseConfigured) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                GlassCard(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(

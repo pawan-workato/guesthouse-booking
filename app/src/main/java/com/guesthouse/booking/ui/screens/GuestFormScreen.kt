@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.GuestEntity
+import com.guesthouse.booking.ui.theme.GlassScaffold
+import com.guesthouse.booking.ui.theme.GlassTopAppBar
 import com.guesthouse.booking.viewmodel.GuestsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,9 +62,9 @@ fun GuestFormScreen(
         return
     }
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBar(
+            GlassTopAppBar(
                 title = { Text(when {
                     readOnly -> "Guest details"
                     isEdit -> "Edit guest"

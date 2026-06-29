@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.guesthouse.booking.ui.navigation.GuesthouseNavHost
 import com.guesthouse.booking.ui.screens.LoginScreen
+import com.guesthouse.booking.ui.theme.GlassBackground
 import com.guesthouse.booking.ui.theme.GuesthouseTheme
 import com.guesthouse.booking.viewmodel.LoginViewModel
 import com.guesthouse.booking.viewmodel.ViewModelFactory
@@ -37,17 +38,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             val session by app.authRepository.session.collectAsStateWithLifecycle()
             GuesthouseTheme {
-                if (session == null) {
-                    val loginVm: LoginViewModel = viewModel(factory = factory)
-                    LoginScreen(viewModel = loginVm)
-                } else {
-                    GuesthouseNavHost(
-                        viewModelFactory = factory,
-                        staffName = session!!.displayName,
-                        isChainAdmin = session!!.isChainAdmin,
-                        isFirebaseConfigured = app.isFirebaseConfigured,
-                        onLogout = { app.authRepository.logout() }
-                    )
+                GlassBackground {
+                    if (session == null) {
+                        val loginVm: LoginViewModel = viewModel(factory = factory)
+                        LoginScreen(viewModel = loginVm)
+                    } else {
+                        GuesthouseNavHost(
+                            viewModelFactory = factory,
+                            staffName = session!!.displayName,
+                            isChainAdmin = session!!.isChainAdmin,
+                            isFirebaseConfigured = app.isFirebaseConfigured,
+                            onLogout = { app.authRepository.logout() }
+                        )
+                    }
                 }
             }
         }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.PropertyEntity
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.PropertiesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,9 +96,8 @@ private fun PropertyCard(
     onClick: () -> Unit,
     onEdit: () -> Unit
 ) {
-    Card(
-        Modifier.fillMaxWidth().clickable(enabled = property.isActive, onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    GlassCard(
+        modifier = Modifier.fillMaxWidth().clickable(enabled = property.isActive, onClick = onClick)
     ) {
         Row(
             Modifier.padding(16.dp),

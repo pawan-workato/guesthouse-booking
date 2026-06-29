@@ -10,10 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.guesthouse.booking.data.local.entities.StaffRole
 import com.guesthouse.booking.data.repository.StaffWithAssignments
+import com.guesthouse.booking.ui.theme.GlassCard
 import com.guesthouse.booking.viewmodel.StaffViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +30,7 @@ fun StaffScreen(
     val showInactive by viewModel.showInactive.collectAsState()
 
     Scaffold(
+        containerColor = Color.Transparent,
         floatingActionButton = {
             FloatingActionButton(onClick = onAddStaff) {
                 Icon(Icons.Default.Add, contentDescription = "Add manager")
@@ -80,7 +83,7 @@ fun StaffScreen(
 @Composable
 private fun StaffCard(item: StaffWithAssignments, roleLabel: String, onEdit: () -> Unit) {
     val isManager = item.staff.role == StaffRole.PROPERTY_MANAGER.name
-    Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row(
