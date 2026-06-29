@@ -20,7 +20,7 @@ class LoginScreenTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-    // Espresso InputManager idling breaks on API 36 emulators; cover login via Maestro (.maestro/login-admin.yaml).
+    // Espresso InputManager idling breaks on API 36 emulators; skipped until Compose/Espresso supports API 36.
     @Ignore("Espresso InputManager.getInstance incompatible with current API 36 emulator")
     @Test
     fun loginScreen_rendersTitleAndSignInButton() {

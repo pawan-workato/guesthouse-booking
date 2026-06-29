@@ -80,34 +80,18 @@ export ANDROID_HOME=$HOME/Library/Android/sdk
 
 ## Testing
 
-Automated tests cover unit logic, Room DAOs, Compose UI, Maestro E2E flows, and CI on pull requests.
+Automated tests cover unit logic, Room DAOs, Compose UI, and CI on push/PR to `main`.
 
 | Layer | Location | Command |
 |-------|----------|---------|
 | Unit tests | `app/src/test/` | `./gradlew testDebugUnitTest` |
 | Instrumented (Room + Compose) | `app/src/androidTest/` | `./gradlew connectedDebugAndroidTest` (device/emulator required) |
-| E2E (Maestro) | `.maestro/` | `maestro test .maestro/` |
 
 **Unit tests** use JUnit 4, MockK, kotlinx-coroutines-test, and Turbine for repository and ViewModel coverage (auth, bookings, guests, properties, RBAC).
 
-**Instrumented tests** use an in-memory Room database for DAO queries and a Compose UI test for the login screen.
+**Instrumented tests** use an in-memory Room database for DAO queries and a Compose UI test for the login screen (login UI test is `@Ignore` on API 36 emulators).
 
-**Maestro flows** (`appId: com.guesthouse.booking`):
-
-- `login-manager.yaml` — property manager sign-in
-- `login-admin.yaml` — chain admin sign-in
-- `guest-add-edit.yaml` — add a guest profile
-- `book-flow.yaml` — navigate to the Book tab
-
-Install [Maestro](https://maestro.mobile.dev/) and run against a debug build on a device or emulator:
-
-```bash
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-maestro test .maestro/
-```
-
-**CI:** GitHub Actions runs `./gradlew testDebugUnitTest` on push/PR to `main` (see `.github/workflows/android-test.yml`). Instrumented tests are documented for local runs; emulator CI is commented out to keep PR checks fast.
+**CI:** GitHub Actions runs unit tests and instrumented tests on push/PR to `main` (see `.github/workflows/android-test.yml`). Instrumented tests run on an API 34 emulator via `reactivecircus/android-emulator-runner`.
 
 ## Roadmap
 
