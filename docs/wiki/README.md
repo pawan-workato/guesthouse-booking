@@ -30,4 +30,4 @@ Property pages describe seeded room names, **types** (from `scripts/seed-data.mj
 
 - [Root README](../../README.md)
 - [Seeding](../seeding.md)
-- Demo admin: `admin@chain.com` / `admin123`
+- Demo admin: `admin@chain.com` — password from `scripts/.env` (`SEED_ADMIN_PASSWORD`)

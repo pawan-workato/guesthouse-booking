@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import admin from 'firebase-admin';
 import { guests, properties, rooms, staffProfiles } from './seed-data.mjs';
+import { loadSeedPasswords, passwordForProfile } from './seed-env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_KEY_PATH = join(__dirname, 'serviceAccountKey.json');
@@ -82,7 +83,7 @@ function initializeAdmin() {
   };
 }
 
-async function ensureAuthUser(auth, profile) {
+async function ensureAuthUser(auth, profile, password) {
   try {
     const existing = await auth.getUserByEmail(profile.email);
     console.log(`  ✓ Auth user exists: ${profile.email} (${existing.uid})`);
@@ -93,7 +94,7 @@ async function ensureAuthUser(auth, profile) {
 
   const created = await auth.createUser({
     email: profile.email,
-    password: profile.password,
+    password,
     displayName: profile.displayName,
     emailVerified: true,
   });
@@ -171,6 +172,7 @@ async function seedEntityData(db) {
 }
 
 async function main() {
+  const seedPasswords = loadSeedPasswords();
   const { projectId, credentialLabel } = initializeAdmin();
 
   const auth = admin.auth();
@@ -183,7 +185,7 @@ async function main() {
   const staffResults = [];
   for (const profile of staffProfiles) {
     console.log(`\n${profile.email}`);
-    const { uid, created } = await ensureAuthUser(auth, profile);
+    const { uid, created } = await ensureAuthUser(auth, profile, passwordForProfile(profile, seedPasswords));
     await upsertStaffDoc(db, uid, profile);
     staffResults.push({ email: profile.email, uid, role: profile.role, created });
   }
@@ -205,9 +207,9 @@ async function main() {
       `\nEntity data: ${entityCounts.properties} properties, ${entityCounts.rooms} rooms, ${entityCounts.guests} guests`
     );
   }
-  console.log('\nDemo login credentials:');
-  console.log('  admin@chain.com / admin123');
-  console.log('  manager.*@chain.com / manager123');
+  console.log('\nDemo login (passwords from your SEED_* env — not printed):');
+  console.log('  admin@chain.com');
+  console.log('  manager.*@chain.com');
   console.log('\nDone.');
 }
 

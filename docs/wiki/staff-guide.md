@@ -90,15 +90,15 @@ Demo assignments come from seed data — see [seeding guide](../../seeding.md).
 
 ## Demo accounts (development)
 
-Run `npm run seed` in `scripts/` to create Firebase Auth users and Firestore data.
+Run `npm run seed` in `scripts/` to create Firebase Auth users and Firestore data. Copy `scripts/.env.example` → `scripts/.env` and set `SEED_ADMIN_PASSWORD` / `SEED_MANAGER_PASSWORD` (min 12 characters).
 
 | Email | Password | Display name | Role | Property IDs |
 |-------|----------|--------------|------|----------------|
-| `admin@chain.com` | `admin123` | Chain Admin | Chain admin | All (1–12) |
-| `manager.mountain@chain.com` | `manager123` | Alex Mountain | Property manager | 1, 3, 7, 11 |
-| `manager.coastal@chain.com` | `manager123` | Sam Coastal | Property manager | 2, 4, 8 |
-| `manager.southwest@chain.com` | `manager123` | Jordan Southwest | Property manager | 6, 9 |
-| `manager.east@chain.com` | `manager123` | Taylor East | Property manager | 5, 10, 12 |
+| `admin@chain.com` | `SEED_ADMIN_PASSWORD` | Chain Admin | Chain admin | All (1–12) |
+| `manager.mountain@chain.com` | `SEED_MANAGER_PASSWORD` | Alex Mountain | Property manager | 1, 3, 7, 11 |
+| `manager.coastal@chain.com` | `SEED_MANAGER_PASSWORD` | Sam Coastal | Property manager | 2, 4, 8 |
+| `manager.southwest@chain.com` | `SEED_MANAGER_PASSWORD` | Jordan Southwest | Property manager | 6, 9 |
+| `manager.east@chain.com` | `SEED_MANAGER_PASSWORD` | Taylor East | Property manager | 5, 10, 12 |
 
 ### Manager → property map
 

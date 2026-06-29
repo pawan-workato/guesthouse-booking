@@ -122,4 +122,4 @@ adb -s "$SERIAL" shell am start -n "$MAIN_ACTIVITY" >/dev/null
 
 echo ""
 echo "Done. App installed on $SERIAL."
-echo "Demo login: admin@chain.com / admin123"
+echo "Demo login: admin@chain.com (password from scripts/.env SEED_ADMIN_PASSWORD)"

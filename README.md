@@ -36,8 +36,8 @@ Seeded via `npm run seed` in `scripts/`:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Chain admin | `admin@chain.com` | `admin123` |
-| Property manager | `manager.mountain@chain.com` | `manager123` |
+| Chain admin | `admin@chain.com` | Set via `SEED_ADMIN_PASSWORD` when seeding |
+| Property manager | `manager.mountain@chain.com` | Set via `SEED_MANAGER_PASSWORD` when seeding |
 
 See [staff guide](docs/wiki/staff-guide.md#demo-accounts-development) for all five manager accounts.
 

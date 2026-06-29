@@ -8,7 +8,7 @@ Replace `<FIREBASE_UID>` with the UID from Firebase Console → Authentication.
 
 ## Chain admin
 
-**Email:** [admin@chain.com](mailto:admin@chain.com) · **Password:** admin123
+**Email:** [admin@chain.com](mailto:admin@chain.com) · **Password:** your `SEED_ADMIN_PASSWORD` from `scripts/.env`
 
 ```json
 {
@@ -31,7 +31,7 @@ Replace `<FIREBASE_UID>` with the UID from Firebase Console → Authentication.
 
 ### Alex Mountain — Mountain West
 
-**Email:** [manager.mountain@chain.com](mailto:manager.mountain@chain.com) · **Password:** manager123
+**Email:** [manager.mountain@chain.com](mailto:manager.mountain@chain.com) · **Password:** your `SEED_MANAGER_PASSWORD` from `scripts/.env`
 
 ```json
 {
@@ -48,7 +48,7 @@ Replace `<FIREBASE_UID>` with the UID from Firebase Console → Authentication.
 
 ### Sam Coastal — Coastal / Pacific NW
 
-**Email:** [manager.coastal@chain.com](mailto:manager.coastal@chain.com) · **Password:** manager123
+**Email:** [manager.coastal@chain.com](mailto:manager.coastal@chain.com) · **Password:** your `SEED_MANAGER_PASSWORD` from `scripts/.env`
 
 ```json
 {
@@ -65,7 +65,7 @@ Replace `<FIREBASE_UID>` with the UID from Firebase Console → Authentication.
 
 ### Jordan Southwest — Southwest
 
-**Email:** [manager.southwest@chain.com](mailto:manager.southwest@chain.com) · **Password:** manager123
+**Email:** [manager.southwest@chain.com](mailto:manager.southwest@chain.com) · **Password:** your `SEED_MANAGER_PASSWORD` from `scripts/.env`
 
 ```json
 {
@@ -82,7 +82,7 @@ Replace `<FIREBASE_UID>` with the UID from Firebase Console → Authentication.
 
 ### Taylor East — Northeast / Southeast / Midwest
 
-**Email:** [manager.east@chain.com](mailto:manager.east@chain.com) · **Password:** manager123
+**Email:** [manager.east@chain.com](mailto:manager.east@chain.com) · **Password:** your `SEED_MANAGER_PASSWORD` from `scripts/.env`
 
 ```json
 {

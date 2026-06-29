@@ -136,7 +136,7 @@
 
 | ID | Test case | Steps | Expected | Code reference |
 |----|-----------|-------|----------|----------------|
-| AUTH-01 | Valid login | Login `admin@chain.com` / `admin123` | Session established, main nav shown | `AuthRepository.login()` |
+| AUTH-01 | Valid login | Login `admin@chain.com` with password from `scripts/.env` (`SEED_ADMIN_PASSWORD`) | Session established, main nav shown | `AuthRepository.login()` |
 | AUTH-02 | Invalid password | Wrong password 5× | Generic error, no user enumeration | `AuthRepository.login()` |
 | AUTH-03 | Brute force resistance | Automated login attempts (100+) | Rate limit or lockout (currently **none** — document as finding) | `LoginViewModel` |
 | AUTH-04 | Session persistence | Login, kill app, reopen | Session restored from **Firebase Auth** + staff profile lookup by UID | `restoreSession()` |
@@ -164,7 +164,7 @@
 | AUTHZ-09 | **Guest edit cross-chain** | Navigate `guest/1/edit` — guest may be unrelated to assigned properties | Edit succeeds? Document exposure | `GuestFormScreen` route — no property guard |
 | AUTHZ-10 | Create booking cross-property | Submit booking for room outside assigned properties via `BookingViewModel` | Error: no access | `submitBooking()` checks `canAccessProperty` |
 | AUTHZ-11 | Chain admin property CRUD | Manager calls `createProperty` via Frida | Silent no-op | `PropertiesViewModel` early return |
-| AUTHZ-12 | Direct SQLite — role change | Update `staff.role` to `CHAIN_ADMIN` in DB | Next `restoreSession` grants admin | DB integrity not protected |
+| AUTHZ-12 | Direct SQLite — role change | Update `staff.role` to `CHAIN_ADMIN` in DB | **Online:** session from Firestore SERVER only — tampered SQLite ignored. **Offline:** local cache used until reconnect; `refreshSessionBinding()` re-validates | `AuthRepository.loadFirebaseSession()`, `refreshSessionBinding()` |
 
 ### 5.3 Data at rest
 
@@ -184,7 +184,7 @@
 |----|-----------|-------|----------|---------|
 | CRYP-01 | Password algorithm | Review `PasswordHasher.kt` | Strong adaptive hash (bcrypt/Argon2) | **SHA-256 + static salt `guesthouse-chain-v1`** |
 | CRYP-02 | Salt uniqueness | Compare hashes for two users with same password | Per-user salt required | **Shared static salt** |
-| CRYP-03 | Hash crack test | Extract hash, run hashcat/john with wordlist | `manager123` cracks quickly | Demo password weakness |
+| CRYP-03 | Hash crack test | Extract hash, run hashcat/john with wordlist | Weak seeded passwords crack if chosen poorly — use strong `SEED_*` values | Demo password policy in `scripts/seed-env.mjs` |
 | CRYP-04 | No secrets in APK | strings / apktool search | No production API keys (N/A today) | `INTERNET` only |
 | CRYP-05 | TLS (future) | When API added: test weak TLS, pinning bypass | TLS 1.2+, pinning enforced | Not applicable yet |
 
@@ -252,7 +252,7 @@ These items were identified in code review; pentest should confirm exploitabilit
 | **KR-01** | SHA-256 password hashing with static salt | **Critical** | `PasswordHasher.kt` | CRYP-01, CRYP-03 |
 | **KR-02** | Session = `staff_id` only in SharedPreferences (no token, no binding) | **High** | `AuthRepository.kt` | AUTH-05 |
 | **KR-03** | `allowBackup=true` enables PII/hash extraction | **High** | `AndroidManifest.xml` | DATA-02 |
-| **KR-04** | Hardcoded demo passwords in Firebase seed script and wiki | **High** | `scripts/seed-firebase-demo.mjs`, `scripts/seed-data.mjs`, `staff-guide.md` | AUTH-09, CRYP-03 |
+| **KR-04** | Hardcoded demo passwords in Firebase seed script and wiki | **High** | `scripts/seed-env.mjs`, `scripts/.env.example`, wiki | **Fixed** — passwords from env only; docs redacted | AUTH-09, CRYP-03 |
 | **KR-05** | `AdminViewModel.cancelBooking` — no property authorization | **High** | `AdminViewModel.kt:44-47` | AUTHZ-05, AUTHZ-06 |
 | **KR-06** | `SyncViewModel.dismissConflict` — no property check | **Medium** | `SyncViewModel.kt:75-78` | AUTHZ-07 |
 | **KR-07** | `GuestsViewModel` — no property-scoped guest access | **Medium** | `GuestsViewModel.kt` | AUTHZ-08 |
@@ -404,7 +404,7 @@ Copy into issue tracker or spreadsheet for each finding:
 | KR-01 | Critical | **Open** | 8 | SHA-256 + static salt — Firebase Auth is the prod auth provider; local hash is demo-only |
 | KR-02 | High | **Fixed** ✅ | 8 | Session from Firebase Auth UID only; no `staff_id` in prefs; legacy prefs purged |
 | KR-03 | High | **Open** | 9 | `allowBackup=true` — add `android:dataExtractionRules` config before pilot |
-| KR-04 | High | **Open** (accepted/dev) | — | Demo creds documented as dev-only in `staff-guide.md`; not in production Firebase |
+| KR-04 | High | **Fixed** ✅ | — | Passwords from `SEED_*` env; `scripts/.env` gitignored; wiki/docs redacted |
 | KR-05 | High | **Fixed** ✅ | 8 | `AdminViewModel.cancelBooking` checks `session.canAccessProperty(booking.propertyId)` |
 | KR-06 | Medium | **Fixed** ✅ | 8 | `SyncViewModel.dismissConflict` checks session + property before delegating |
 | KR-07 | Medium | **Fixed** ✅ | 8 | `GuestRepository.canEditGuest` scopes edits; `AppNavigation` shows access-denied screen |
@@ -438,15 +438,15 @@ Copy into issue tracker or spreadsheet for each finding:
 
 ## Appendix B — Demo test accounts
 
-From `docs/wiki/staff-guide.md` (do not use in production):
+From `docs/wiki/staff-guide.md` (do not use in production). Set passwords in `scripts/.env` before `npm run seed`:
 
 | Email | Password | Role | Properties |
 |-------|----------|------|------------|
-| `admin@chain.com` | `admin123` | Chain Admin | All (1–12) |
-| `manager.mountain@chain.com` | `manager123` | Property Manager | 1, 3, 7, 11 |
-| `manager.coastal@chain.com` | `manager123` | Property Manager | 2, 4, 8 |
-| `manager.southwest@chain.com` | `manager123` | Property Manager | 6, 9 |
-| `manager.east@chain.com` | `manager123` | Property Manager | 5, 10, 12 |
+| `admin@chain.com` | `SEED_ADMIN_PASSWORD` | Chain Admin | All (1–12) |
+| `manager.mountain@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 1, 3, 7, 11 |
+| `manager.coastal@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 2, 4, 8 |
+| `manager.southwest@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 6, 9 |
+| `manager.east@chain.com` | `SEED_MANAGER_PASSWORD` | Property Manager | 5, 10, 12 |
 
 ---
 

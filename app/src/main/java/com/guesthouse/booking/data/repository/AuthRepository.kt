@@ -8,8 +8,10 @@ import com.guesthouse.booking.data.firebase.FirebaseInitializer
 import com.guesthouse.booking.data.firebase.FirestoreDataSource
 import com.guesthouse.booking.data.firebase.FirestoreSyncService
 import com.guesthouse.booking.data.firebase.PullRemoteDataResult
+import com.guesthouse.booking.data.firebase.StaffProfile
 import com.guesthouse.booking.data.local.AppDatabase
 import com.guesthouse.booking.data.local.entities.StaffRole
+import com.guesthouse.booking.data.sync.NetworkMonitor
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,7 @@ import kotlinx.coroutines.tasks.await
 class AuthRepository(
     private val database: AppDatabase,
     private val appContext: Context,
+    private val networkMonitor: NetworkMonitor,
     private val firestore: FirestoreDataSource = FirestoreDataSource(),
     private val syncService: FirestoreSyncService = FirestoreSyncService(database, firestore),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -42,12 +45,38 @@ class AuthRepository(
             clearSession()
             return
         }
-        val session = loadFirebaseSession(user.uid) ?: run {
+        bindSession(user.uid) ?: run {
             logout()
             return
         }
+    }
+
+    /** Re-validates role and assignments from Firestore when connectivity returns (AUTHZ-12). */
+    suspend fun refreshSessionBinding() {
+        if (!firebaseEnabled || auth.currentUser == null) return
+        if (!networkMonitor.isCurrentlyOnline()) return
+        val uid = auth.currentUser!!.uid
+        val refreshed = bindSession(uid) ?: run {
+            logout()
+            return
+        }
+        val current = _session.value
+        if (current == null ||
+            current.staffId != refreshed.staffId ||
+            current.role != refreshed.role ||
+            current.assignedPropertyIds != refreshed.assignedPropertyIds
+        ) {
+            Log.i(TAG, "Session binding refreshed from Firestore for ${refreshed.email}")
+            _session.value = refreshed
+            pullRemoteDataWithRetry(refreshed)
+        }
+    }
+
+    private suspend fun bindSession(uid: String): StaffSession? {
+        val session = loadFirebaseSession(uid) ?: return null
         _session.value = session
         pullRemoteDataWithRetry(session)
+        return session
     }
 
     private suspend fun awaitFirebaseAuthReady() {
@@ -92,31 +121,54 @@ class AuthRepository(
             awaitFirebaseAuthReady()
             val uid = auth.currentUser?.uid
                 ?: throw IllegalStateException("Firebase sign-in succeeded without a user")
-            val session = loadFirebaseSession(uid)
+            val session = bindSession(uid)
                 ?: throw IllegalArgumentException("No staff profile linked to this account")
             LegacySessionStorage.purge(appContext)
-            _session.value = session
-            pullRemoteDataWithRetry(session)
             session
         }.fold(onSuccess = { Result.success(it) }, onFailure = { Result.failure(mapFirebaseError(it)) })
     }
 
     private suspend fun loadFirebaseSession(uid: String): StaffSession? {
-        val profile = firestore.getStaffByUid(uid)
-            ?: database.staffDao().findByFirebaseUid(uid)?.let { staff ->
-                if (!staff.isActive) return null
-                if (staff.firebaseUid != uid) return null
-                val assigned = if (staff.role == StaffRole.CHAIN_ADMIN.name) emptyList()
-                else database.staffDao().assignedPropertyIds(staff.id)
-                com.guesthouse.booking.data.firebase.StaffProfile(
-                    firebaseUid = uid,
-                    staffId = staff.id,
-                    email = staff.email,
-                    displayName = staff.displayName,
-                    role = staff.role,
-                    assignedPropertyIds = assigned
-                )
-            } ?: return null
+        val online = networkMonitor.isCurrentlyOnline()
+        val profile = when {
+            online -> {
+                runCatching { firestore.getStaffByUid(uid) }.getOrElse { error ->
+                    Log.w(TAG, "Firestore staff lookup failed while online for uid=$uid", error)
+                    return null
+                } ?: run {
+                    Log.w(TAG, "No Firestore staff profile for uid=$uid while online")
+                    return null
+                }
+            }
+            else -> {
+                runCatching { firestore.getStaffByUidFromCache(uid) }.getOrNull()
+                    ?: loadLocalStaffProfile(uid)
+                    ?: run {
+                        Log.w(TAG, "No cached staff profile for uid=$uid while offline")
+                        return null
+                    }
+            }
+        }
+        return profileToSession(profile, uid)
+    }
+
+    private suspend fun loadLocalStaffProfile(uid: String): StaffProfile? {
+        val staff = database.staffDao().findByFirebaseUid(uid) ?: return null
+        if (!staff.isActive || staff.firebaseUid != uid) return null
+        Log.w(TAG, "Using local staff cache for uid=$uid (offline — re-sync when online)")
+        val assigned = if (staff.role == StaffRole.CHAIN_ADMIN.name) emptyList()
+        else database.staffDao().assignedPropertyIds(staff.id)
+        return StaffProfile(
+            firebaseUid = uid,
+            staffId = staff.id,
+            email = staff.email,
+            displayName = staff.displayName,
+            role = staff.role,
+            assignedPropertyIds = assigned
+        )
+    }
+
+    private suspend fun profileToSession(profile: StaffProfile, uid: String): StaffSession? {
         if (profile.firebaseUid != uid) return null
         syncService.cacheStaffProfile(profile)
         val local = database.staffDao().findById(profile.staffId)

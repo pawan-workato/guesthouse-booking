@@ -57,7 +57,7 @@ Trigger sync manually via the **sync icon** in the top app bar (badge = pending 
 
 ## Demo / test
 
-1. Sign in as `manager.mountain@chain.com` / `manager123`.
+1. Sign in as `manager.mountain@chain.com` with your seeded manager password (`SEED_MANAGER_PASSWORD`).
 2. Airplane mode → book on **Book** → expect TMP reference.
 3. Online → top-bar **sync** → **SYNCED** / `GH-*` reference.
 

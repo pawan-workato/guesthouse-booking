@@ -51,7 +51,7 @@ Use when you cannot run the script.
 Firebase Console → **Build → Authentication → Users → Add user**
 
 - Email: `admin@chain.com`
-- Password: `admin123`
+- Password: value you set in `SEED_ADMIN_PASSWORD` (see `scripts/.env.example`)
 
 ### Step 2 — Create admin staff document
 
@@ -81,6 +81,6 @@ Add other Auth users and `staff/{uid}` docs using [seed-firestore-staff.md](seed
 ## After seeding
 
 Deploy rules: `npx -y firebase-tools@latest deploy --only firestore:rules`  
-Login: `admin@chain.com` / `admin123`
+Login with the emails below and the passwords from your `scripts/.env` (not committed).
 
 Run the app: `../scripts/run-on-emulator.sh` from repo root (or `./gradlew :app:installDebug`).

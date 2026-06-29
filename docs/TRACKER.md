@@ -14,7 +14,7 @@ Single source of truth for security remediation, product delivery, and open work
 |--------|------:|----------|
 | ✅ Done | 49 | KR-02, KR-10, SEC-FIRE, BUG-CHK-UI, FEAT-NAV/KTOR, login lockout UX |
 | 🔄 In progress | 0 | — |
-| ⏳ Pending | 8 | KR-04 pilot creds, AUTHZ-12, Sprint 10 pentest, FEAT-S8+ |
+| ⏳ Pending | 6 | Sprint 10 P2 manual pentest, FEAT-S8+ |
 | ❌ Deferred | 2 | KR-07 chain-wide guest read (product), AUTHZ-08 |
 
 ---
@@ -37,7 +37,7 @@ Single source of truth for security remediation, product delivery, and open work
 | KR-01 | Crypto | SHA-256 + static salt passwords | ✅ Done | Critical | BCrypt cost 12; legacy SHA-256 verify path for migration | `3fd47c3` / PR #1 |
 | KR-02 | Auth | Session = `staff_id` in SharedPreferences | ✅ Done | High | Removed prefs-based session; identity from Firebase Auth UID → staff profile only; legacy `guesthouse_auth*` prefs purged on start/login/logout | `LegacySessionStorage` + `AuthRepository` |
 | KR-03 | Platform | `allowBackup=true` | ✅ Done | High | `android:allowBackup="false"` in manifest | `3fd47c3` / PR #1 |
-| KR-04 | Crypto / ops | Hardcoded demo passwords in seed scripts & wiki | ⏳ Pending | High | Acceptable for dev; must rotate/remove before pilot | — |
+| KR-04 | Crypto / ops | Hardcoded demo passwords in seed scripts & wiki | ✅ Done | High | Passwords from `SEED_*` env only; `scripts/.env.example`; docs redacted | Working tree |
 | KR-05 | AuthZ | `AdminViewModel.cancelBooking` — no property check | ✅ Done | High | Property check in ViewModel + repository | On `main` (post PR #2) |
 | KR-06 | AuthZ | `SyncViewModel.dismissConflict` — no property check | ✅ Done | Medium | `canAccessProperty` before dismiss | On `main` |
 | KR-07 | AuthZ | Managers see all chain guests | ❌ Deferred | Medium | **Product decision:** managers view all guests read-only; edit limited to guests linked via bookings on assigned properties (`GuestRepository.canEditGuest`) | Uncommitted guest visibility change |
@@ -69,7 +69,7 @@ Single source of truth for security remediation, product delivery, and open work
 | AUTHZ-09 | AuthZ | Guest edit cross-chain | ✅ Done | Medium | Edit denied (`readOnly`) when guest not linked to manager properties; view allowed | Working tree |
 | AUTHZ-10 | AuthZ | Create booking cross-property blocked | ✅ Done | High | `BookingViewModel.submitBooking` | On `main` |
 | AUTHZ-11 | AuthZ | Manager property CRUD via Frida | ✅ Done | Medium | ViewModel early return for non-admin | On `main` |
-| AUTHZ-12 | AuthZ | Direct SQLite role change | ⏳ Pending | Medium | No DB integrity protection on rooted device | — |
+| AUTHZ-12 | AuthZ | Direct SQLite role change | ✅ Done | Medium | Online: Firestore SERVER-only session; offline: Firestore cache then local; `refreshSessionBinding` on reconnect | Working tree |
 
 ---
 
@@ -99,7 +99,7 @@ Single source of truth for security remediation, product delivery, and open work
 | SPRINT-8 | Security | ProGuard / R8 release minify | ✅ Done | Medium | KR-11 | Working tree |
 | SPRINT-8 | Security | Certificate pinning (API) | ❌ Deferred | Low | Firebase-only — pinning N/A | Ktor removed |
 | SPRINT-9 | Security | Continue hardening (migrations, Firestore guest read scope) | ✅ Done | High | KR-10 + SEC-FIRE complete | Working tree |
-| SPRINT-10 | Security | P1 internal pentest execution | ⏳ Pending | High | Most KR items closed; schedule pentest | — |
+| SPRINT-10 | Security | P1 internal pentest execution | ✅ Done | High | Automated + static run — see [pentest-run-2026-06-27.md](./security/pentest-run-2026-06-27.md); P2 manual gate pending | 2026-06-27 |
 | PRE-PILOT | Security | P2 pre-production gate | ⏳ Pending | Critical | After Sprint 10 pentest | — |
 
 ---
@@ -142,7 +142,7 @@ Single source of truth for security remediation, product delivery, and open work
 | Phase | Item | Status | Notes |
 |-------|------|--------|-------|
 | P0 | Dev self-assessment (SAST, manifest) | ✅ Done | Tracker + pentest doc refreshed |
-| P1 | Internal pentest | ⏳ Pending | Target Sprint 10 |
+| P1 | Internal pentest | ✅ Done (automated) | [pentest-run-2026-06-27.md](./security/pentest-run-2026-06-27.md); manual P2 follow-up |
 | P2 | Pre-production gate | ⏳ Pending | Before pilot devices |
 | P3 | Backend/API pentest | ❌ Deferred | No Ktor API in current direction |
 | P4 | Annual regression | ⏳ Pending | — |

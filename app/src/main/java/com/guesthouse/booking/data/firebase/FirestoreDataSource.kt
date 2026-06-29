@@ -17,10 +17,16 @@ class FirestoreDataSource(
 ) {
     val isSignedIn: Boolean get() = auth.currentUser != null
 
-    suspend fun getStaffByUid(uid: String): StaffProfile? {
+    suspend fun getStaffByUid(uid: String): StaffProfile? =
+        getStaffByUid(uid, Source.SERVER)
+
+    suspend fun getStaffByUidFromCache(uid: String): StaffProfile? =
+        getStaffByUid(uid, Source.CACHE)
+
+    private suspend fun getStaffByUid(uid: String, source: Source): StaffProfile? {
         val snapshot = firestore.collection(FirestoreCollections.STAFF)
             .document(uid)
-            .get(Source.SERVER)
+            .get(source)
             .await()
         return if (snapshot.exists()) snapshot.toStaffProfile() else null
     }

@@ -78,8 +78,8 @@ All signed-in staff can view every guest profile (name, email, phone, notes). Gu
 
 | Account | Password |
 |---------|----------|
-| `admin@chain.com` | `admin123` |
-| All `manager.*@chain.com` | `manager123` |
+| `admin@chain.com` | `SEED_ADMIN_PASSWORD` in `scripts/.env` |
+| All `manager.*@chain.com` | `SEED_MANAGER_PASSWORD` in `scripts/.env` |
 
 ### Why don't I see bookings from another phone?
 

@@ -52,15 +52,15 @@ npm run seed
 
 See [scripts/README.md](../scripts/README.md) for the 3-step guide (download service account key → place file → run).
 
-**Demo logins after seeding:**
+**Demo logins after seeding** (passwords from `scripts/.env`, min 12 characters):
 
-| Email | Password |
-|-------|----------|
-| admin@chain.com | admin123 |
-| manager.mountain@chain.com | manager123 |
-| manager.coastal@chain.com | manager123 |
-| manager.southwest@chain.com | manager123 |
-| manager.east@chain.com | manager123 |
+| Email | Password source |
+|-------|-----------------|
+| admin@chain.com | `SEED_ADMIN_PASSWORD` |
+| manager.mountain@chain.com | `SEED_MANAGER_PASSWORD` |
+| manager.coastal@chain.com | `SEED_MANAGER_PASSWORD` |
+| manager.southwest@chain.com | `SEED_MANAGER_PASSWORD` |
+| manager.east@chain.com | `SEED_MANAGER_PASSWORD` |
 
 ### Manual fallback
 
