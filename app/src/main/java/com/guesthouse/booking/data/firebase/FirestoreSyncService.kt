@@ -27,12 +27,14 @@ class FirestoreSyncService(
             )
         )
         database.staffDao().deleteAssignmentsForStaff(profile.staffId)
-        if (profile.role != StaffRole.CHAIN_ADMIN.name) {
-            database.staffDao().insertAssignments(
-                profile.assignedPropertyIds.map { propertyId ->
-                    StaffPropertyAssignmentEntity(profile.staffId, propertyId)
-                }
-            )
+        if (profile.role != StaffRole.CHAIN_ADMIN.name && profile.assignedPropertyIds.isNotEmpty()) {
+            val existingPropertyIds = database.propertyDao().getAllIncludingInactive().map { it.id }.toSet()
+            val assignments = profile.assignedPropertyIds
+                .filter { it in existingPropertyIds }
+                .map { propertyId -> StaffPropertyAssignmentEntity(profile.staffId, propertyId) }
+            if (assignments.isNotEmpty()) {
+                database.staffDao().insertAssignments(assignments)
+            }
         }
     }
 

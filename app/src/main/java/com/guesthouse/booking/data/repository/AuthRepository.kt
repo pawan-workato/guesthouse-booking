@@ -190,13 +190,25 @@ class AuthRepository(
         syncService.cacheStaffProfile(profile)
         val local = database.staffDao().findById(profile.staffId)
         if (local != null && !local.isActive) return null
-        return buildSession(profile.staffId, profile.email, profile.displayName, profile.role)
+        return buildSession(
+            profile.staffId,
+            profile.email,
+            profile.displayName,
+            profile.role,
+            assignedPropertyIds = profile.assignedPropertyIds.toSet()
+        )
     }
 
 
-    private suspend fun buildSession(staffId: Long, email: String, displayName: String, roleName: String): StaffSession? {
+    private suspend fun buildSession(
+        staffId: Long,
+        email: String,
+        displayName: String,
+        roleName: String,
+        assignedPropertyIds: Set<Long>? = null
+    ): StaffSession? {
         val role = runCatching { StaffRole.valueOf(roleName) }.getOrNull() ?: return null
-        val assigned = if (role == StaffRole.CHAIN_ADMIN) emptySet()
+        val assigned = assignedPropertyIds ?: if (role == StaffRole.CHAIN_ADMIN) emptySet()
         else database.staffDao().assignedPropertyIds(staffId).toSet()
         return StaffSession(staffId, email, displayName, role, assigned)
     }
