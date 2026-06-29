@@ -21,7 +21,14 @@ class BlockDateRepository(private val database: AppDatabase, private val authRep
             return Result.failure(IllegalStateException("These dates overlap an existing booking"))
         }
         val id = database.blockDateDao().insert(
-            BlockDateEntity(room.propertyId, roomId, startEpochDay, endEpochDay, reason.trim(), session.staffId)
+            BlockDateEntity(
+                propertyId = room.propertyId,
+                roomId = roomId,
+                startEpochDay = startEpochDay,
+                endEpochDay = endEpochDay,
+                reason = reason.trim(),
+                createdByStaffId = session.staffId
+            )
         )
         return Result.success(id)
     }

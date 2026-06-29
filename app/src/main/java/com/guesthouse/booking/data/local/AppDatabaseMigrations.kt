@@ -22,5 +22,24 @@ object AppDatabaseMigrations {
         """.trimIndent())
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9)
+    val MIGRATION_9_10 = Migration(9, 10) { db ->
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `block_dates` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `propertyId` INTEGER NOT NULL,
+                `roomId` INTEGER NOT NULL,
+                `startEpochDay` INTEGER NOT NULL,
+                `endEpochDay` INTEGER NOT NULL,
+                `reason` TEXT NOT NULL,
+                `createdByStaffId` INTEGER,
+                `createdAtEpochMs` INTEGER NOT NULL,
+                FOREIGN KEY(`propertyId`) REFERENCES `properties`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(`roomId`) REFERENCES `rooms`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_block_dates_propertyId` ON `block_dates` (`propertyId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_block_dates_roomId` ON `block_dates` (`roomId`)")
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_8_9, MIGRATION_9_10)
 }
