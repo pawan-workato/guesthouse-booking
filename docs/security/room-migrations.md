@@ -1,8 +1,12 @@
 # Room database migrations
 
-## Current state (v8)
+## Current state (v9)
 
-The app uses Room database version **8**. `AppDatabase` still uses `fallbackToDestructiveMigration` for development velocity.
+The app uses Room database version **9** after room type inventory. `AppDatabase` uses `AppDatabaseMigrations.MIGRATION_8_9` for upgrades; older versions still rely on development-time destructive rebuilds until full migration chain is added (KR-10).
+
+## Version 9 — room type inventory
+
+Adds `roomType` (`SINGLE`, `DOUBLE`, `SUITE`, `FAMILY`) to each room row. Migration `MIGRATION_8_9` backfills from name/capacity. Synced via Ktor `RoomDto`, Firestore `roomType`, and PostgreSQL `rooms.room_type`.
 
 ## Pre-pilot (KR-10)
 

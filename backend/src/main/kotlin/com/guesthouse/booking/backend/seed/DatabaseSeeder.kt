@@ -47,6 +47,21 @@ object DatabaseSeeder {
         }
     }
 
+
+    private fun inferRoomType(name: String, capacity: Int): String {
+        val lower = name.lowercase()
+        return when {
+            "single" in lower -> "SINGLE"
+            "double" in lower -> "DOUBLE"
+            "suite" in lower -> "SUITE"
+            "family" in lower || "cottage" in lower -> "FAMILY"
+            "den" in lower && capacity >= 4 -> "FAMILY"
+            capacity <= 1 -> "SINGLE"
+            capacity >= 4 -> "FAMILY"
+            else -> "DOUBLE"
+        }
+    }
+
     private data class PropertySeed(val id: Long, val name: String, val address: String, val region: String)
 
     private fun seedRooms() {
@@ -89,6 +104,7 @@ object DatabaseSeeder {
                 it[description] = room.description
                 it[pricePerNight] = room.pricePerNight
                 it[capacity] = room.capacity
+                it[roomType] = inferRoomType(room.name, room.capacity)
             }
         }
     }

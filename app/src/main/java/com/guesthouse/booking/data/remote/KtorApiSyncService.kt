@@ -46,7 +46,8 @@ class KtorApiSyncService(
                     name = dto.name,
                     description = dto.description,
                     pricePerNight = dto.pricePerNight,
-                    capacity = dto.capacity
+                    capacity = dto.capacity,
+                    roomType = dto.roomType
                 )
             }
             if (rooms.isNotEmpty()) {

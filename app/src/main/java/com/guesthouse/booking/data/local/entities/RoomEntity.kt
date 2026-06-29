@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("propertyId")]
+    indices = [Index("propertyId"), Index("roomType")]
 )
 data class RoomEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -23,5 +23,6 @@ data class RoomEntity(
     val name: String,
     val description: String,
     val pricePerNight: Double,
-    val capacity: Int
+    val capacity: Int,
+    val roomType: String = RoomType.DOUBLE.name
 )
